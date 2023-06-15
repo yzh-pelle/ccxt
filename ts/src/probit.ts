@@ -1455,6 +1455,7 @@ export default class probit extends Exchange {
         /**
          * @method
          * @name probit#fetchDeposits
+         * @see https://docs-en.probit.com/reference/transferpayment
          * @description fetch all deposits made to an account
          * @param {string|undefined} code unified currency code
          * @param {int|undefined} since the earliest time in ms to fetch deposits for
@@ -1473,6 +1474,7 @@ export default class probit extends Exchange {
         /**
          * @method
          * @name probit#fetchWithdrawals
+         * @see https://docs-en.probit.com/reference/transferpayment
          * @description fetch all withdrawals made to an account
          * @param {string|undefined} code unified currency code
          * @param {int|undefined} since the earliest time in ms to fetch withdrawals for
@@ -1491,6 +1493,7 @@ export default class probit extends Exchange {
         /**
          * @method
          * @name probit#fetchTransactions
+         * @see https://docs-en.probit.com/reference/transferpayment
          * @description fetch all transactions made to an account
          * @param {string|undefined} code unified currency code
          * @param {int|undefined} since the earliest time in ms to fetch transactions for
