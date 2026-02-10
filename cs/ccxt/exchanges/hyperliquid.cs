@@ -204,6 +204,7 @@ public partial class hyperliquid : Exchange
                     { "Insufficient balance for token transfer", typeof(InsufficientFunds) },
                     { "TWAP order value too small. Min is $1200, which is $10 per minute.", typeof(InvalidOrder) },
                     { "TWAP was never placed, already canceled, or filled.", typeof(OrderNotFound) },
+                    { "Too many cumulative requests sent", typeof(RateLimitExceeded) },
                 } },
             } },
             { "precisionMode", TICK_SIZE },
