@@ -10,7 +10,7 @@ var sha3 = require('./static_dependencies/noble-hashes/sha3.js');
 var secp256k1 = require('./static_dependencies/noble-curves/secp256k1.js');
 var crypto = require('./base/functions/crypto.js');
 
-//  ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 //  ---------------------------------------------------------------------------
 /**
  * @class hyperliquid
@@ -215,6 +215,7 @@ class hyperliquid extends hyperliquid$1["default"] {
                     'Insufficient balance for token transfer': errors.InsufficientFunds,
                     'TWAP order value too small. Min is $1200, which is $10 per minute.': errors.InvalidOrder,
                     'TWAP was never placed, already canceled, or filled.': errors.OrderNotFound,
+                    'Too many cumulative requests sent': errors.RateLimitExceeded, // {"status":"err","response":"Too many cumulative requests sent (37986 > 10436) for cumulative volume traded $437.92. Place taker orders to free up 1 request per USDC traded."}
                 },
             },
             'precisionMode': number.TICK_SIZE,
