@@ -65,9 +65,9 @@ export default class btse extends Exchange {
                 'createTrailingPercentOrder': false,
                 'createTriggerOrder': true,
                 'deposit': false,
-                'editOrder': false,
+                'editOrder': true,
                 'editOrders': false,
-                'editOrderWithClientOrderId': false,
+                'editOrderWithClientOrderId': true,
                 'fetchAccounts': false,
                 'fetchBalance': false,
                 'fetchBidsAsks': false,
@@ -281,8 +281,8 @@ export default class btse extends Exchange {
                         'spot/api/v3.3/user/wallet/transfer': 15,
                     },
                     'put': {
-                        'spot/api/v3.3/order': 1,
-                        'futures/api/v2.3/order': 1,
+                        'spot/api/v3.3/order': 1, // done
+                        'futures/api/v2.3/order': 1, // done
                     },
                     'delete': {
                         'spot/api/v3.3/order': 1,
@@ -337,9 +337,9 @@ export default class btse extends Exchange {
                     'fetchOrder': undefined,
                     'fetchOpenOrder': {
                         'marginMode': false,
-                        'trigger': true,
+                        'trigger': false,
                         'trailing': false,
-                        'symbolRequired': true,
+                        'symbolRequired': false,
                     },
                     'fetchOpenOrders': {
                         'marginMode': false,
@@ -401,9 +401,9 @@ export default class btse extends Exchange {
                     'fetchOrder': undefined,
                     'fetchOpenOrder': {
                         'marginMode': false,
-                        'trigger': true,
+                        'trigger': false,
                         'trailing': false,
-                        'symbolRequired': true,
+                        'symbolRequired': false,
                     },
                     'fetchOpenOrders': {
                         'marginMode': false,
@@ -1474,7 +1474,7 @@ export default class btse extends Exchange {
      * @param {string} [params.type] 'spot' or 'swap' or 'future', default is 'spot'
      * @returns {object[]} a list of [trade structures]{@link https://docs.ccxt.com/#/?id=trade-structure}
      */
-    async fetchMyTrades (symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
+    async fetchMyTrades (symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}): Promise<Trade[]> {
         await this.loadMarkets ();
         const paginate = this.safeBool (params, 'paginate', false);
         if (paginate) {
@@ -1581,7 +1581,7 @@ export default class btse extends Exchange {
      * @param {string} [params.type] 'spot' or 'swap' or 'future', default is 'spot'
      * @returns {object[]} a list of [trade structures]{@link https://docs.ccxt.com/?id=trade-structure}
      */
-    async fetchOrderTrades (id: string, symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
+    async fetchOrderTrades (id: string, symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}): Promise<Trade[]> {
         await this.loadMarkets ();
         const clientOrderId = this.safeString (params, 'clientOrderId');
         if (clientOrderId === undefined) {
@@ -2205,6 +2205,60 @@ export default class btse extends Exchange {
         return this.parseOrder (response);
     }
 
+    /**
+     * @method
+     * @name btse#editOrder
+     * @description edit a trade order
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#amend-order
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#amend-order
+     * @param {string} id cancel order id
+     * @param {string} symbol unified symbol of the market to create an order in
+     * @param {string} type 'market' or 'limit' (not used by btse)
+     * @param {string} side 'buy' or 'sell' (not used by btse)
+     * @param {float} amount how much of currency you want to trade in units of base currency
+     * @param {float} [price] the price at which the order is to be fulfilled, in units of the quote currency, ignored in market orders
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.clientOrderId] a unique id for the order (required if id is not provided)
+     * @param {float} [params.triggerPrice] the price that a trigger order is triggered at
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async editOrder (id: string, symbol: string, type: OrderType, side: OrderSide, amount: Num = undefined, price: Num = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+            'type': 'ALL',
+        };
+        const clientOrderId = this.safeString (params, 'clientOrderId');
+        if (clientOrderId !== undefined) {
+            request['clOrderID'] = clientOrderId;
+            params = this.omit (params, 'clientOrderId');
+        } else if (id === undefined) {
+            throw new ArgumentsRequired (this.id + ' fetchOpenOrder() requires an id argument or a clientOrderId parameter');
+        } else {
+            request['orderID'] = id;
+        }
+        if (amount !== undefined) {
+            request['orderSize'] = this.amountToPrecision (symbol, amount);
+        }
+        if (price !== undefined) {
+            request['orderPrice'] = this.priceToPrecision (symbol, price);
+        }
+        const triggerPrice = this.safeString (params, 'triggerPrice');
+        if (triggerPrice !== undefined) {
+            request['triggerPrice'] = this.priceToPrecision (symbol, triggerPrice);
+            params = this.omit (params, 'triggerPrice');
+        }
+        let response = undefined;
+        if (market['spot']) {
+            response = await this.privatePutSpotApiV33Order (this.extend (request, params));
+        } else {
+            response = await this.privatePutFuturesApiV23Order (this.extend (request, params));
+        }
+        const order = this.safeDict (response, 0, {});
+        return this.parseOrder (order, market);
+    }
+
     parseOrder (order: Dict, market: Market = undefined): Order {
         //
         // createOrder - spot
@@ -2316,6 +2370,7 @@ export default class btse extends Exchange {
             '15': 'rejected', // Order Rejected
             '16': 'rejected', // Order Not Found
             '17': 'rejected', // Request Failed
+            '123': 'open', // AMEND_ORDER = Order amended
         };
         return this.safeString (statuses, status, status);
     }
