@@ -2,11 +2,10 @@
 //  ---------------------------------------------------------------------------
 
 import Exchange from './abstract/btse.js';
-import { BadRequest } from '../ccxt.js';
-import { Precise } from './base/Precise.js';
+import { ArgumentsRequired, BadRequest, InvalidOrder } from '../ccxt.js';
 import { sha384 } from './static_dependencies/noble-hashes/sha512.js';
 import { TICK_SIZE } from './base/functions/number.js';
-import type { Dict, FundingRate, FundingRateHistory, FundingRates, Int, LeverageTier, LeverageTiers, Market, OHLCV, OpenInterests, OrderBook, Str, Strings, Ticker, Tickers, Trade } from './base/types.js';
+import type { Dict, FundingRate, FundingRateHistory, FundingRates, Int, LeverageTier, LeverageTiers, Market, Num, OHLCV, OpenInterests, Order, OrderBook, OrderSide, OrderType, Str, Strings, Ticker, Tickers, Trade } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -43,28 +42,28 @@ export default class btse extends Exchange {
                 'closeAllPositions': false,
                 'closePosition': false,
                 'createDepositAddress': false,
-                'createLimitBuyOrder': false,
-                'createLimitOrder': false,
-                'createLimitSellOrder': false,
-                'createMarketBuyOrder': false,
+                'createLimitBuyOrder': true,
+                'createLimitOrder': true,
+                'createLimitSellOrder': true,
+                'createMarketBuyOrder': true,
                 'createMarketBuyOrderWithCost': false,
-                'createMarketOrder': false,
+                'createMarketOrder': true,
                 'createMarketOrderWithCost': false,
-                'createMarketSellOrder': false,
+                'createMarketSellOrder': true,
                 'createMarketSellOrderWithCost': false,
-                'createOrder': false,
+                'createOrder': true,
                 'createOrders': false,
-                'createOrderWithTakeProfitAndStopLoss': false,
-                'createPostOnlyOrder': false,
-                'createReduceOnlyOrder': false,
+                'createOrderWithTakeProfitAndStopLoss': true, // contract markets only
+                'createPostOnlyOrder': true,
+                'createReduceOnlyOrder': true,
                 'createStopLimitOrder': false,
                 'createStopLossOrder': false,
-                'createStopMarketOrder': false,
-                'createStopOrder': false,
-                'createTakeProfitOrder': false,
-                'createTrailingAmountOrder': false,
+                'createStopMarketOrder': true,
+                'createStopOrder': true,
+                'createTakeProfitOrder': true,
+                'createTrailingAmountOrder': true,
                 'createTrailingPercentOrder': false,
-                'createTriggerOrder': false,
+                'createTriggerOrder': true,
                 'deposit': false,
                 'editOrder': false,
                 'editOrders': false,
@@ -255,14 +254,14 @@ export default class btse extends Exchange {
                         'spot/api/v3.2/subaccount/wallet/history': 15,
                     },
                     'post': {
-                        'spot/api/v3.3/order': 1,
-                        'spot/api/v3.3/order/peg': 1,
+                        'spot/api/v3.3/order': 1, // done
+                        'spot/api/v3.3/order/peg': 1, // same as above
                         'spot/api/v3.3/order/cancelAllAfter': 1,
                         'spot/api/v3.3/invest/deposit': 5,
                         'spot/api/v3.3/invest/renew': 5,
                         'spot/api/v3.3/invest/redeem': 5,
-                        'futures/api/v2.3/order': 1,
-                        'futures/api/v2.3/order/peg': 1,
+                        'futures/api/v2.3/order': 1, // done
+                        'futures/api/v2.3/order/peg': 1, // done
                         'futures/api/v2.3/order/cancelAllAfter': 1,
                         'futures/api/v2.3/order/close_position': 1,
                         'futures/api/v2.3/risk_limit': 5,
@@ -293,11 +292,11 @@ export default class btse extends Exchange {
                 },
             },
             'features': {
-                'default': {
+                'contract': {
                     'sandbox': true,
                     'createOrder': {
-                        'marginMode': false,
-                        'triggerPrice': false,
+                        'marginMode': true, // todo check
+                        'triggerPrice': true,
                         'triggerPriceType': {
                             'mark': true,
                             'last': true,
@@ -305,7 +304,14 @@ export default class btse extends Exchange {
                         },
                         'stopLossPrice': true,
                         'takeProfitPrice': true,
-                        'attachedStopLossTakeProfit': undefined, // not supported
+                        'attachedStopLossTakeProfit': {
+                            'triggerPriceType': {
+                                'last': true,
+                                'mark': true,
+                                'index': false,
+                            },
+                            'price': false,
+                        },
                         'timeInForce': {
                             'IOC': true,
                             'FOK': true,
@@ -320,9 +326,7 @@ export default class btse extends Exchange {
                         'marketBuyRequiresPrice': false,
                         'marketBuyByCost': false,
                     },
-                    'createOrders': {
-                        'max': 5,
-                    },
+                    'createOrders': undefined,
                     'fetchMyTrades': {
                         'marginMode': false,
                         'daysBack': 182, // 6 months
@@ -360,17 +364,78 @@ export default class btse extends Exchange {
                     },
                 },
                 'spot': {
-                    'extends': 'default',
+                    'sandbox': true,
+                    'createOrder': {
+                        'marginMode': false,
+                        'triggerPrice': true,
+                        'triggerPriceType': {
+                            'mark': false,
+                            'last': true,
+                            'index': true,
+                        },
+                        'stopLossPrice': true,
+                        'takeProfitPrice': true,
+                        'attachedStopLossTakeProfit': undefined, // not supported
+                        'timeInForce': {
+                            'IOC': true,
+                            'FOK': true,
+                            'PO': true,
+                            'GTD': false, // see timeInForce in options
+                        },
+                        'hedged': false,
+                        'selfTradePrevention': false,
+                        'trailing': true,
+                        'iceberg': false,
+                        'leverage': false,
+                        'marketBuyRequiresPrice': false,
+                        'marketBuyByCost': false,
+                    },
+                    'createOrders': undefined,
+                    'fetchMyTrades': {
+                        'marginMode': false,
+                        'daysBack': 182, // 6 months
+                        'limit': 500,
+                        'untilDays': 7,
+                        'symbolRequired': false,
+                    },
+                    'fetchOrder': undefined,
+                    'fetchOpenOrder': {
+                        'marginMode': false,
+                        'trigger': true,
+                        'trailing': false,
+                        'symbolRequired': true,
+                    },
+                    'fetchOpenOrders': {
+                        'marginMode': false,
+                        'limit': 500,
+                        'trigger': true,
+                        'trailing': false,
+                        'symbolRequired': true,
+                    },
+                    'fetchOrders': undefined,
+                    'fetchCanceledAndClosedOrders': {
+                        'marginMode': false,
+                        'limit': 500,
+                        'daysBack': 182, // 6 months
+                        'untilDays': 7,
+                        'trigger': false,
+                        'trailing': false,
+                        'symbolRequired': false,
+                    },
+                    'fetchClosedOrders': undefined,
+                    'fetchOHLCV': {
+                        'limit': 300,
+                    },
                 },
                 'swap': {
                     'linear': {
-                        'extends': 'default',
+                        'extends': 'contract',
                     },
                     'inverse': undefined,
                 },
                 'future': {
                     'linear': {
-                        'extends': 'default',
+                        'extends': 'contract',
                     },
                     'inverse': undefined,
                 },
@@ -410,6 +475,10 @@ export default class btse extends Exchange {
             },
             'exceptions': {
                 'exact': {
+                    // when position mode is wrong {"status":429,"errorCode":-1,"message":"Order not found","extraData":["117","0"]}
+                    // {"status":400,"errorCode":-2,"message":"Invalid request parameters","extraData":null}
+                    // {"code":33001001,"msg":"BADREQUEST: The distance between Trigger Price and Limit Price cannot exceed 5.0 %","time":1770815167145,"data":["5.0 %"],"success":false}
+                    // {"code":51523,"msg":"BADREQUEST: Insufficient wallet balance","time":1770814875493,"data":null,"success":false}
                     // {"code":10002,"msg":"UNAUTHORIZED: Authentication Failed","time":1770477230034,"data":null,"success":false}
                     // {"status":400,"errorCode":-7,"message":"Authenticate failed","extraData":null}
                     // 400 Bad Request {"code":-11,"msg":"System error","success":false,"time":1770451790797,"data":[]}
@@ -427,6 +496,16 @@ export default class btse extends Exchange {
                 'networks': {
                 },
                 'timeInForce': {
+                    'GTC': 'GTC',
+                    'IOC': 'IOC',
+                    'FOK': 'FOK',
+                    'HALFMIN': 'HALFMIN',
+                    'FIVEMIN': 'FIVEMIN',
+                    'HOUR': 'HOUR',
+                    'TWELVEHOUR': 'TWELVEHOUR',
+                    'DAY': 'DAY',
+                    'WEEK': 'WEEK',
+                    'MONTH': 'MONTH',
                 },
                 'accountsByType': {
                 },
@@ -601,7 +680,7 @@ export default class btse extends Exchange {
         const minAmountString = this.safeString (market, 'minOrderSize');
         const minPriceString = this.safeString (market, 'minValidPrice');
         const pricePrecision = this.safeString (market, 'minPriceIncrement');
-        let amountPrecision = this.safeString (market, 'minSizeIncrement');
+        const amountPrecision = this.safeString (market, 'minSizeIncrement');
         const isSpot = !(this.safeBool (market, 'futures', true)); // only spot markets have the 'futures' field, and it's false
         let active = this.safeBool (market, 'active');
         let type = 'spot';
@@ -616,7 +695,6 @@ export default class btse extends Exchange {
             symbol += ':' + quote; // todo check
             contractSize = this.safeString (market, 'contractSize');
             isFuture = this.safeBool (market, 'timeBasedContract', false);
-            amountPrecision = Precise.stringMul (amountPrecision, contractSize);
             if (isFuture) {
                 expiry = this.safeInteger (market, 'closeTime');
                 symbol += '-' + this.yymmdd (expiry);
@@ -1410,6 +1488,522 @@ export default class btse extends Exchange {
             'cost': undefined,
             'fee': undefined,
         }, market);
+    }
+
+    /**
+     * @method
+     * @name btse#createOrder
+     * @description create a trade order
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#create-new-order
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#create-new-order
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#create-new-algo-order
+     * @param {string} symbol unified symbol of the market to create an order in
+     * @param {string} type 'market' or 'limit'
+     * @param {string} side 'buy' or 'sell'
+     * @param {float} amount how much of currency you want to trade in units of base currency
+     * @param {float} [price] the price at which the order is to be fullfilled, in units of the quote currency, ignored in market orders
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.clientOrderId] a unique id for the order
+     * @param {bool} [params.postOnly] if true, the order will only be posted to the order book and not executed immediately (default is false)
+     * @param {string} [params.timeInForce] 'GTC', 'IOC', 'FOK', 'PO', 'HALFMIN', 'FIVEMIN', 'HOUR', 'TWELVEHOUR', 'DAY', 'WEEK' or 'MONTH'
+     * @param {float} [params.triggerPrice] the price that a trigger order is triggered at (same as takeProfitPrice)
+     * @param {float} [params.stopLossPrice] the price that a stop loss order is triggered at
+     * @param {float} [params.takeProfitPrice] the price that a take profit order is triggered at
+     * @param {string} [params.triggerPriceType] 'INDEX_PRICE' or 'LAST_PRICE', default is 'LAST_PRICE'
+     * @param {float} [params.trailingAmount] the quote amount to trail away from the current market price
+     * @param {float} [params.deviation] *PEG orders only* How much should the order price deviate from index price. Value is in percentage and can range from -10 to 10
+     * @param {float} [params.stealth] *PEG orders only*  How many percent of the order is to be displayed on the orderbook
+     * @param {float} [params.stopPrice] *NB - It is NOT stopLossPrice or triggerPrice!!! OCO orders only* Mandatory when creating an OCO order. Indicates the stop price
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}): Promise<Order> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        if (market['spot']) {
+            return await this.createSpotOrder (symbol, type, side, amount, price, params);
+        } else {
+            return await this.createContractOrder (symbol, type, side, amount, price, params);
+        }
+    }
+
+    /**
+     * @method
+     * @name btse#createSpotOrder
+     * @description create a trade order on spot market
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#create-new-order
+     * @param {string} symbol unified symbol of the market to create an order in
+     * @param {string} type 'market' or 'limit' or 'OCO' or 'PEG'
+     * @param {string} side 'buy' or 'sell'
+     * @param {float} amount how much of you want to trade in units of the base currency
+     * @param {float} [price] the price that the order is to be fulfilled, in units of the quote currency, ignored in market orders
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.clientOrderId] a unique id for the order
+     * @param {bool} [params.postOnly] if true, the order will only be posted to the order book and not executed immediately (default is false)
+     * @param {string} [params.timeInForce] 'GTC', 'IOC', 'FOK', 'PO', 'HALFMIN', 'FIVEMIN', 'HOUR', 'TWELVEHOUR', 'DAY', 'WEEK' or 'MONTH'
+     * @param {float} [params.triggerPrice] the price that a trigger order is triggered at (same as takeProfitPrice)
+     * @param {float} [params.stopLossPrice] the price that a stop loss order is triggered at
+     * @param {float} [params.takeProfitPrice] the price that a take profit order is triggered at
+     * @param {string} [params.triggerPriceType] 'INDEX_PRICE' or 'LAST_PRICE', default is 'LAST_PRICE'
+     * @param {float} [params.trailingAmount] the quote amount to trail away from the current market price
+     * @param {float} [params.deviation] *PEG orders only* How much should the order price deviate from index price. Value is in percentage and can range from -10 to 10
+     * @param {float} [params.stealth] *PEG orders only*  How many percent of the order is to be displayed on the orderbook
+     * @param {float} [params.stopPrice] *NB - It is NOT stopLossPrice or triggerPrice!!! OCO orders only* Mandatory when creating an OCO order. Indicates the stop price
+     * @param {bool} [params.hedged] *contract markets only* true for hedged mode, false for one way mode, default is false
+     * @param {string} [params.positionMode] *contract markets only* 'ONE_WAY' or 'HEDGE or 'ISOLATED' (default is 'ONE_WAY')
+     * @param {object} [params.takeProfit] *contract markets only* *takeProfit object in params* containing the triggerPrice at which the attached take profit order will be triggered (perpetual swap markets only)
+     * @param {float} [params.takeProfit.triggerPrice] *contract markets only* take profit trigger price
+     * @param {string} [params.takeProfit.priceType] *contract markets only* 'markPrice' or 'lastPrice', default is 'markPrice'
+     * @param {object} [params.stopLoss] *contract markets only* *stopLoss object in params* containing the triggerPrice at which the attached stop loss order will be triggered (perpetual swap markets only)
+     * @param {float} [params.stopLoss.triggerPrice] *contract markets only* stop loss trigger price
+     * @param {string} [params.stopLoss.priceType] *contract markets only* 'markPrice' or 'lastPrice', default is 'markPrice'
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createSpotOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}): Promise<Order> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        type = type.toUpperCase ();
+        const request: Dict = {
+            'symbol': market['id'],
+            // 'price'
+            'size': this.amountToPrecision (symbol, amount),
+            'side': side.toUpperCase (),
+            // 'time_in_force'
+            'type': type,
+            // 'txType'
+            // 'stopPrice'
+            // 'triggerPrice'
+            // 'trailValue'
+            // 'postOnly'
+            // 'clOrderID'
+            // 'stealth'
+            // 'deviation'
+            // 'triggerPriceType'
+        };
+        const isMarketOrder = (type === 'MARKET');
+        if (!isMarketOrder) {
+            if (price === undefined) {
+                throw new InvalidOrder (this.id + ' createOrder() requires a price argument for ' + type + ' orders');
+            }
+            request['price'] = this.priceToPrecision (symbol, price);
+        }
+        const clientOrderId = this.safeString (params, 'clientOrderId');
+        if (clientOrderId !== undefined) {
+            request['clOrderID'] = clientOrderId;
+            params = this.omit (params, 'clientOrderId');
+        }
+        let postOnly = false;
+        // exchange-specific postOnly is the same as the unified one
+        [ postOnly, params ] = this.handlePostOnly (isMarketOrder, postOnly, params); // this will remove PO from params.timeInForce if present
+        if (postOnly) {
+            request['postOnly'] = true;
+        }
+        const timeInForce = this.handleTimeInForce (params);
+        if (timeInForce !== undefined) {
+            request['time_in_force'] = timeInForce;
+        }
+        const triggerPrice = this.safeString (params, 'triggerPrice');
+        const takeProfitPrice = this.safeString (params, 'takeProfitPrice');
+        const stopLossPrice = this.safeString (params, 'stopLossPrice');
+        const triggerPriceToSend = triggerPrice || takeProfitPrice || stopLossPrice;
+        const isTriggerOrder = (triggerPrice !== undefined) || (takeProfitPrice !== undefined);
+        const isStopLossOrder = (stopLossPrice !== undefined);
+        if (isTriggerOrder || isStopLossOrder) {
+            params = this.omit (params, [ 'triggerPrice', 'takeProfitPrice', 'stopLossPrice' ]);
+            request['triggerPrice'] = this.priceToPrecision (symbol, triggerPriceToSend);
+            if (isTriggerOrder) {
+                request['txType'] = 'TRIGGER';
+            } else if (isStopLossOrder) {
+                request['txType'] = 'STOP';
+            }
+        }
+        const trailingAmount = this.safeString (params, 'trailingAmount');
+        if (trailingAmount !== undefined) {
+            request['trailValue'] = this.priceToPrecision (symbol, trailingAmount);
+            params = this.omit (params, 'trailingAmount');
+        }
+        let triggerPriceType = this.safeString (params, 'triggerPriceType');
+        if (triggerPriceType !== undefined) {
+            params = this.omit (params, 'triggerPriceType');
+            if ((triggerPriceType === 'index') || (triggerPriceType === 'indexPrice')) {
+                triggerPriceType = 'INDEX_PRICE';
+            } else if ((triggerPriceType === 'last') || (triggerPriceType === 'lastPrice')) {
+                triggerPriceType = 'LAST_PRICE';
+            }
+            request['triggerPriceType'] = triggerPriceType;
+        }
+        const response = await this.privatePostSpotApiV33Order (this.extend (request, params));
+        //
+        //     [
+        //         {
+        //             "status": 2,
+        //             "symbol": "ETH-USDT",
+        //             "orderType": 76,
+        //             "price": 1000,
+        //             "side": "BUY",
+        //             "orderID": "cde4fb37-2e2b-437e-a816-4b55b2e2b7c7",
+        //             "timestamp": 1770813053751,
+        //             "triggerPrice": 0,
+        //             "stopPrice": null,
+        //             "trigger": false,
+        //             "message": "",
+        //             "clOrderID": null,
+        //             "stealth": 1,
+        //             "deviation": 1,
+        //             "postOnly": false,
+        //             "orderDetailType": null,
+        //             "originalOrderBaseSize": 0.0001,
+        //             "originalOrderQuoteSize": null,
+        //             "currentOrderBaseSize": 0.0001,
+        //             "currentOrderQuoteSize": null,
+        //             "remainingOrderBaseSize": 0.0001,
+        //             "remainingOrderQuoteSize": null,
+        //             "filledBaseSize": 0,
+        //             "totalFilledBaseSize": 0,
+        //             "orderCurrency": "base",
+        //             "avgFilledPrice": 0,
+        //             "time_in_force": "GTC"
+        //         }
+        //     ]
+        //
+        const order = this.safeDict (response, 0, {});
+        return this.parseOrder (order, market);
+    }
+
+    /**
+     * @method
+     * @name btse#createContractOrder
+     * @description create a trade order on contract market
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#create-new-order
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#create-new-algo-order
+     * @param {string} symbol unified symbol of the market to create an order in
+     * @param {string} type 'market' or 'limit' or 'OCO' or 'PEG'
+     * @param {string} side 'buy' or 'sell'
+     * @param {float} amount how much of you want to trade in units of the base currency
+     * @param {float} [price] the price that the order is to be fulfilled, in units of the quote currency, ignored in market orders
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.clientOrderId] a unique id for the order
+     * @param {bool} [params.postOnly] if true, the order will only be posted to the order book and not executed immediately (default is false)
+     * @param {bool} [params.reduceOnly] if true, the order will only reduce a current position, not increase it (default is false)
+     * @param {string} [params.timeInForce] 'GTC', 'IOC', 'FOK', 'PO', 'HALFMIN', 'FIVEMIN', 'HOUR', 'TWELVEHOUR', 'DAY', 'WEEK' or 'MONTH'
+     * @param {bool} [params.hedged] true for hedged mode, false for one way mode, default is false
+     * @param {string} [params.positionMode] 'ONE_WAY' or 'HEDGE or 'ISOLATED' (default is 'ONE_WAY')
+     * @param {float} [params.triggerPrice] the price that a trigger order is triggered at (same as takeProfitPrice)
+     * @param {float} [params.stopLossPrice] the price that a stop loss order is triggered at
+     * @param {float} [params.takeProfitPrice] the price that a take profit order is triggered at
+     * @param {string} [params.triggerPriceType] 'markPrice' or 'lastPrice', default is 'markPrice'
+     * @param {float} [params.trailingAmount] the quote amount to trail away from the current market price
+     * @param {object} [params.takeProfit] *takeProfit object in params* containing the triggerPrice at which the attached take profit order will be triggered (perpetual swap markets only)
+     * @param {float} [params.takeProfit.triggerPrice] take profit trigger price
+     * @param {string} [params.takeProfit.priceType] 'markPrice' or 'lastPrice', default is 'markPrice'
+     * @param {object} [params.stopLoss] *stopLoss object in params* containing the triggerPrice at which the attached stop loss order will be triggered (perpetual swap markets only)
+     * @param {float} [params.stopLoss.triggerPrice] stop loss trigger price
+     * @param {string} [params.stopLoss.priceType] 'markPrice' or 'lastPrice', default is 'markPrice'
+     * @param {float} [params.deviation] *PEG orders only* How much should the order price deviate from index price. Value is in percentage and can range from -10 to 10
+     * @param {float} [params.stealth] *PEG orders only*  How many percent of the order is to be displayed on the orderbook
+     * @param {float} [params.stopPrice] *NB - It is NOT the stopLossPrice!!! OCO orders only* Mandatory when creating an OCO order. Indicates the stop price
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createContractOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}): Promise<Order> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+            // 'price'
+            'size': this.amountToPrecision (symbol, amount),
+            'side': side.toUpperCase (),
+            // 'time_in_force'
+            // 'type'
+            // 'txType'
+            // 'stopPrice'
+            // 'triggerPrice'
+            // 'trailValue'
+            // 'postOnly'
+            // 'reduceOnly'
+            // 'clOrderID'
+            // 'trigger'
+            // 'takeProfitPrice'
+            // 'takeProfitTrigger'
+            // 'stopLossPrice'
+            // 'stopLossTrigger'
+            // 'positionMode'
+            // additional params for algo orders:
+            // 'deviation'
+            // 'stealth'
+        };
+        type = type.toUpperCase ();
+        const clientOrderId = this.safeString (params, 'clientOrderId');
+        if (clientOrderId !== undefined) {
+            request['clOrderID'] = clientOrderId;
+            params = this.omit (params, 'clientOrderId');
+        }
+        let hedged = false;
+        [ hedged, params ] = this.handleOptionAndParams (params, 'createOrder', 'hedged', hedged);
+        if (hedged) {
+            request['positionMode'] = 'HEDGE';
+        }
+        const deviation = this.safeNumber (params, 'deviation');
+        const stealth = this.safeNumber (params, 'stealth');
+        let response = undefined;
+        if ((type === 'PEG') || (deviation !== undefined) || (stealth !== undefined)) {
+            // contract PEG orders have own endpoint and do not require type
+            request['price'] = this.priceToPrecision (symbol, price);
+            response = await this.privatePostSpotApiV33OrderPeg (this.extend (request, params));
+        } else {
+            request['type'] = type;
+            const isMarketOrder = (type === 'MARKET');
+            if (!isMarketOrder) {
+                if (price === undefined) {
+                    throw new ArgumentsRequired (this.id + ' createOrder() requires a price argument for ' + type + ' orders');
+                }
+                request['price'] = this.priceToPrecision (symbol, price);
+            }
+            let postOnly = false;
+            // exchange-specific postOnly is the same as the unified one
+            [ postOnly, params ] = this.handlePostOnly (isMarketOrder, postOnly, params); // this will remove PO from params.timeInForce if present
+            if (postOnly) {
+                request['postOnly'] = true;
+            }
+            const timeInForce = this.handleTimeInForce (params);
+            if (timeInForce !== undefined) {
+                request['time_in_force'] = timeInForce;
+            }
+            // reduceOnly will be passed with params
+            const trailingAmount = this.safeString (params, 'trailingAmount');
+            if (trailingAmount !== undefined) {
+                request['trailValue'] = this.priceToPrecision (symbol, trailingAmount);
+                params = this.omit (params, 'trailingAmount');
+            }
+            const triggerPrice = this.safeString (params, 'triggerPrice');
+            // the exchange uses takeProfitPrice and stopLossPrice for attached TP/SL orders
+            // this means that we have a conflict with our logic
+            // we will use ccxt terms and logic to define what kind of tp/sl order we want to create
+            // first we handling with simple tp/sl order
+            const takeProfitPrice = this.safeString (params, 'takeProfitPrice');
+            const stopLossPrice = this.safeString (params, 'stopLossPrice');
+            const triggerPriceToSend = triggerPrice || takeProfitPrice || stopLossPrice;
+            const isTriggerOrder = (triggerPrice !== undefined) || (takeProfitPrice !== undefined);
+            const isStopLossOrder = (stopLossPrice !== undefined);
+            if (isTriggerOrder || isStopLossOrder) {
+                params = this.omit (params, [ 'triggerPrice', 'takeProfitPrice', 'stopLossPrice' ]);
+                request['triggerPrice'] = this.priceToPrecision (symbol, triggerPriceToSend);
+                if (isTriggerOrder) {
+                    request['txType'] = 'TRIGGER';
+                } else if (isStopLossOrder) {
+                    request['txType'] = 'STOP';
+                }
+            }
+            const triggerPriceType = this.safeString (params, 'triggerPriceType');
+            if (triggerPriceType !== undefined) {
+                params = this.omit (params, 'triggerPriceType');
+                request['triggerPriceType'] = this.encodeContractPriceType (triggerPriceType);
+            }
+            // here we handling with attached take profit and stop loss orders
+            const takeProfit = this.safeDict (params, 'takeProfit');
+            const stopLoss = this.safeDict (params, 'stopLoss');
+            if ((takeProfit !== undefined) || (stopLoss !== undefined)) {
+                const takeProfitTriggerPrice = this.safeString (takeProfit, 'triggerPrice');
+                const stopLossTriggerPrice = this.safeString (stopLoss, 'triggerPrice');
+                const stopLossTriggerPriceType = this.safeString (stopLoss, 'priceType');
+                if (takeProfitTriggerPrice !== undefined) {
+                    request['takeProfitPrice'] = this.priceToPrecision (symbol, takeProfitTriggerPrice);
+                    const takeProfitTriggerPriceType = this.safeString (takeProfit, 'priceType');
+                    if (takeProfitTriggerPriceType !== undefined) {
+                        request['takeProfitTrigger'] = this.encodeContractPriceType (takeProfitTriggerPriceType);
+                    }
+                }
+                if (stopLossTriggerPrice !== undefined) {
+                    request['stopLossPrice'] = this.priceToPrecision (symbol, stopLossTriggerPrice);
+                    if (stopLossTriggerPriceType !== undefined) {
+                        request['stopLossTrigger'] = this.encodeContractPriceType (stopLossTriggerPriceType);
+                    }
+                }
+                params = this.omit (params, [ 'takeProfit', 'stopLoss' ]);
+            }
+            //
+            //     [
+            //         {
+            //             "status": 4,
+            //             "symbol": "ETH-PERP",
+            //             "orderType": 77,
+            //             "price": 1956.59,
+            //             "side": "BUY",
+            //             "orderID": "5c6a26db-8cfb-45c7-b25d-56927bc36795",
+            //             "timestamp": 1770821231984,
+            //             "triggerPrice": 0,
+            //             "trigger": false,
+            //             "deviation": 100,
+            //             "stealth": 100,
+            //             "message": "",
+            //             "avgFilledPrice": 1956.59,
+            //             "clOrderID": "",
+            //             "originalOrderSize": 1,
+            //             "currentOrderSize": 1,
+            //             "filledSize": 1,
+            //             "totalFilledSize": 1,
+            //             "remainingSize": 0,
+            //             "postOnly": false,
+            //             "orderDetailType": null,
+            //             "positionMode": "ONE_WAY",
+            //             "positionDirection": null,
+            //             "positionId": "ETH-PERP-USDT",
+            //             "time_in_force": "GTC"
+            //         }
+            //     ]
+            //
+            response = await this.privatePostFuturesApiV23Order (this.extend (request, params));
+            const order = this.safeDict (response, 0, {});
+            return this.parseOrder (order, market);
+        }
+    }
+
+    encodeContractPriceType (priceType) {
+        const priceTypes = {
+            'MARK_PRICE': 'markPrice',
+            'LAST_PRICE': 'lastPrice',
+            'last': 'lastPrice',
+            'mark': 'markPrice',
+        };
+        return this.safeString (priceTypes, priceType, priceType);
+    }
+
+    parseOrder (order: Dict, market: Market = undefined): Order {
+        //
+        // createOrder - spot
+        //     {
+        //         "status": 2,
+        //         "symbol": "ETH-USDT",
+        //         "orderType": 76,
+        //         "price": 1000,
+        //         "side": "BUY",
+        //         "orderID": "cde4fb37-2e2b-437e-a816-4b55b2e2b7c7",
+        //         "timestamp": 1770813053751,
+        //         "triggerPrice": 0,
+        //         "stopPrice": null,
+        //         "trigger": false,
+        //         "message": "",
+        //         "clOrderID": null,
+        //         "stealth": 1,
+        //         "deviation": 1,
+        //         "postOnly": false,
+        //         "orderDetailType": null,
+        //         "originalOrderBaseSize": 0.0001,
+        //         "originalOrderQuoteSize": null,
+        //         "currentOrderBaseSize": 0.0001,
+        //         "currentOrderQuoteSize": null,
+        //         "remainingOrderBaseSize": 0.0001,
+        //         "remainingOrderQuoteSize": null,
+        //         "filledBaseSize": 0,
+        //         "totalFilledBaseSize": 0,
+        //         "orderCurrency": "base",
+        //         "avgFilledPrice": 0,
+        //         "time_in_force": "GTC"
+        //     }
+        //
+        // createOrder - swap
+        //     {
+        //         "status": 4,
+        //         "symbol": "ETH-PERP",
+        //         "orderType": 77,
+        //         "price": 1956.59,
+        //         "side": "BUY",
+        //         "orderID": "5c6a26db-8cfb-45c7-b25d-56927bc36795",
+        //         "timestamp": 1770821231984,
+        //         "triggerPrice": 0,
+        //         "trigger": false,
+        //         "deviation": 100,
+        //         "stealth": 100,
+        //         "message": "",
+        //         "avgFilledPrice": 1956.59,
+        //         "clOrderID": "",
+        //         "originalOrderSize": 1,
+        //         "currentOrderSize": 1,
+        //         "filledSize": 1,
+        //         "totalFilledSize": 1,
+        //         "remainingSize": 0,
+        //         "postOnly": false,
+        //         "orderDetailType": null,
+        //         "positionMode": "ONE_WAY",
+        //         "positionDirection": null,
+        //         "positionId": "ETH-PERP-USDT",
+        //         "time_in_force": "GTC"
+        //     }
+        //
+        const marketId = this.safeString (order, 'symbol');
+        market = this.safeMarket (marketId, market);
+        const timestamp = this.safeInteger (order, 'timestamp');
+        const rawStatus = this.safeString (order, 'status');
+        const rawType = this.safeString (order, 'orderType');
+        const rawTimeInForce = this.safeString (order, 'time_in_force');
+        return this.safeOrder ({
+            'info': order,
+            'id': this.safeString (order, 'orderID'),
+            'clientOrderId': this.safeString (order, 'clOrderID'),
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'lastTradeTimestamp': undefined,
+            'lastUpdateTimestamp': undefined,
+            'status': this.parseOrderStatus (rawStatus),
+            'symbol': market['symbol'],
+            'type': this.parseOrderType (rawType),
+            'timeInForce': this.parseTimeInForce (rawTimeInForce),
+            'postOnly': this.safeBool (order, 'postOnly'),
+            'reduceOnly': undefined, // todo check
+            'side': this.safeStringLower (order, 'side'),
+            'price': this.safeString (order, 'price'),
+            'triggerPrice': this.omitZero (this.safeString (order, 'triggerPrice')),
+            'stopLossPrice': undefined, // todo check
+            'takeProfitPrice': undefined, // todo check
+            'amount': this.safeString2 (order, 'currentOrderBaseSize', 'currentOrderSize'),
+            'filled': this.safeString2 (order, 'totalFilledBaseSize', 'totalFilledSize'),
+            'remaining': this.safeString2 (order, 'remainingOrderBaseSize', 'remainingSize'),
+            'cost': undefined,
+            'trades': undefined,
+            'fee': undefined,
+            'average': this.omitZero (this.safeString (order, 'avgFilledPrice')),
+        }, market);
+    }
+
+    parseOrderStatus (status) {
+        const statuses = {
+            '2': 'open', // Order Inserted
+            '3': 'closed', // Order Transacted
+            '4': 'closed', // Order Fully Transacted
+            '5': 'open', // Order Partially Transacted
+            '6': 'canceled', // Order Cancelled
+            '7': 'refunded', // Order Refunded
+            '8': 'rejected', // Insufficient Balance
+            '9': 'open', // Trigger Inserted
+            '10': 'open', // Trigger Activated
+            '15': 'rejected', // Order Rejected
+            '16': 'rejected', // Order Not Found
+            '17': 'rejected', // Request Failed
+        };
+        return this.safeString (statuses, status, status);
+    }
+
+    parseOrderType (type) {
+        const types = {
+            '76': 'limit', // Limit order
+            '77': 'market', // Market order
+            '80': 'limit', // Peg/Algo order
+        };
+        return this.safeString (types, type, type);
+    }
+
+    parseTimeInForce (timeInForce) {
+        const values = {
+            'GTC': 'GTC',
+            'IOC': 'IOC',
+            'FOK': 'FOK',
+            'HALFMIN': 'GTD',
+            'FIVEMIN': 'GTD',
+            'HOUR': 'GTD',
+            'TWELVEHOUR': 'GTD',
+            'DAY': 'GTD',
+            'WEEK': 'GTD',
+            'MONTH': 'GTD',
+        };
+        return this.safeString (values, timeInForce, timeInForce);
     }
 
     sign (path, api: any = 'public', method = 'GET', params = {}, headers: any = undefined, body: any = undefined) {
