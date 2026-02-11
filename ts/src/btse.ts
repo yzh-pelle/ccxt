@@ -34,7 +34,7 @@ export default class btse extends Exchange {
                 'borrowCrossMargin': false,
                 'borrowIsolatedMargin': false,
                 'borrowMargin': false,
-                'cancelAllOrders': false,
+                'cancelAllOrders': true,
                 'cancelOrder': true,
                 'cancelOrders': false,
                 'cancelOrdersWithClientOrderId': false,
@@ -2298,6 +2298,34 @@ export default class btse extends Exchange {
         }
         const order = this.safeDict (response, 0, {});
         return this.parseOrder (order, market);
+    }
+
+    /**
+     * @method
+     * @name btse#cancelAllOrders
+     * @description cancel all open orders in a market
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#cancel-order
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#cancel-order
+     * @param {string} symbol unified market symbol of the market to cancel orders in
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object[]} a list of [order structures]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async cancelAllOrders (symbol: Str = undefined, params = {}): Promise<Order[]> {
+        if (symbol === undefined) {
+            throw new ArgumentsRequired (this.id + ' cancelAllOrders() requires a symbol argument');
+        }
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+        };
+        let response = undefined;
+        if (market['spot']) {
+            response = await this.privateDeleteSpotApiV33Order (this.extend (request, params));
+        } else {
+            response = await this.privateDeleteFuturesApiV23Order (this.extend (request, params));
+        }
+        return this.parseOrders (response, market);
     }
 
     parseOrder (order: Dict, market: Market = undefined): Order {
