@@ -35,6 +35,7 @@ export default class btse extends Exchange {
                 'borrowIsolatedMargin': false,
                 'borrowMargin': false,
                 'cancelAllOrders': true,
+                'cancelAllOrdersAfter': true,
                 'cancelOrder': true,
                 'cancelOrders': false,
                 'cancelOrdersWithClientOrderId': false,
@@ -256,13 +257,13 @@ export default class btse extends Exchange {
                     'post': {
                         'spot/api/v3.3/order': 1, // done
                         'spot/api/v3.3/order/peg': 1, // same as above
-                        'spot/api/v3.3/order/cancelAllAfter': 1,
+                        'spot/api/v3.3/order/cancelAllAfter': 1, // done
                         'spot/api/v3.3/invest/deposit': 5,
                         'spot/api/v3.3/invest/renew': 5,
                         'spot/api/v3.3/invest/redeem': 5,
                         'futures/api/v2.3/order': 1, // done
                         'futures/api/v2.3/order/peg': 1, // done
-                        'futures/api/v2.3/order/cancelAllAfter': 1,
+                        'futures/api/v2.3/order/cancelAllAfter': 1, // done
                         'futures/api/v2.3/order/close_position': 1,
                         'futures/api/v2.3/risk_limit': 5,
                         'futures/api/v2.3/leverage': 5,
@@ -2326,6 +2327,33 @@ export default class btse extends Exchange {
             response = await this.privateDeleteFuturesApiV23Order (this.extend (request, params));
         }
         return this.parseOrders (response, market);
+    }
+
+    /**
+     * @method
+     * @name btse#cancelAllOrdersAfter
+     * @description dead man's switch, cancel all orders after the given timeout
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#dead-man-39-s-switch-cancel-all-after
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#dead-man-39-s-switch-cancel-all-after
+     * @param {number} timeout time in milliseconds, 0 represents cancel the timer
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.type] 'spot', 'swap' or 'future' (default is 'spot')
+     * @returns {object} the api result
+     */
+    async cancelAllOrdersAfter (timeout: Int, params = {}) {
+        await this.loadMarkets ();
+        const request: Dict = {
+            'timeout': timeout,
+        };
+        let response = undefined;
+        let marketType = 'spot';
+        [ marketType, params ] = this.handleMarketTypeAndParams ('cancelAllOrdersAfter', undefined, params, marketType);
+        if (marketType === 'spot') {
+            response = await this.privatePostSpotApiV33OrderCancelAllAfter (this.extend (request, params));
+        } else {
+            response = await this.privatePostFuturesApiV23OrderCancelAllAfter (this.extend (request, params));
+        }
+        return response;
     }
 
     parseOrder (order: Dict, market: Market = undefined): Order {
