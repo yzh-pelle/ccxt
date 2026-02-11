@@ -35,10 +35,10 @@ export default class btse extends Exchange {
                 'borrowIsolatedMargin': false,
                 'borrowMargin': false,
                 'cancelAllOrders': false,
-                'cancelOrder': false,
+                'cancelOrder': true,
                 'cancelOrders': false,
                 'cancelOrdersWithClientOrderId': false,
-                'cancelOrderWithClientOrderId': false,
+                'cancelOrderWithClientOrderId': true,
                 'closeAllPositions': false,
                 'closePosition': false,
                 'createDepositAddress': false,
@@ -285,8 +285,8 @@ export default class btse extends Exchange {
                         'futures/api/v2.3/order': 1, // done
                     },
                     'delete': {
-                        'spot/api/v3.3/order': 1,
-                        'futures/api/v2.3/order': 1,
+                        'spot/api/v3.3/order': 1, // done
+                        'futures/api/v2.3/order': 1, // done
                         'spot/api/v3.3/user/wallet/address': 15,
                     },
                 },
@@ -475,6 +475,7 @@ export default class btse extends Exchange {
             },
             'exceptions': {
                 'exact': {
+                    // {"status":400,"errorCode":-2,"message":"symbol parameter is mandatory","extraData":null}
                     // {"status":400,"errorCode":33001003,"message":"You can not SELL ETH lower than 1825.24 USDT","extraData":["SELL","ETH","lower","1825.24","USDT"]}
                     // {"code":400,"msg":"BADREQUEST: startTime can not before than 1569888000000 (2019-10-01T00:00)","time":1770828108074,"data":null,"success":false}
                     // when position mode is wrong {"status":429,"errorCode":-1,"message":"Order not found","extraData":["117","0"]}
@@ -2259,6 +2260,46 @@ export default class btse extends Exchange {
         return this.parseOrder (order, market);
     }
 
+    /**
+     * @method
+     * @name btse#cancelOrder
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#cancel-order
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#cancel-order
+     * @description cancels an open order
+     * @param {string} id order id
+     * @param {string} symbol unified symbol of the market the order was made in
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.clientOrderId] a unique id for the order (required if id is not provided)
+     * @returns {object} An [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async cancelOrder (id: string, symbol: Str = undefined, params = {}) {
+        if (symbol === undefined) {
+            throw new ArgumentsRequired (this.id + ' cancelOrder() requires a symbol argument');
+        }
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+        };
+        const clientOrderId = this.safeString (params, 'clientOrderId');
+        if (clientOrderId !== undefined) {
+            request['clOrderID'] = clientOrderId;
+            params = this.omit (params, 'clientOrderId');
+        } else if (id === undefined) {
+            throw new ArgumentsRequired (this.id + ' fetchOpenOrder() requires an id argument or a clientOrderId parameter');
+        } else {
+            request['orderID'] = id;
+        }
+        let response = undefined;
+        if (market['spot']) {
+            response = await this.privateDeleteSpotApiV33Order (this.extend (request, params));
+        } else {
+            response = await this.privateDeleteFuturesApiV23Order (this.extend (request, params));
+        }
+        const order = this.safeDict (response, 0, {});
+        return this.parseOrder (order, market);
+    }
+
     parseOrder (order: Dict, market: Market = undefined): Order {
         //
         // createOrder - spot
@@ -2405,7 +2446,7 @@ export default class btse extends Exchange {
         let url = baseUrl + '/' + this.implodeParams (path, params);
         const query = this.omit (params, this.extractParams (path));
         let queryString = '';
-        if (method === 'GET') {
+        if ((method === 'GET') || (method === 'DELETE')) {
             if (Object.keys (query).length) {
                 queryString = this.urlencode (query);
                 url += '?' + queryString;
@@ -2415,7 +2456,7 @@ export default class btse extends Exchange {
             this.checkRequiredCredentials ();
             const nonce = this.nonce ();
             let bodyString = this.json (query);
-            if (method === 'GET') {
+            if ((method === 'GET') || (method === 'DELETE')) {
                 bodyString = '';
             } else {
                 body = bodyString;
