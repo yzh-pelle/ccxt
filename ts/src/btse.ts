@@ -134,7 +134,7 @@ export default class btse extends Exchange {
                 'fetchOpenInterestHistory': false,
                 'fetchOpenInterests': true,
                 'fetchOpenOrder': true,
-                'fetchOpenOrders': false,
+                'fetchOpenOrders': true,
                 'fetchOption': false,
                 'fetchOptionChain': false,
                 'fetchOrder': false,
@@ -228,14 +228,14 @@ export default class btse extends Exchange {
                 'private': {
                     'get': {
                         'spot/api/v3.3/order': 1, // done
-                        'spot/api/v3.3/user/open_orders': 5,
+                        'spot/api/v3.3/user/open_orders': 5, // done
                         'spot/api/v3.3/user/trade_history': 5, // done
                         'spot/api/v3.3/user/fees': 5,
                         'spot/api/v3.3/invest/products': 5,
                         'spot/api/v3.3/invest/orders': 5,
                         'spot/api/v3.3/invest/history': 5,
                         'futures/api/v2.3/order': 1, // done
-                        'futures/api/v2.3/user/open_orders': 1,
+                        'futures/api/v2.3/user/open_orders': 1, // done
                         'futures/api/v2.3/user/trade_history': 5, // done
                         'futures/api/v2.3/user/positions': 5,
                         'futures/api/v2.3/risk_limit': 5,
@@ -344,21 +344,13 @@ export default class btse extends Exchange {
                     },
                     'fetchOpenOrders': {
                         'marginMode': false,
-                        'limit': 500,
-                        'trigger': true,
-                        'trailing': false,
-                        'symbolRequired': true,
-                    },
-                    'fetchOrders': undefined,
-                    'fetchCanceledAndClosedOrders': {
-                        'marginMode': false,
-                        'limit': 500,
-                        'daysBack': 182, // 6 months
-                        'untilDays': 7,
+                        'limit': undefined,
                         'trigger': false,
                         'trailing': false,
                         'symbolRequired': false,
                     },
+                    'fetchOrders': undefined,
+                    'fetchCanceledAndClosedOrders': undefined,
                     'fetchClosedOrders': undefined,
                     'fetchOHLCV': {
                         'limit': 300,
@@ -408,21 +400,13 @@ export default class btse extends Exchange {
                     },
                     'fetchOpenOrders': {
                         'marginMode': false,
-                        'limit': 500,
-                        'trigger': true,
-                        'trailing': false,
-                        'symbolRequired': true,
-                    },
-                    'fetchOrders': undefined,
-                    'fetchCanceledAndClosedOrders': {
-                        'marginMode': false,
-                        'limit': 500,
-                        'daysBack': 182, // 6 months
-                        'untilDays': 7,
+                        'limit': undefined,
                         'trigger': false,
                         'trailing': false,
                         'symbolRequired': false,
                     },
+                    'fetchOrders': undefined,
+                    'fetchCanceledAndClosedOrders': undefined,
                     'fetchClosedOrders': undefined,
                     'fetchOHLCV': {
                         'limit': 300,
@@ -2354,6 +2338,39 @@ export default class btse extends Exchange {
             response = await this.privatePostFuturesApiV23OrderCancelAllAfter (this.extend (request, params));
         }
         return response;
+    }
+
+    /**
+     * @method
+     * @name btse#fetchOpenOrders
+     * @description fetch all unfilled currently open orders
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#query-open-orders
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-open-orders
+     * @param {string} [symbol] unified market symbol
+     * @param {int} [since] the earliest time in ms to fetch open orders for
+     * @param {int} [limit] the maximum number of open orders structures to retrieve
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.type] 'spot', 'swap' or 'future' (default is 'spot')
+     * @returns {Order[]} a list of [order structures]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async fetchOpenOrders (symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}): Promise<Order[]> {
+        await this.loadMarkets ();
+        const request: Dict = {};
+        let market = undefined;
+        if (symbol !== undefined) {
+            market = this.market (symbol);
+            request['symbol'] = market['id'];
+        }
+        let marketType = 'spot';
+        [ marketType, params ] = this.handleMarketTypeAndParams ('fetchOpenOrders', market, params, marketType);
+        let response = undefined;
+        if (marketType === 'spot') {
+            response = await this.privateGetSpotApiV33UserOpenOrders (this.extend (request, params));
+        } else {
+            response = await this.privateGetFuturesApiV23UserOpenOrders (this.extend (request, params));
+        }
+        // todo check parsing
+        return this.parseOrders (response, market);
     }
 
     parseOrder (order: Dict, market: Market = undefined): Order {
