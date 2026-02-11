@@ -132,7 +132,7 @@ export default class btse extends Exchange {
                 'fetchOpenInterest': true,
                 'fetchOpenInterestHistory': false,
                 'fetchOpenInterests': true,
-                'fetchOpenOrder': false,
+                'fetchOpenOrder': true,
                 'fetchOpenOrders': false,
                 'fetchOption': false,
                 'fetchOptionChain': false,
@@ -226,14 +226,14 @@ export default class btse extends Exchange {
                 },
                 'private': {
                     'get': {
-                        'spot/api/v3.3/order': 1,
+                        'spot/api/v3.3/order': 1, // done
                         'spot/api/v3.3/user/open_orders': 5,
                         'spot/api/v3.3/user/trade_history': 5, // done
                         'spot/api/v3.3/user/fees': 5,
                         'spot/api/v3.3/invest/products': 5,
                         'spot/api/v3.3/invest/orders': 5,
                         'spot/api/v3.3/invest/history': 5,
-                        'futures/api/v2.3/order': 1,
+                        'futures/api/v2.3/order': 1, // done
                         'futures/api/v2.3/user/open_orders': 1,
                         'futures/api/v2.3/user/trade_history': 5, // done
                         'futures/api/v2.3/user/positions': 5,
@@ -329,8 +329,8 @@ export default class btse extends Exchange {
                     'createOrders': undefined,
                     'fetchMyTrades': {
                         'marginMode': false,
-                        'daysBack': 182, // 6 months
-                        'limit': 500,
+                        'daysBack': undefined,
+                        'limit': undefined,
                         'untilDays': 7,
                         'symbolRequired': false,
                     },
@@ -393,8 +393,8 @@ export default class btse extends Exchange {
                     'createOrders': undefined,
                     'fetchMyTrades': {
                         'marginMode': false,
-                        'daysBack': 182, // 6 months
-                        'limit': 500,
+                        'daysBack': undefined,
+                        'limit': undefined,
                         'untilDays': 7,
                         'symbolRequired': false,
                     },
@@ -475,6 +475,8 @@ export default class btse extends Exchange {
             },
             'exceptions': {
                 'exact': {
+                    // {"status":400,"errorCode":33001003,"message":"You can not SELL ETH lower than 1825.24 USDT","extraData":["SELL","ETH","lower","1825.24","USDT"]}
+                    // {"code":400,"msg":"BADREQUEST: startTime can not before than 1569888000000 (2019-10-01T00:00)","time":1770828108074,"data":null,"success":false}
                     // when position mode is wrong {"status":429,"errorCode":-1,"message":"Order not found","extraData":["117","0"]}
                     // {"status":400,"errorCode":-2,"message":"Invalid request parameters","extraData":null}
                     // {"code":33001001,"msg":"BADREQUEST: The distance between Trigger Price and Limit Price cannot exceed 5.0 %","time":1770815167145,"data":["5.0 %"],"success":false}
@@ -1474,6 +1476,11 @@ export default class btse extends Exchange {
      */
     async fetchMyTrades (symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
         await this.loadMarkets ();
+        const paginate = this.safeBool (params, 'paginate', false);
+        if (paginate) {
+            params = this.omit (params, 'paginate');
+            return await this.fetchPaginatedCallDynamic ('fetchMyTrades', symbol, since, limit, params);
+        }
         let market = undefined;
         let request: Dict = {};
         if (symbol !== undefined) {
@@ -2077,6 +2084,127 @@ export default class btse extends Exchange {
         return this.safeString (priceTypes, priceType, priceType);
     }
 
+    /**
+     * @method
+     * @name btse#fetchOpenOrder
+     * @description fetches information on an open order made by the user
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#query-order
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-order
+     * @param {string} id the order id
+     * @param {string} [symbol] unified symbol of the market the order was made in
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.clientOrderId] a unique id for the order
+     * @param {string} [params.type] 'spot', 'swap' or 'future' (default is 'spot')
+     * @returns {object} An [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async fetchOpenOrder (id: string, symbol: Str = undefined, params = {}) {
+        await this.loadMarkets ();
+        const request: Dict = {};
+        const clientOrderId = this.safeString (params, 'clientOrderId');
+        if (clientOrderId !== undefined) {
+            request['clOrderID'] = clientOrderId;
+            params = this.omit (params, 'clientOrderId');
+        } else if (id === undefined) {
+            throw new ArgumentsRequired (this.id + ' fetchOpenOrder() requires an id argument or a clientOrderId parameter');
+        } else {
+            request['orderID'] = id;
+        }
+        let market = undefined;
+        if (symbol !== undefined) {
+            market = this.market (symbol);
+        }
+        let marketType = 'spot';
+        [ marketType, params ] = this.handleMarketTypeAndParams ('fetchOrder', market, params, marketType);
+        let response = undefined;
+        if (marketType === 'spot') {
+            //
+            //     {
+            //         "orderID": "a5ff04c6-c0bc-47a4-ac7f-6750e9b1699c",
+            //         "orderType": 76,
+            //         "price": 1000,
+            //         "side": "BUY",
+            //         "orderValue": 0.0999846,
+            //         "pegPriceMin": 0,
+            //         "pegPriceMax": 0,
+            //         "pegPriceDeviation": 0,
+            //         "timestamp": 1770830503384,
+            //         "triggerOrder": false,
+            //         "triggerPrice": 0,
+            //         "triggerOriginalPrice": 0,
+            //         "triggerOrderType": 0,
+            //         "triggerTrailingStopDeviation": 0,
+            //         "triggerStopPrice": 0,
+            //         "symbol": "ETH-USDT",
+            //         "trailValue": 0,
+            //         "trailValueType": "DISTANCE",
+            //         "quote": "USDT",
+            //         "clOrderID": null,
+            //         "status": 2,
+            //         "timeInForce": "GTC",
+            //         "triggerUseLastPrice": false,
+            //         "activationPrice": null,
+            //         "activationPriceType": null,
+            //         "currentPegPrice": 999.84,
+            //         "originalOrderBaseSize": 0.0001,
+            //         "originalOrderQuoteSize": null,
+            //         "currentOrderBaseSize": 0.0001,
+            //         "currentOrderQuoteSize": null,
+            //         "remainingOrderBaseSize": 0.0001,
+            //         "remainingOrderQuoteSize": null,
+            //         "totalFilledBaseSize": 0,
+            //         "orderCurrency": "base",
+            //         "avgFilledPrice": 0,
+            //         "triggered": false,
+            //         "wrapperOrder": false
+            //     }
+            //
+            response = await this.privateGetSpotApiV33Order (this.extend (request, params));
+        } else {
+            //
+            //     {
+            //         "orderType": 76,
+            //         "price": 1830,
+            //         "originalOrderSize": 1,
+            //         "currentOrderSize": 1,
+            //         "totalFilledSize": 1,
+            //         "remainingSize": 0,
+            //         "side": "SELL",
+            //         "orderValue": 0.183,
+            //         "pegPriceMin": 0,
+            //         "pegPriceMax": 0,
+            //         "pegPriceDeviation": 1,
+            //         "timestamp": 1770831088059,
+            //         "orderID": "5857e882-52ba-4668-a733-b0c346d087fd",
+            //         "stealth": 1,
+            //         "triggerOrder": false,
+            //         "triggered": false,
+            //         "triggerPrice": 0,
+            //         "triggerOriginalPrice": 0,
+            //         "triggerOrderType": 0,
+            //         "triggerTrailingStopDeviation": 0,
+            //         "triggerStopPrice": 0,
+            //         "symbol": "ETH-PERP",
+            //         "trailValue": 0,
+            //         "trailValueType": "DISTANCE",
+            //         "clOrderID": "",
+            //         "reduceOnly": false,
+            //         "status": 4,
+            //         "triggerUseLastPrice": false,
+            //         "avgFilledPrice": 1932.16,
+            //         "contractSize": 0.0001,
+            //         "timeInForce": "GTC",
+            //         "closeOrder": false,
+            //         "activationPrice": null,
+            //         "activationPriceType": null,
+            //         "currentPegPrice": 1830,
+            //         "wrapperOrder": false
+            //     }
+            //
+            response = await this.privateGetFuturesApiV23Order (this.extend (request, params));
+        }
+        return this.parseOrder (response);
+    }
+
     parseOrder (order: Dict, market: Market = undefined): Order {
         //
         // createOrder - spot
@@ -2161,7 +2289,7 @@ export default class btse extends Exchange {
             'reduceOnly': undefined, // todo check
             'side': this.safeStringLower (order, 'side'),
             'price': this.safeString (order, 'price'),
-            'triggerPrice': this.omitZero (this.safeString (order, 'triggerPrice')),
+            'triggerPrice': this.omitZero (this.safeString2 (order, 'triggerOriginalPrice', 'triggerPrice')),
             'stopLossPrice': undefined, // todo check
             'takeProfitPrice': undefined, // todo check
             'amount': this.safeString2 (order, 'currentOrderBaseSize', 'currentOrderSize'),
