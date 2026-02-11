@@ -1559,6 +1559,36 @@ export default class btse extends Exchange {
         return this.parseTrades (response, market, since, limit);
     }
 
+    /**
+     * @method
+     * @name btse#fetchOrderTrades
+     * @description fetch all the trades made from a single order
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#query-user-trades-fills
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-trades-fills-2
+     * @param {string} id order id
+     * @param {string} [symbol] unified market symbol
+     * @param {int} [since] the earliest time in ms to fetch trades for
+     * @param {int} [limit] the maximum number of trades to retrieve
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.clientOrderId] client order id, could be used instead of the order id
+     * @param {string} [params.type] 'spot' or 'swap' or 'future', default is 'spot'
+     * @returns {object[]} a list of [trade structures]{@link https://docs.ccxt.com/?id=trade-structure}
+     */
+    async fetchOrderTrades (id: string, symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
+        await this.loadMarkets ();
+        const clientOrderId = this.safeString (params, 'clientOrderId');
+        if (clientOrderId === undefined) {
+            if (id === undefined) {
+                throw new ArgumentsRequired (this.id + ' fetchOrderTrades() requires an id argument or a clientOrderId parameter');
+            } else {
+                params = this.extend (params, { 'orderID': id });
+            }
+        } else {
+            params = this.extend (params, { 'clOrderID': clientOrderId });
+        }
+        return await this.fetchMyTrades (symbol, since, limit, params);
+    }
+
     parseTrade (trade: Dict, market: Market = undefined): Trade {
         //
         // fetchTrades
@@ -1644,13 +1674,13 @@ export default class btse extends Exchange {
             'timestamp': timestamp,
             'datetime': this.iso8601 (timestamp),
             'symbol': market['symbol'],
-            'id': this.safeString (trade, 'serialId'),
+            'id': this.safeString2 (trade, 'tradeId', 'serialId'),
             'order': this.safeString (trade, 'orderId'),
             'type': undefined,
             'side': this.safeStringLower (trade, 'side'),
             'takerOrMaker': undefined,
-            'price': this.safeString (trade, 'price'),
-            'amount': this.safeString (trade, 'size'),
+            'price': this.safeString2 (trade, 'filledPrice', 'price'),
+            'amount': this.safeString2 (trade, 'filledSize', 'size'),
             'cost': undefined,
             'fee': fee,
         }, market);
