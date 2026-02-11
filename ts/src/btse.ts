@@ -127,7 +127,7 @@ export default class btse extends Exchange {
                 'fetchMarkPrices': false,
                 'fetchMyLiquidations': false,
                 'fetchMySettlementHistory': false,
-                'fetchMyTrades': false,
+                'fetchMyTrades': true,
                 'fetchOHLCV': true,
                 'fetchOpenInterest': true,
                 'fetchOpenInterestHistory': false,
@@ -141,7 +141,7 @@ export default class btse extends Exchange {
                 'fetchOrderBooks': false,
                 'fetchOrders': false,
                 'fetchOrdersByStatus': false,
-                'fetchOrderTrades': false,
+                'fetchOrderTrades': true,
                 'fetchOrderWithClientOrderId': false,
                 'fetchPosition': false,
                 'fetchPositionHistory': false,
@@ -228,14 +228,14 @@ export default class btse extends Exchange {
                     'get': {
                         'spot/api/v3.3/order': 1,
                         'spot/api/v3.3/user/open_orders': 5,
-                        'spot/api/v3.3/user/trade_history': 5,
+                        'spot/api/v3.3/user/trade_history': 5, // done
                         'spot/api/v3.3/user/fees': 5,
                         'spot/api/v3.3/invest/products': 5,
                         'spot/api/v3.3/invest/orders': 5,
                         'spot/api/v3.3/invest/history': 5,
                         'futures/api/v2.3/order': 1,
                         'futures/api/v2.3/user/open_orders': 1,
-                        'futures/api/v2.3/user/trade_history': 5,
+                        'futures/api/v2.3/user/trade_history': 5, // done
                         'futures/api/v2.3/user/positions': 5,
                         'futures/api/v2.3/risk_limit': 5,
                         'futures/api/v2.3/leverage': 5,
@@ -295,7 +295,7 @@ export default class btse extends Exchange {
                 'contract': {
                     'sandbox': true,
                     'createOrder': {
-                        'marginMode': true, // todo check
+                        'marginMode': true,
                         'triggerPrice': true,
                         'triggerPriceType': {
                             'mark': true,
@@ -1458,6 +1458,107 @@ export default class btse extends Exchange {
         return this.parseTrades (response, market, since, limit);
     }
 
+    /**
+     * @method
+     * @name btse#fetchMyTrades
+     * @description fetch all trades made by the user
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#query-user-trades-fills
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-trades-fills-2
+     * @param {string} [symbol] unified market symbol
+     * @param {int} [since] the earliest time in ms to fetch trades for
+     * @param {int} [limit] the maximum number of trades structures to retrieve
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {int} [params.until] timestamp in ms for the ending date filter, default is undefined
+     * @param {string} [params.type] 'spot' or 'swap' or 'future', default is 'spot'
+     * @returns {object[]} a list of [trade structures]{@link https://docs.ccxt.com/#/?id=trade-structure}
+     */
+    async fetchMyTrades (symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
+        await this.loadMarkets ();
+        let market = undefined;
+        let request: Dict = {};
+        if (symbol !== undefined) {
+            market = this.market (symbol);
+            request['symbol'] = market['id'];
+        }
+        if (since !== undefined) {
+            request['startTime'] = since;
+        }
+        if (limit !== undefined) {
+            request['count'] = limit;
+        }
+        [ request, params ] = this.handleUntilOption ('endTime', request, params);
+        let marketType = 'spot';
+        [ marketType, params ] = this.handleMarketTypeAndParams ('fetchMyTrades', market, params, marketType);
+        let response = undefined;
+        if (marketType === 'spot') {
+            //
+            //     [
+            //         {
+            //             "tradeId": "4b4bd301-6f20-4e39-a682-ce4f9b8400a0",
+            //             "orderId": "2fa9678b-9945-47ce-9ffe-256dc7b4dd8c",
+            //             "clOrderID": "test spot market buy",
+            //             "username": "romancuhari",
+            //             "side": "BUY",
+            //             "orderType": 77,
+            //             "triggerType": 0,
+            //             "price": 1952.05859608,
+            //             "size": 0.19520586,
+            //             "filledPrice": 1952.05859608,
+            //             "filledSize": 0.0001,
+            //             "triggerPrice": 0,
+            //             "base": "ETH",
+            //             "quote": "USDT",
+            //             "symbol": "ETH-USDT",
+            //             "feeCurrency": "ETH",
+            //             "feeAmount": 0.0000002,
+            //             "wallet": "SPOT@",
+            //             "realizedPnl": 0,
+            //             "total": 0,
+            //             "serialId": 49071052,
+            //             "timestamp": 1770814978685,
+            //             "avgFilledPrice": 1952.05859608
+            //         }
+            //     ]
+            //
+            response = await this.privateGetSpotApiV33UserTradeHistory (this.extend (request, params));
+        } else {
+            //
+            //     [
+            //         {
+            //             "tradeId": "b708489a-19d1-4be2-a6c2-f499f76aa176",
+            //             "orderId": "5c6a26db-8cfb-45c7-b25d-56927bc36795",
+            //             "username": "romancuhari",
+            //             "side": "BUY",
+            //             "orderType": 77,
+            //             "triggerType": null,
+            //             "price": 0,
+            //             "size": 1,
+            //             "filledPrice": 1956.59,
+            //             "filledSize": 1,
+            //             "triggerPrice": 0,
+            //             "base": "ETH",
+            //             "quote": "USDT",
+            //             "symbol": "ETH-PERP",
+            //             "feeCurrency": "USDT",
+            //             "feeAmount": 0.00010761,
+            //             "wallet": "CROSS@",
+            //             "realizedPnl": 0,
+            //             "total": -0.00010761,
+            //             "serialId": 50953296,
+            //             "timestamp": 1770821231984,
+            //             "orderDetailType": null,
+            //             "contractSize": 0.0001,
+            //             "clOrderID": "",
+            //             "positionId": "ETH-PERP-USDT",
+            //             "avgFilledPrice": 1956.59
+            //         }
+            //     ]
+            //
+            response = await this.privateGetFuturesApiV23UserTradeHistory (this.extend (request, params));
+        }
+        return this.parseTrades (response, market, since, limit);
+    }
+
     parseTrade (trade: Dict, market: Market = undefined): Trade {
         //
         // fetchTrades
@@ -1470,23 +1571,88 @@ export default class btse extends Exchange {
         //         "timestamp": 1770473932328
         //     }
         //
+        // fetchMyTrades spot
+        //     {
+        //         "tradeId": "4b4bd301-6f20-4e39-a682-ce4f9b8400a0",
+        //         "orderId": "2fa9678b-9945-47ce-9ffe-256dc7b4dd8c",
+        //         "clOrderID": "test spot market buy",
+        //         "username": "romancuhari",
+        //         "side": "BUY",
+        //         "orderType": 77,
+        //         "triggerType": 0,
+        //         "price": 1952.05859608,
+        //         "size": 0.19520586,
+        //         "filledPrice": 1952.05859608,
+        //         "filledSize": 0.0001,
+        //         "triggerPrice": 0,
+        //         "base": "ETH",
+        //         "quote": "USDT",
+        //         "symbol": "ETH-USDT",
+        //         "feeCurrency": "ETH",
+        //         "feeAmount": 0.0000002,
+        //         "wallet": "SPOT@",
+        //         "realizedPnl": 0,
+        //         "total": 0,
+        //         "serialId": 49071052,
+        //         "timestamp": 1770814978685,
+        //         "avgFilledPrice": 1952.05859608
+        //     }
+        //
+        // fetchMyTrades swap
+        //     {
+        //         "tradeId": "b708489a-19d1-4be2-a6c2-f499f76aa176",
+        //         "orderId": "5c6a26db-8cfb-45c7-b25d-56927bc36795",
+        //         "username": "romancuhari",
+        //         "side": "BUY",
+        //         "orderType": 77,
+        //         "triggerType": null,
+        //         "price": 0,
+        //         "size": 1,
+        //         "filledPrice": 1956.59,
+        //         "filledSize": 1,
+        //         "triggerPrice": 0,
+        //         "base": "ETH",
+        //         "quote": "USDT",
+        //         "symbol": "ETH-PERP",
+        //         "feeCurrency": "USDT",
+        //         "feeAmount": 0.00010761,
+        //         "wallet": "CROSS@",
+        //         "realizedPnl": 0,
+        //         "total": -0.00010761,
+        //         "serialId": 50953296,
+        //         "timestamp": 1770821231984,
+        //         "orderDetailType": null,
+        //         "contractSize": 0.0001,
+        //         "clOrderID": "",
+        //         "positionId": "ETH-PERP-USDT",
+        //         "avgFilledPrice": 1956.59
+        //     }
+        //
         const marketId = this.safeString (trade, 'symbol');
         market = this.safeMarket (marketId, market);
         const timestamp = this.safeInteger (trade, 'timestamp');
+        let fee = undefined;
+        const feeCost = this.safeNumber (trade, 'feeAmount');
+        if (feeCost !== undefined) {
+            fee = {
+                'cost': feeCost,
+                'currency': this.safeCurrencyCode (this.safeString (trade, 'feeCurrency')),
+            };
+        }
         return this.safeTrade ({
             'info': trade,
             'timestamp': timestamp,
             'datetime': this.iso8601 (timestamp),
             'symbol': market['symbol'],
             'id': this.safeString (trade, 'serialId'),
-            'order': undefined,
+            'order': this.safeString (trade, 'orderId'),
             'type': undefined,
             'side': this.safeStringLower (trade, 'side'),
             'takerOrMaker': undefined,
             'price': this.safeString (trade, 'price'),
             'amount': this.safeString (trade, 'size'),
             'cost': undefined,
-            'fee': undefined,
+            'fee': fee,
         }, market);
     }
 
@@ -1514,6 +1680,15 @@ export default class btse extends Exchange {
      * @param {float} [params.deviation] *PEG orders only* How much should the order price deviate from index price. Value is in percentage and can range from -10 to 10
      * @param {float} [params.stealth] *PEG orders only*  How many percent of the order is to be displayed on the orderbook
      * @param {float} [params.stopPrice] *NB - It is NOT stopLossPrice or triggerPrice!!! OCO orders only* Mandatory when creating an OCO order. Indicates the stop price
+     * @param {bool} [params.hedged] *contract markets only* true for hedged mode, false for one way mode, default is false
+     * @param {string} [params.marginMode] *contract markets only* 'cross' or 'isolated' (default is 'cross') - the exchange does not have cross/isolated margin modes but instead has 'ONE_WAY', 'HEDGE' and 'ISOLATED' position modes, so this param will be converted to the appropriate position mode
+     * @param {string} [params.positionMode] *contract markets only* 'ONE_WAY (default) or 'HEDGE or 'ISOLATED' (if not provided, it will be derived from marginMode and hedged params)
+     * @param {object} [params.takeProfit] *contract markets only* *takeProfit object in params* containing the triggerPrice at which the attached take profit order will be triggered (perpetual swap markets only)
+     * @param {float} [params.takeProfit.triggerPrice] *contract markets only* take profit trigger price
+     * @param {string} [params.takeProfit.priceType] *contract markets only* 'markPrice' or 'lastPrice', default is 'markPrice'
+     * @param {object} [params.stopLoss] *contract markets only* *stopLoss object in params* containing the triggerPrice at which the attached stop loss order will be triggered (perpetual swap markets only)
+     * @param {float} [params.stopLoss.triggerPrice] *contract markets only* stop loss trigger price
+     * @param {string} [params.stopLoss.priceType] *contract markets only* 'markPrice' or 'lastPrice', default is 'markPrice'
      * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
      */
     async createOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}): Promise<Order> {
@@ -1548,14 +1723,6 @@ export default class btse extends Exchange {
      * @param {float} [params.deviation] *PEG orders only* How much should the order price deviate from index price. Value is in percentage and can range from -10 to 10
      * @param {float} [params.stealth] *PEG orders only*  How many percent of the order is to be displayed on the orderbook
      * @param {float} [params.stopPrice] *NB - It is NOT stopLossPrice or triggerPrice!!! OCO orders only* Mandatory when creating an OCO order. Indicates the stop price
-     * @param {bool} [params.hedged] *contract markets only* true for hedged mode, false for one way mode, default is false
-     * @param {string} [params.positionMode] *contract markets only* 'ONE_WAY' or 'HEDGE or 'ISOLATED' (default is 'ONE_WAY')
-     * @param {object} [params.takeProfit] *contract markets only* *takeProfit object in params* containing the triggerPrice at which the attached take profit order will be triggered (perpetual swap markets only)
-     * @param {float} [params.takeProfit.triggerPrice] *contract markets only* take profit trigger price
-     * @param {string} [params.takeProfit.priceType] *contract markets only* 'markPrice' or 'lastPrice', default is 'markPrice'
-     * @param {object} [params.stopLoss] *contract markets only* *stopLoss object in params* containing the triggerPrice at which the attached stop loss order will be triggered (perpetual swap markets only)
-     * @param {float} [params.stopLoss.triggerPrice] *contract markets only* stop loss trigger price
-     * @param {string} [params.stopLoss.priceType] *contract markets only* 'markPrice' or 'lastPrice', default is 'markPrice'
      * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
      */
     async createSpotOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}): Promise<Order> {
@@ -1686,7 +1853,8 @@ export default class btse extends Exchange {
      * @param {bool} [params.reduceOnly] if true, the order will only reduce a current position, not increase it (default is false)
      * @param {string} [params.timeInForce] 'GTC', 'IOC', 'FOK', 'PO', 'HALFMIN', 'FIVEMIN', 'HOUR', 'TWELVEHOUR', 'DAY', 'WEEK' or 'MONTH'
      * @param {bool} [params.hedged] true for hedged mode, false for one way mode, default is false
-     * @param {string} [params.positionMode] 'ONE_WAY' or 'HEDGE or 'ISOLATED' (default is 'ONE_WAY')
+     * @param {string} [params.marginMode] 'cross' or 'isolated' (default is 'cross') - the exchange does not have cross/isolated margin modes but instead has 'ONE_WAY', 'HEDGE' and 'ISOLATED' position modes, so this param will be converted to the appropriate position mode
+     * @param {string} [params.positionMode] 'ONE_WAY (default) or 'HEDGE or 'ISOLATED' (if not provided, it will be derived from marginMode and hedged params)
      * @param {float} [params.triggerPrice] the price that a trigger order is triggered at (same as takeProfitPrice)
      * @param {float} [params.stopLossPrice] the price that a stop loss order is triggered at
      * @param {float} [params.takeProfitPrice] the price that a take profit order is triggered at
@@ -1736,10 +1904,23 @@ export default class btse extends Exchange {
             request['clOrderID'] = clientOrderId;
             params = this.omit (params, 'clientOrderId');
         }
-        let hedged = false;
-        [ hedged, params ] = this.handleOptionAndParams (params, 'createOrder', 'hedged', hedged);
-        if (hedged) {
-            request['positionMode'] = 'HEDGE';
+        // handle positionMode
+        const positionMode = this.safeString (params, 'positionMode');
+        // if positionMode is provided, we will get it from params and send it as is
+        if (positionMode === undefined) {
+            let hedged = false;
+            [ hedged, params ] = this.handleOptionAndParams (params, 'createOrder', 'hedged', hedged);
+            let marginMode = 'cross';
+            [ marginMode, params ] = this.handleOptionAndParams (params, 'createOrder', 'marginMode', marginMode);
+            if (marginMode === 'isolated') {
+                if (hedged) {
+                    throw new BadRequest (this.id + ' createOrder() cannot use isolated margin with hedged positions');
+                }
+                request['positionMode'] = 'ISOLATED';
+            } else if (hedged) {
+                request['positionMode'] = 'HEDGE';
+            }
+            // if not hedged and not isolated, the default is ONE_WAY
         }
         const deviation = this.safeNumber (params, 'deviation');
         const stealth = this.safeNumber (params, 'stealth');
@@ -1851,9 +2032,9 @@ export default class btse extends Exchange {
             //     ]
             //
             response = await this.privatePostFuturesApiV23Order (this.extend (request, params));
-            const order = this.safeDict (response, 0, {});
-            return this.parseOrder (order, market);
         }
+        const order = this.safeDict (response, 0, {});
+        return this.parseOrder (order, market);
     }
 
     encodeContractPriceType (priceType) {
