@@ -3,6 +3,29 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchMarginMode": [
+            {
+                "description": "fetch margin mode",
+                "method": "fetchMarginMode",
+                "input": [
+                    "ETH/USDT:USDT"
+                ],
+                "httpResponse": [
+                    {
+                        "symbol": "ETH-PERP",
+                        "positionMode": "ONE_WAY"
+                    }
+                ],
+                "parsedResponse": {
+                    "info": {
+                        "symbol": "ETH-PERP",
+                        "positionMode": "ONE_WAY"
+                    },
+                    "symbol": "ETH/USDT:USDT",
+                    "marginMode": "cross"
+                }
+            }
+        ],
         "fetchPositionMode": [
             {
                 "description": "fetch position mode for market",
