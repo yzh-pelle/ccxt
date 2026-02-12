@@ -3,6 +3,29 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "setPositionMode": [
+            {
+                "description": "set position mode for market",
+                "method": "setPositionMode",
+                "url": "https://api.btse.com/futures/api/v2.3/position_mode",
+                "input": [
+                    false,
+                    "ETH/USDT:USDT"
+                ],
+                "output": "{\"symbol\":\"ETH-PERP\",\"positionMode\":\"ONE_WAY\"}"
+            }
+        ],
+        "fetchPositionMode": [
+            {
+                "description": "fetch position mode for market",
+                "method": "fetchPositionMode",
+                "url": "https://api.btse.com/futures/api/v2.3/position_mode?symbol=ETH-PERP",
+                "input": [
+                    "ETH/USDT:USDT"
+                ],
+                "output": null
+            }
+        ],
         "fetchPositionsForSymbol": [
             {
                 "description": "fetch positions for market",
