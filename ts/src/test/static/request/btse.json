@@ -3,6 +3,64 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "setMarginMode": [
+            {
+                "description": "set margin mode to cross and hedged",
+                "method": "setMarginMode",
+                "url": "https://api.btse.com/futures/api/v2.3/position_mode",
+                "input": [
+                    "CROSS",
+                    "ETH/USDT:USDT",
+                    {
+                        "hedged": true
+                    }
+                ],
+                "output": "{\"symbol\":\"ETH-PERP\",\"positionMode\":\"HEDGE\"}"
+            },
+            {
+                "description": "set margin mode to cross and one-way",
+                "method": "setMarginMode",
+                "url": "https://api.btse.com/futures/api/v2.3/position_mode",
+                "input": [
+                    "CROSS",
+                    "ETH/USDT:USDT",
+                    {
+                        "hedged": false
+                    }
+                ],
+                "output": "{\"symbol\":\"ETH-PERP\",\"positionMode\":\"ONE_WAY\"}"
+            },
+            {
+                "description": "set margin mode to isolated",
+                "method": "setMarginMode",
+                "url": "https://api.btse.com/futures/api/v2.3/position_mode",
+                "input": [
+                    "isolated",
+                    "ETH/USDT:USDT"
+                ],
+                "output": "{\"symbol\":\"ETH-PERP\",\"positionMode\":\"ISOLATED\"}"
+            }
+        ],
+        "fetchMarginModes": [
+            {
+                "description": "fetch margin modes",
+                "method": "fetchMarginModes",
+                "url": "https://api.btse.com/futures/api/v2.3/position_mode",
+                "input": [],
+                "output": null
+            }
+        ],
+        "fetchMarginMode": [
+            {
+                "description": "fetch margin mode",
+                "method": "fetchMarginMode",
+                "url": "https://api.btse.com/futures/api/v2.3/position_mode?symbol=ETH-PERP",
+                "input": [
+                    "ETH/USDT:USDT"
+                ],
+                "output": null
+            }
+        ],
         "setPositionMode": [
             {
                 "description": "set position mode for market",
