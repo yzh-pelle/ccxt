@@ -5,7 +5,7 @@ import Exchange from './abstract/btse.js';
 import { ArgumentsRequired, BadRequest, InvalidOrder } from '../ccxt.js';
 import { sha384 } from './static_dependencies/noble-hashes/sha512.js';
 import { TICK_SIZE } from './base/functions/number.js';
-import type { Dict, FundingRate, FundingRateHistory, FundingRates, Int, LeverageTier, LeverageTiers, Market, Num, OHLCV, OpenInterests, Order, OrderBook, OrderSide, OrderType, Str, Strings, Ticker, Tickers, Trade } from './base/types.js';
+import type { Dict, FundingRate, FundingRateHistory, FundingRates, Int, LeverageTier, LeverageTiers, Market, Num, OHLCV, OpenInterests, Order, OrderBook, OrderSide, OrderType, Str, Strings, Ticker, Tickers, Trade, TradingFees, TradingFeeInterface } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -158,8 +158,8 @@ export default class btse extends Exchange {
                 'fetchTickers': true,
                 'fetchTime': true,
                 'fetchTrades': true,
-                'fetchTradingFee': false,
-                'fetchTradingFees': false,
+                'fetchTradingFee': true,
+                'fetchTradingFees': true,
                 'fetchTradingLimits': false,
                 'fetchTransactionFee': false,
                 'fetchTransactionFees': false,
@@ -230,7 +230,7 @@ export default class btse extends Exchange {
                         'spot/api/v3.3/order': 1, // done
                         'spot/api/v3.3/user/open_orders': 5, // done
                         'spot/api/v3.3/user/trade_history': 5, // done
-                        'spot/api/v3.3/user/fees': 5,
+                        'spot/api/v3.3/user/fees': 5, // done
                         'spot/api/v3.3/invest/products': 5,
                         'spot/api/v3.3/invest/orders': 5,
                         'spot/api/v3.3/invest/history': 5,
@@ -240,7 +240,7 @@ export default class btse extends Exchange {
                         'futures/api/v2.3/user/positions': 5,
                         'futures/api/v2.3/risk_limit': 5,
                         'futures/api/v2.3/leverage': 5,
-                        'futures/api/v2.3/user/fees': 5,
+                        'futures/api/v2.3/user/fees': 5, // done
                         'futures/api/v2.3/position_mode': 5,
                         'futures/api/v2.3/user/margin_setting': 5,
                         'futures/api/v2.3/user/wallet': 5,
@@ -2512,6 +2512,91 @@ export default class btse extends Exchange {
             'MONTH': 'GTD',
         };
         return this.safeString (values, timeInForce, timeInForce);
+    }
+
+    /**
+     * @method
+     * @name btse#fetchTradingFees
+     * @description fetch the trading fees for multiple markets
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#query-account-fees
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-account-fee
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.type] 'spot', 'swap' or 'future' (default is 'spot')
+     * @returns {object} a dictionary of [fee structures]{@link https://docs.ccxt.com/?id=fee-structure} indexed by market symbols
+     */
+    async fetchTradingFees (params = {}): Promise<TradingFees> {
+        await this.loadMarkets ();
+        let response = [];
+        let marketType = 'spot';
+        [ marketType, params ] = this.handleMarketTypeAndParams ('fetchTradingFees', undefined, params, marketType);
+        if (marketType === 'spot') {
+            response = await this.privateGetSpotApiV33UserFees (params);
+        } else {
+            response = await this.privateGetFuturesApiV23UserFees (params);
+        }
+        //
+        //     [
+        //         {
+        //             "symbol": "FUSD-USD",
+        //             "makerFee": 0.002,
+        //             "takerFee": 0.002
+        //         }
+        //     ]
+        //
+        const responseList = this.arrayConcat ([], response);
+        const result: Dict = {};
+        for (let i = 0; i < responseList.length; i++) {
+            const feeInfo = responseList[i];
+            const marketId = this.safeString (feeInfo, 'symbol');
+            const market = this.safeMarket (marketId);
+            const symbol = market['symbol'];
+            const makerFee = this.safeNumber (feeInfo, 'makerFee');
+            const takerFee = this.safeNumber (feeInfo, 'takerFee');
+            result[symbol] = {
+                'info': feeInfo,
+                'symbol': symbol,
+                'maker': makerFee,
+                'taker': takerFee,
+                'percentage': true,
+                'tierBased': true,
+            };
+        }
+        return result;
+    }
+
+    /**
+     * @method
+     * @name btse#fetchTradingFee
+     * @description fetch the trading fees for a market
+     * @see https://btsecom.github.io/docs/spotV3_3/en/#query-account-fees
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-account-fee
+     * @param {string} symbol unified market symbol
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} a [fee structure]{@link https://docs.ccxt.com/?id=fee-structure}
+     */
+    async fetchTradingFee (symbol: string, params = {}): Promise<TradingFeeInterface> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+        };
+        let response = undefined;
+        if (market['spot']) {
+            response = await this.privateGetSpotApiV33UserFees (this.extend (request, params));
+        } else {
+            response = await this.privateGetFuturesApiV23UserFees (this.extend (request, params));
+        }
+        const feeInfo = this.safeDict (response, 0, {});
+        const makerFee = this.safeNumber (feeInfo, 'makerFee');
+        const takerFee = this.safeNumber (feeInfo, 'takerFee');
+        return {
+            'info': feeInfo,
+            'symbol': symbol,
+            'maker': makerFee,
+            'taker': takerFee,
+            'percentage': true,
+            'tierBased': true,
+        };
     }
 
     sign (path, api: any = 'public', method = 'GET', params = {}, headers: any = undefined, body: any = undefined) {
