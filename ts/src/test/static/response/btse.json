@@ -3,6 +3,103 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "closePosition": [
+            {
+                "description": "close isolated position",
+                "method": "closePosition",
+                "input": [
+                    "ETH/USDT:USDT",
+                    null,
+                    {
+                        "positionId": "ETH-PERP-USDT|4#1"
+                    }
+                ],
+                "httpResponse": [
+                    {
+                        "status": "4",
+                        "symbol": "ETH-PERP",
+                        "orderType": "77",
+                        "price": "1979.28",
+                        "side": "SELL",
+                        "orderID": "69ab2027-a89f-49c0-9f17-e11e61d2c609",
+                        "timestamp": "1770890126091",
+                        "triggerPrice": "0",
+                        "trigger": false,
+                        "deviation": "100",
+                        "stealth": "100",
+                        "message": "",
+                        "avgFilledPrice": "1979.28",
+                        "clOrderID": "",
+                        "originalOrderSize": "10",
+                        "currentOrderSize": "10",
+                        "filledSize": "10",
+                        "totalFilledSize": "10",
+                        "remainingSize": "0",
+                        "postOnly": false,
+                        "orderDetailType": null,
+                        "positionMode": "ISOLATED",
+                        "positionDirection": "LONG",
+                        "positionId": "ETH-PERP-USDT|4#1",
+                        "time_in_force": "GTC"
+                    }
+                ],
+                "parsedResponse": {
+                    "info": {
+                        "status": "4",
+                        "symbol": "ETH-PERP",
+                        "orderType": "77",
+                        "price": "1979.28",
+                        "side": "SELL",
+                        "orderID": "69ab2027-a89f-49c0-9f17-e11e61d2c609",
+                        "timestamp": "1770890126091",
+                        "triggerPrice": "0",
+                        "trigger": false,
+                        "deviation": "100",
+                        "stealth": "100",
+                        "message": "",
+                        "avgFilledPrice": "1979.28",
+                        "clOrderID": "",
+                        "originalOrderSize": "10",
+                        "currentOrderSize": "10",
+                        "filledSize": "10",
+                        "totalFilledSize": "10",
+                        "remainingSize": "0",
+                        "postOnly": false,
+                        "orderDetailType": null,
+                        "positionMode": "ISOLATED",
+                        "positionDirection": "LONG",
+                        "positionId": "ETH-PERP-USDT|4#1",
+                        "time_in_force": "GTC"
+                    },
+                    "id": "69ab2027-a89f-49c0-9f17-e11e61d2c609",
+                    "clientOrderId": null,
+                    "timestamp": 1770890126091,
+                    "datetime": "2026-02-12T09:55:26.091Z",
+                    "lastTradeTimestamp": null,
+                    "lastUpdateTimestamp": null,
+                    "status": "closed",
+                    "symbol": "ETH/USDT:USDT",
+                    "type": "market",
+                    "timeInForce": "GTC",
+                    "postOnly": false,
+                    "reduceOnly": null,
+                    "side": "sell",
+                    "price": 1979.28,
+                    "triggerPrice": null,
+                    "stopLossPrice": null,
+                    "takeProfitPrice": null,
+                    "amount": 10,
+                    "filled": 10,
+                    "remaining": 0,
+                    "cost": 1.97928,
+                    "trades": [],
+                    "fee": null,
+                    "average": 1979.28,
+                    "fees": [],
+                    "stopPrice": null
+                }
+            }
+        ],
         "fetchMarginMode": [
             {
                 "description": "fetch margin mode",
