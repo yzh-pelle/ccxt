@@ -3,6 +3,34 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchTradingFee": [
+            {
+                "description": "fetch trading fee for spot",
+                "method": "fetchTradingFee",
+                "input": [
+                    "ETH/USDT"
+                ],
+                "httpResponse": [
+                    {
+                        "symbol": "ETH-USDT",
+                        "makerFee": "0.002",
+                        "takerFee": "0.002"
+                    }
+                ],
+                "parsedResponse": {
+                    "info": {
+                        "symbol": "ETH-USDT",
+                        "makerFee": "0.002",
+                        "takerFee": "0.002"
+                    },
+                    "symbol": "ETH/USDT",
+                    "maker": 0.002,
+                    "taker": 0.002,
+                    "percentage": true,
+                    "tierBased": true
+                }
+            }
+        ],
         "fetchTrades": [
             {
                 "description": "fetch trades for spot",
