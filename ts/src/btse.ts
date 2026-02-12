@@ -5,7 +5,7 @@ import Exchange from './abstract/btse.js';
 import { ArgumentsRequired, BadRequest, InvalidOrder } from '../ccxt.js';
 import { sha384 } from './static_dependencies/noble-hashes/sha512.js';
 import { TICK_SIZE } from './base/functions/number.js';
-import type { Dict, FundingRate, FundingRateHistory, FundingRates, Int, LeverageTier, LeverageTiers, Market, Num, OHLCV, OpenInterests, Order, OrderBook, OrderSide, OrderType, Position, Str, Strings, Ticker, Tickers, Trade, TradingFees, TradingFeeInterface } from './base/types.js';
+import type { Dict, FundingRate, FundingRateHistory, FundingRates, Int, LeverageTier, LeverageTiers, MarginMode, MarginModes, Market, Num, OHLCV, OpenInterests, Order, OrderBook, OrderSide, OrderType, Position, Str, Strings, Ticker, Tickers, Trade, TradingFees, TradingFeeInterface } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -120,8 +120,8 @@ export default class btse extends Exchange {
                 'fetchLongShortRatio': false,
                 'fetchLongShortRatioHistory': false,
                 'fetchMarginAdjustmentHistory': false,
-                'fetchMarginMode': false,
-                'fetchMarginModes': false,
+                'fetchMarginMode': true,
+                'fetchMarginModes': true,
                 'fetchMarketLeverageTiers': true,
                 'fetchMarkets': true,
                 'fetchMarkOHLCV': false,
@@ -178,7 +178,7 @@ export default class btse extends Exchange {
                 'sandbox': true,
                 'setLeverage': false,
                 'setMargin': false,
-                'setMarginMode': false,
+                'setMarginMode': true,
                 'setPositionMode': true,
                 'signIn': false,
                 'transfer': false,
@@ -2736,7 +2736,7 @@ export default class btse extends Exchange {
     /**
      * @method
      * @name btse#fetchPositionMode
-     * @description fetchs the position mode, hedged or one way, hedged for binance is set identically for all linear markets or all inverse markets
+     * @description fetchs the position mode, hedged or one way, hedged for btse is set identically for all linear markets or all inverse markets
      * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-position-mode
      * @param {string} symbol unified symbol of the market to fetch entry for
      * @param {object} [params] extra parameters specific to the exchange API endpoint
@@ -2789,6 +2789,116 @@ export default class btse extends Exchange {
         await this.loadMarkets ();
         const market = this.market (symbol);
         const positionMode = hedged ? 'HEDGE' : 'ONE_WAY';
+        const request: Dict = {
+            'symbol': market['id'],
+            'positionMode': positionMode,
+        };
+        return await this.privatePostFuturesApiV23PositionMode (this.extend (request, params));
+    }
+
+    /**
+     * @method
+     * @name btse#fetchMarginModes
+     * @description fetches margin modes ("isolated" or "cross") that the market for the symbol in in, with symbol=undefined all markets are returned
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-position-mode
+     * @param {string[]} symbols unified market symbols
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} a list of [margin mode structures]{@link https://docs.ccxt.com/?id=margin-mode-structure}
+     */
+    async fetchMarginModes (symbols: Strings = undefined, params = {}): Promise<MarginModes> {
+        // btse do not have specific endpoint for marginMode
+        // both marginMode and positionMode are set and get with the same endpoints
+        // it terms of btse positionMode could be HEDGE, ONE_WAY or ISOLATED
+        await this.loadMarkets ();
+        symbols = this.marketSymbols (symbols);
+        const response = await this.privateGetFuturesApiV23PositionMode (params);
+        return this.parseMarginModes (response, symbols, 'symbol');
+    }
+
+    /**
+     * @method
+     * @name btse#fetchMarginMode
+     * @description fetches the margin mode of a specific symbol
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-position-mode
+     * @param {string} symbol unified symbol of the market the order was made in
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} a [margin mode structure]{@link https://docs.ccxt.com/?id=margin-mode-structure}
+     */
+    async fetchMarginMode (symbol: string, params = {}): Promise<MarginMode> {
+        // btse do not have specific endpoint for marginMode
+        // both marginMode and positionMode are set and get with the same endpoints
+        // it terms of btse positionMode could be HEDGE, ONE_WAY or ISOLATED
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+        };
+        const response = await this.privateGetFuturesApiV23PositionMode (this.extend (request, params));
+        const data = this.safeDict (response, 0, {});
+        return this.parseMarginMode (data, market);
+    }
+
+    parseMarginMode (marginMode: Dict, market = undefined): MarginMode {
+        //
+        //     {
+        //         "symbol": "ETH-PERP",
+        //         "positionMode": "HEDGE"
+        //     }
+        //
+        const marketId = this.safeString (marginMode, 'symbol');
+        market = this.safeMarket (marketId, market);
+        const positionMode = this.safeStringLower (marginMode, 'positionMode');
+        let marginModeValue = 'cross';
+        if (positionMode === 'isolated') {
+            marginModeValue = 'isolated';
+        }
+        return {
+            'info': marginMode,
+            'symbol': market['symbol'],
+            'marginMode': marginModeValue,
+        } as MarginMode;
+    }
+
+    /**
+     * @method
+     * @name btse#setMarginMode
+     * @description set margin mode to 'cross' or 'isolated'
+     * @see https://bingx-api.github.io/docs/#/en-us/swapV2/trade-api.html#Set%20Position%20Mode
+     * @param {string} marginMode 'cross' or 'isolated'
+     * @param {string} symbol unified market symbol
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {bool} [params.hedged] set to true to use dualSidePosition, required for setting marginMode to cross on btse
+     * @returns {object} response from the exchange
+     */
+    async setMarginMode (marginMode: string, symbol: Str = undefined, params = {}) {
+        // btse do not have specific endpoint for marginMode
+        // both marginMode and positionMode are set and get with the same endpoints
+        // it terms of btse positionMode could be HEDGE, ONE_WAY or ISOLATED
+        // we use params.hedged to define the positionMode when marginMode is cross
+        // and warn user if the params are not correct for the marginMode being set
+        if (symbol === undefined) {
+            throw new ArgumentsRequired (this.id + ' setMarginMode() requires a symbol argument');
+        }
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        marginMode = marginMode.toLowerCase ();
+        let positionMode = 'ONE_WAY';
+        if ((marginMode !== 'cross') && (marginMode !== 'isolated')) {
+            throw new BadRequest (this.id + ' setMarginMode() marginMode argument should be either cross or isolated');
+        }
+        const hedged = this.safeBool (params, 'hedged');
+        if (marginMode === 'cross') {
+            if (!('hedged' in params)) {
+                throw new ArgumentsRequired (this.id + ' setMarginMode() requires a hedged parameter for cross margin mode');
+            } else if (hedged) {
+                positionMode = 'HEDGE';
+            }
+        } else if (hedged) {
+            throw new BadRequest (this.id + ' setMarginMode() hedged parameter cannot be true for isolated margin mode');
+        } else {
+            positionMode = 'ISOLATED';
+        }
+        params = this.omit (params, 'hedged');
         const request: Dict = {
             'symbol': market['id'],
             'positionMode': positionMode,
