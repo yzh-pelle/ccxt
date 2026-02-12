@@ -3,6 +3,37 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchTradingFees": [
+            {
+                "description": "fetch trading fees for contract",
+                "method": "fetchTradingFees",
+                "url": "https://api.btse.com/futures/api/v2.3/user/fees",
+                "input": [
+                    {
+                        "type": "swap"
+                    }
+                ],
+                "output": null
+            },
+            {
+                "description": "fetch trading fees for spot",
+                "method": "fetchTradingFees",
+                "url": "https://api.btse.com/spot/api/v3.3/user/fees",
+                "input": [],
+                "output": null
+            }
+        ],
+        "fetchTradingFee": [
+            {
+                "description": "fetch trading fee for spot",
+                "method": "fetchTradingFee",
+                "url": "https://api.btse.com/spot/api/v3.3/user/fees?symbol=ETH-USDT",
+                "input": [
+                    "ETH/USDT"
+                ],
+                "output": null
+            }
+        ],
         "fetchTrades": [
             {
                 "description": "fetch trades for swap",
