@@ -41,7 +41,7 @@ export default class btse extends Exchange {
                 'cancelOrdersWithClientOrderId': false,
                 'cancelOrderWithClientOrderId': true,
                 'closeAllPositions': false,
-                'closePosition': false,
+                'closePosition': true,
                 'createDepositAddress': false,
                 'createLimitBuyOrder': true,
                 'createLimitOrder': true,
@@ -264,7 +264,7 @@ export default class btse extends Exchange {
                         'futures/api/v2.3/order': 1, // done
                         'futures/api/v2.3/order/peg': 1, // done
                         'futures/api/v2.3/order/cancelAllAfter': 1, // done
-                        'futures/api/v2.3/order/close_position': 1,
+                        'futures/api/v2.3/order/close_position': 1, // done
                         'futures/api/v2.3/risk_limit': 5, // not used
                         'futures/api/v2.3/leverage': 5,
                         'futures/api/v2.3/settle_in': 5,
@@ -2680,7 +2680,7 @@ export default class btse extends Exchange {
         const marginType = this.safeString (position, 'marginType');
         const side = this.safeStringLower2 (position, 'positionDirection', 'side');
         const positionMode = this.safeString (position, 'positionMode');
-        const hedged = positionMode === 'HEDGE';
+        const hedged = (positionMode === 'HEDGE') || (positionMode === 'ISOLATED');
         const takeProfitOrder = this.safeDict (position, 'takeProfitOrder', {});
         const takeProfitPrice = this.safeString (takeProfitOrder, 'triggerPrice');
         const stopLossOrder = this.safeDict (position, 'stopLossOrder', {});
@@ -2762,17 +2762,18 @@ export default class btse extends Exchange {
         //
         const data = this.safeDict (response, 0, {});
         const positionMode = this.safeString (data, 'positionMode');
+        const hedged = (positionMode === 'HEDGE') || (positionMode === 'ISOLATED');
         return {
             'info': data,
             'symbol': symbol,
-            'hedged': positionMode === 'HEDGE',
+            'hedged': hedged,
         };
     }
 
     /**
      * @method
      * @name btse#setPositionMode
-     * @description set hedged to true or false for a market
+     * @description NB!!! This method also sets margin mode to cross on btse. Set hedged to true or false for a cross-margin market.
      * @see https://bingx-api.github.io/docs/#/en-us/swapV2/trade-api.html#Set%20Position%20Mode
      * @param {bool} hedged set to true to use dualSidePosition
      * @param {string} symbol unified symbol of the market to set position mode for
@@ -2780,12 +2781,14 @@ export default class btse extends Exchange {
      * @returns {object} response from the exchange
      */
     async setPositionMode (hedged: boolean, symbol: Str = undefined, params = {}) {
-        if (symbol === undefined) {
-            throw new ArgumentsRequired (this.id + ' setPositionMode() requires a symbol argument');
-        }
+        // NB!!! This method also sets margin mode to cross on btse
         // btse do not have specific endpoint for marginMode
         // both marginMode and positionMode are set and get with the same endpoints
         // it terms of btse positionMode could be HEDGE, ONE_WAY or ISOLATED
+        // ISOLATED positionMode is always hedged and multi-position
+        if (symbol === undefined) {
+            throw new ArgumentsRequired (this.id + ' setPositionMode() requires a symbol argument');
+        }
         await this.loadMarkets ();
         const market = this.market (symbol);
         const positionMode = hedged ? 'HEDGE' : 'ONE_WAY';
@@ -2809,6 +2812,7 @@ export default class btse extends Exchange {
         // btse do not have specific endpoint for marginMode
         // both marginMode and positionMode are set and get with the same endpoints
         // it terms of btse positionMode could be HEDGE, ONE_WAY or ISOLATED
+        // ISOLATED positionMode is always hedged and multi-position
         await this.loadMarkets ();
         symbols = this.marketSymbols (symbols);
         const response = await this.privateGetFuturesApiV23PositionMode (params);
@@ -2828,6 +2832,7 @@ export default class btse extends Exchange {
         // btse do not have specific endpoint for marginMode
         // both marginMode and positionMode are set and get with the same endpoints
         // it terms of btse positionMode could be HEDGE, ONE_WAY or ISOLATED
+        // ISOLATED positionMode is always hedged and multi-position
         await this.loadMarkets ();
         const market = this.market (symbol);
         const request: Dict = {
@@ -2874,6 +2879,7 @@ export default class btse extends Exchange {
         // btse do not have specific endpoint for marginMode
         // both marginMode and positionMode are set and get with the same endpoints
         // it terms of btse positionMode could be HEDGE, ONE_WAY or ISOLATED
+        // ISOLATED positionMode is always hedged and multi-position
         // we use params.hedged to define the positionMode when marginMode is cross
         // and warn user if the params are not correct for the marginMode being set
         if (symbol === undefined) {
@@ -2893,8 +2899,8 @@ export default class btse extends Exchange {
             } else if (hedged) {
                 positionMode = 'HEDGE';
             }
-        } else if (hedged) {
-            throw new BadRequest (this.id + ' setMarginMode() hedged parameter cannot be true for isolated margin mode');
+        } else if (('hedged' in params) && (!hedged)) {
+            throw new BadRequest (this.id + ' setMarginMode() hedged parameter cannot be false for isolated margin mode');
         } else {
             positionMode = 'ISOLATED';
         }
@@ -2904,6 +2910,42 @@ export default class btse extends Exchange {
             'positionMode': positionMode,
         };
         return await this.privatePostFuturesApiV23PositionMode (this.extend (request, params));
+    }
+
+    /**
+     * @method
+     * @name btse#closePosition
+     * @description closes an open position for a market
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#close-position
+     * @param {string} symbol unified CCXT market symbol
+     * @param {string} [side] not used by btse
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.type] 'limit' or 'market' (default is 'market')
+     * @param {float} [params.price] required if params.type is 'limit'
+     * @param {bool} [params.postOnly] true if the order should be post only
+     * @param {string} [params.positionId] The position ID that you want to close. Mandatory when positionMode is HEDGE or ISOLATED
+     * @returns {object} An [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async closePosition (symbol: string, side: OrderSide = undefined, params = {}): Promise<Order> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+        };
+        let type = 'market';
+        [ type, params ] = this.handleOptionAndParams (params, 'closePosition', 'type', type);
+        type = type.toUpperCase ();
+        request['type'] = type;
+        if (type === 'LIMIT') {
+            const price = this.safeString (params, 'price');
+            if (price === undefined) {
+                throw new ArgumentsRequired (this.id + ' closePosition() requires a price parameter for limit orders');
+            }
+            request['price'] = this.priceToPrecision (symbol, price);
+        }
+        const response = await this.privatePostFuturesApiV23OrderClosePosition (this.extend (request, params));
+        const order = this.safeDict (response, 0, {});
+        return this.parseOrder (order, market);
     }
 
     sign (path, api: any = 'public', method = 'GET', params = {}, headers: any = undefined, body: any = undefined) {
