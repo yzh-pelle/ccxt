@@ -2283,7 +2283,7 @@ class krakenfutures(Exchange, ImplicitAPI):
         #         "fundingRate": -0.000000756414717067,
         #         "fundingRatePrediction": 0.000000195218676,
         #         "suspended": False,
-        #         "indexPrice": 0.043392,
+        #         "indexPrice": 0.043391,
         #         "postOnly": False,
         #         "change24h": -0.46
         #     }
@@ -2296,13 +2296,13 @@ class krakenfutures(Exchange, ImplicitAPI):
         fundingRateResult = Precise.string_div(fundingRateString, markPriceString)
         nextFundingRateString = self.safe_string(ticker, 'fundingRatePrediction')
         nextFundingRateResult = Precise.string_div(nextFundingRateString, markPriceString)
-        if fundingRateResult > '0.25':
+        if Precise.string_gt(fundingRateResult, '0.25'):
             fundingRateResult = '0.25'
-        elif fundingRateResult > '-0.25':
+        elif Precise.string_lt(fundingRateResult, '-0.25'):
             fundingRateResult = '-0.25'
-        if nextFundingRateResult > '0.25':
+        if Precise.string_gt(nextFundingRateResult, '0.25'):
             nextFundingRateResult = '0.25'
-        elif nextFundingRateResult > '-0.25':
+        elif Precise.string_lt(nextFundingRateResult, '-0.25'):
             nextFundingRateResult = '-0.25'
         return {
             'info': ticker,
