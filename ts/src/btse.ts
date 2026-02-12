@@ -5,7 +5,7 @@ import Exchange from './abstract/btse.js';
 import { ArgumentsRequired, BadRequest, InvalidOrder } from '../ccxt.js';
 import { sha384 } from './static_dependencies/noble-hashes/sha512.js';
 import { TICK_SIZE } from './base/functions/number.js';
-import type { Dict, FundingRate, FundingRateHistory, FundingRates, Int, LeverageTier, LeverageTiers, Market, Num, OHLCV, OpenInterests, Order, OrderBook, OrderSide, OrderType, Str, Strings, Ticker, Tickers, Trade, TradingFees, TradingFeeInterface } from './base/types.js';
+import type { Dict, FundingRate, FundingRateHistory, FundingRates, Int, LeverageTier, LeverageTiers, Market, Num, OHLCV, OpenInterests, Order, OrderBook, OrderSide, OrderType, Position, Str, Strings, Ticker, Tickers, Trade, TradingFees, TradingFeeInterface } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -147,8 +147,8 @@ export default class btse extends Exchange {
                 'fetchPosition': false,
                 'fetchPositionHistory': false,
                 'fetchPositionMode': false,
-                'fetchPositions': false,
-                'fetchPositionsForSymbol': false,
+                'fetchPositions': true,
+                'fetchPositionsForSymbol': true,
                 'fetchPositionsHistory': false,
                 'fetchPositionsRisk': false,
                 'fetchPremiumIndexOHLCV': false,
@@ -237,7 +237,7 @@ export default class btse extends Exchange {
                         'futures/api/v2.3/order': 1, // done
                         'futures/api/v2.3/user/open_orders': 1, // done
                         'futures/api/v2.3/user/trade_history': 5, // done
-                        'futures/api/v2.3/user/positions': 5,
+                        'futures/api/v2.3/user/positions': 5, // done
                         'futures/api/v2.3/risk_limit': 5,
                         'futures/api/v2.3/leverage': 5,
                         'futures/api/v2.3/user/fees': 5, // done
@@ -2597,6 +2597,139 @@ export default class btse extends Exchange {
             'percentage': true,
             'tierBased': true,
         };
+    }
+
+    /**
+     * @method
+     * @name btse#fetchPositions
+     * @description fetch all open positions
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-position
+     * @param {string[]} [symbols] list of unified market symbols
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object[]} a list of [position structure]{@link https://docs.ccxt.com/?id=position-structure}
+     */
+    async fetchPositions (symbols: Strings = undefined, params = {}): Promise<Position[]> {
+        await this.loadMarkets ();
+        symbols = this.marketSymbols (symbols);
+        const response = await this.privateGetFuturesApiV23UserPositions (params);
+        return this.parsePositions (response, symbols);
+    }
+
+    /**
+     * @method
+     * @name btse#fetchPositionsForSymbol
+     * @description fetch open positions for a single market
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-position
+     * @description fetch all open positions for specific symbol
+     * @param {string} symbol unified market symbol
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object[]} a list of [position structure]{@link https://docs.ccxt.com/?id=position-structure}
+     */
+    async fetchPositionsForSymbol (symbol: string, params = {}): Promise<Position[]> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        params = this.extend ({
+            'symbol': market['id'],
+        }, params);
+        return await this.fetchPositions ([ symbol ], params);
+    }
+
+    parsePosition (position: Dict, market: Market = undefined) {
+        //
+        //     {
+        //         "marginType": 91,
+        //         "entryPrice": 1968.78,
+        //         "markPrice": 1967.47829431,
+        //         "symbol": "ETH-PERP",
+        //         "side": "BUY",
+        //         "orderValue": 3.93495658,
+        //         "settleWithAsset": "USDT",
+        //         "unrealizedProfitLoss": -0.00260341,
+        //         "totalMaintenanceMargin": 0.0218963,
+        //         "size": 20,
+        //         "liquidationPrice": 0,
+        //         "isolatedLeverage": 25,
+        //         "adlScoreBucket": 1,
+        //         "contractSize": 0.0001,
+        //         "liquidationInProgress": false,
+        //         "timestamp": 1770880518034,
+        //         "takeProfitOrder": {
+        //             "orderId": "18b4056a-59de-424a-843e-c2df5c9f7265",
+        //             "side": "SELL",
+        //             "triggerPrice": 2500,
+        //             "triggerUseLastPrice": false
+        //         },
+        //         "stopLossOrder": {
+        //             "orderId": "e7ef1035-0773-446d-9a80-2de0e1de2c13",
+        //             "side": "SELL",
+        //             "triggerPrice": 1000,
+        //             "triggerUseLastPrice": false
+        //         },
+        //         "positionMode": "ONE_WAY",
+        //         "positionDirection": null,
+        //         "positionId": "ETH-PERP-USDT",
+        //         "walletName": "CROSS@",
+        //         "currentLeverage": 0.2,
+        //         "minimumRequiredMargin": 0
+        //     }
+        //
+        const marketId = this.safeString (position, 'symbol');
+        market = this.safeMarket (marketId, market);
+        const timestamp = this.safeInteger (position, 'timestamp');
+        const marginType = this.safeString (position, 'marginType');
+        const side = this.safeStringLower2 (position, 'positionDirection', 'side');
+        const positionMode = this.safeString (position, 'positionMode');
+        const hedged = positionMode === 'HEDGE';
+        const takeProfitOrder = this.safeDict (position, 'takeProfitOrder', {});
+        const takeProfitPrice = this.safeString (takeProfitOrder, 'triggerPrice');
+        const stopLossOrder = this.safeDict (position, 'stopLossOrder', {});
+        const stopLossPrice = this.safeString (stopLossOrder, 'triggerPrice');
+        return this.safePosition ({
+            'info': position,
+            'id': this.safeString (position, 'positionId'),
+            'symbol': market['symbol'],
+            'entryPrice': this.parseNumber (this.safeString (position, 'entryPrice')),
+            'markPrice': this.parseNumber (this.safeString (position, 'markPrice')),
+            'lastPrice': undefined,
+            'takeProfitPrice': this.parseNumber (takeProfitPrice),
+            'stopLossPrice': this.parseNumber (stopLossPrice),
+            'notional': this.parseNumber (this.safeString (position, 'orderValue')),
+            'collateral': undefined,
+            'unrealizedPnl': this.parseNumber (this.safeString (position, 'unrealizedProfitLoss')),
+            'realizedPnl': undefined,
+            'side': this.parsePositionSide (side),
+            'contracts': this.parseNumber (this.safeString (position, 'size')),
+            'contractSize': this.parseNumber (this.safeString (position, 'contractSize')),
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'lastUpdateTimestamp': undefined,
+            'hedged': hedged,
+            'maintenanceMargin': this.parseNumber (this.safeString (position, 'totalMaintenanceMargin')),
+            'maintenanceMarginPercentage': undefined,
+            'initialMargin': undefined,
+            'initialMarginPercentage': undefined,
+            'leverage': this.parseNumber (this.safeString (position, 'currentLeverage')),
+            'liquidationPrice': this.parseNumber (this.safeString (position, 'liquidationPrice')),
+            'marginRatio': undefined,
+            'marginMode': this.parseMarginModeType (marginType),
+            'percentage': undefined,
+        });
+    }
+
+    parseMarginModeType (marginMode) {
+        const marginModes = {
+            '91': 'cross',
+            '92': 'isolated',
+        };
+        return this.safeString (marginModes, marginMode, marginMode);
+    }
+
+    parsePositionSide (side) {
+        const sides = {
+            'buy': 'long',
+            'sell': 'short',
+        };
+        return this.safeString (sides, side, side);
     }
 
     sign (path, api: any = 'public', method = 'GET', params = {}, headers: any = undefined, body: any = undefined) {
