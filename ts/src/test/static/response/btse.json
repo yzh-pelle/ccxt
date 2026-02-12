@@ -3,6 +3,118 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchPositions": [
+            {
+                "description": "fetch positions",
+                "method": "fetchPositions",
+                "input": [],
+                "httpResponse": [
+                    {
+                        "marginType": "91",
+                        "entryPrice": "1968.78",
+                        "markPrice": "1969.34",
+                        "symbol": "ETH-PERP",
+                        "side": "BUY",
+                        "orderValue": "3.93867999",
+                        "settleWithAsset": "USDT",
+                        "unrealizedProfitLoss": "0.00112",
+                        "totalMaintenanceMargin": "0.02197247",
+                        "size": "20",
+                        "liquidationPrice": "0",
+                        "isolatedLeverage": "25",
+                        "adlScoreBucket": "2",
+                        "contractSize": "0.0001",
+                        "liquidationInProgress": false,
+                        "timestamp": "1770883186144",
+                        "takeProfitOrder": {
+                            "orderId": "18b4056a-59de-424a-843e-c2df5c9f7265",
+                            "side": "SELL",
+                            "triggerPrice": "2500",
+                            "triggerUseLastPrice": false
+                        },
+                        "stopLossOrder": {
+                            "orderId": "e7ef1035-0773-446d-9a80-2de0e1de2c13",
+                            "side": "SELL",
+                            "triggerPrice": "1000",
+                            "triggerUseLastPrice": false
+                        },
+                        "positionMode": "ONE_WAY",
+                        "positionDirection": null,
+                        "positionId": "ETH-PERP-USDT",
+                        "walletName": "CROSS@",
+                        "currentLeverage": "0.2",
+                        "minimumRequiredMargin": "0"
+                    }
+                ],
+                "parsedResponse": [
+                    {
+                        "info": {
+                            "marginType": "91",
+                            "entryPrice": "1968.78",
+                            "markPrice": "1969.34",
+                            "symbol": "ETH-PERP",
+                            "side": "BUY",
+                            "orderValue": "3.93867999",
+                            "settleWithAsset": "USDT",
+                            "unrealizedProfitLoss": "0.00112",
+                            "totalMaintenanceMargin": "0.02197247",
+                            "size": "20",
+                            "liquidationPrice": "0",
+                            "isolatedLeverage": "25",
+                            "adlScoreBucket": "2",
+                            "contractSize": "0.0001",
+                            "liquidationInProgress": false,
+                            "timestamp": "1770883186144",
+                            "takeProfitOrder": {
+                                "orderId": "18b4056a-59de-424a-843e-c2df5c9f7265",
+                                "side": "SELL",
+                                "triggerPrice": "2500",
+                                "triggerUseLastPrice": false
+                            },
+                            "stopLossOrder": {
+                                "orderId": "e7ef1035-0773-446d-9a80-2de0e1de2c13",
+                                "side": "SELL",
+                                "triggerPrice": "1000",
+                                "triggerUseLastPrice": false
+                            },
+                            "positionMode": "ONE_WAY",
+                            "positionDirection": null,
+                            "positionId": "ETH-PERP-USDT",
+                            "walletName": "CROSS@",
+                            "currentLeverage": "0.2",
+                            "minimumRequiredMargin": "0"
+                        },
+                        "id": "ETH-PERP-USDT",
+                        "symbol": "ETH/USDT:USDT",
+                        "entryPrice": 1968.78,
+                        "markPrice": 1969.34,
+                        "lastPrice": null,
+                        "takeProfitPrice": 2500,
+                        "stopLossPrice": 1000,
+                        "notional": 3.93867999,
+                        "collateral": null,
+                        "unrealizedPnl": 0.00112,
+                        "realizedPnl": null,
+                        "side": "long",
+                        "contracts": 20,
+                        "contractSize": 0.0001,
+                        "timestamp": 1770883186144,
+                        "datetime": "2026-02-12T07:59:46.144Z",
+                        "lastUpdateTimestamp": null,
+                        "hedged": false,
+                        "maintenanceMargin": 0.02197247,
+                        "maintenanceMarginPercentage": null,
+                        "initialMargin": null,
+                        "initialMarginPercentage": null,
+                        "leverage": 0.2,
+                        "liquidationPrice": 0,
+                        "marginRatio": null,
+                        "marginMode": "cross",
+                        "percentage": null
+                    }
+                ]
+            }
+        ],
         "fetchTradingFee": [
             {
                 "description": "fetch trading fee for spot",
