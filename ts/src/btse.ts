@@ -5,7 +5,7 @@ import Exchange from './abstract/btse.js';
 import { ArgumentsRequired, BadRequest, InvalidOrder } from '../ccxt.js';
 import { sha384 } from './static_dependencies/noble-hashes/sha512.js';
 import { TICK_SIZE } from './base/functions/number.js';
-import type { Dict, FundingRate, FundingRateHistory, FundingRates, Int, LeverageTier, LeverageTiers, MarginMode, MarginModes, Market, Num, OHLCV, OpenInterests, Order, OrderBook, OrderSide, OrderType, Position, Str, Strings, Ticker, Tickers, Trade, TradingFees, TradingFeeInterface } from './base/types.js';
+import type { Dict, FundingRate, FundingRateHistory, FundingRates, int, Int, Leverage, LeverageTier, LeverageTiers, MarginMode, Market, Num, OHLCV, OpenInterests, Order, OrderBook, OrderSide, OrderType, Position, Str, Strings, Ticker, Tickers, Trade, TradingFees, TradingFeeInterface } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -113,7 +113,7 @@ export default class btse extends Exchange {
                 'fetchLastPrices': false,
                 'fetchLedger': false,
                 'fetchLedgerEntry': false,
-                'fetchLeverage': false,
+                'fetchLeverage': true,
                 'fetchLeverages': false,
                 'fetchLeverageTiers': true,
                 'fetchLiquidations': false,
@@ -121,7 +121,7 @@ export default class btse extends Exchange {
                 'fetchLongShortRatioHistory': false,
                 'fetchMarginAdjustmentHistory': false,
                 'fetchMarginMode': true,
-                'fetchMarginModes': true,
+                'fetchMarginModes': false,
                 'fetchMarketLeverageTiers': true,
                 'fetchMarkets': true,
                 'fetchMarkOHLCV': false,
@@ -239,7 +239,7 @@ export default class btse extends Exchange {
                         'futures/api/v2.3/user/trade_history': 5, // done
                         'futures/api/v2.3/user/positions': 5, // done
                         'futures/api/v2.3/risk_limit': 5, // not used
-                        'futures/api/v2.3/leverage': 5,
+                        'futures/api/v2.3/leverage': 5, // done
                         'futures/api/v2.3/user/fees': 5, // done
                         'futures/api/v2.3/position_mode': 5, // done
                         'futures/api/v2.3/user/margin_setting': 5, // not used
@@ -266,7 +266,7 @@ export default class btse extends Exchange {
                         'futures/api/v2.3/order/cancelAllAfter': 1, // done
                         'futures/api/v2.3/order/close_position': 1, // done
                         'futures/api/v2.3/risk_limit': 5, // not used
-                        'futures/api/v2.3/leverage': 5,
+                        'futures/api/v2.3/leverage': 5, // done
                         'futures/api/v2.3/settle_in': 5,
                         'futures/api/v2.3/order/bind/tpsl': 1,
                         'futures/api/v2.3/position_mode': 5, // done
@@ -460,6 +460,9 @@ export default class btse extends Exchange {
             },
             'exceptions': {
                 'exact': {
+                    // 200 {"symbol":"ETH-PERP","timestamp":1770892916507,"status":135,"type":93,"message":"{\"msgKey\":\"trade.error.invalid.position_id\",\"params\":[\"ETH-PERP-USDT\"] ,\"default_msg\":\"User is in ISOLATE_HEDGE in market: ETH-PERP-USDT, but positionId is empty in the request.\"}"}
+                    // bad request {"status":429,"errorCode":-1,"message":"Order not found","extraData":["ETHPFC-USD","0","117"]}
+                    // {"status":400,"errorCode":-2,"message":"symbol parameter is mandatory","extraData":null}
                     // {"status":400,"errorCode":134,"message":"failure","extraData":"Remaining positions."}
                     // {"status":400,"errorCode":-2,"message":"symbol parameter is mandatory","extraData":null}
                     // {"status":400,"errorCode":33001003,"message":"You can not SELL ETH lower than 1825.24 USDT","extraData":["SELL","ETH","lower","1825.24","USDT"]}
@@ -2801,44 +2804,20 @@ export default class btse extends Exchange {
 
     /**
      * @method
-     * @name btse#fetchMarginModes
-     * @description fetches margin modes ("isolated" or "cross") that the market for the symbol in in, with symbol=undefined all markets are returned
-     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-position-mode
-     * @param {string[]} symbols unified market symbols
-     * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @returns {object} a list of [margin mode structures]{@link https://docs.ccxt.com/?id=margin-mode-structure}
-     */
-    async fetchMarginModes (symbols: Strings = undefined, params = {}): Promise<MarginModes> {
-        // btse do not have specific endpoint for marginMode
-        // both marginMode and positionMode are set and get with the same endpoints
-        // it terms of btse positionMode could be HEDGE, ONE_WAY or ISOLATED
-        // ISOLATED positionMode is always hedged and multi-position
-        await this.loadMarkets ();
-        symbols = this.marketSymbols (symbols);
-        const response = await this.privateGetFuturesApiV23PositionMode (params);
-        return this.parseMarginModes (response, symbols, 'symbol');
-    }
-
-    /**
-     * @method
      * @name btse#fetchMarginMode
      * @description fetches the margin mode of a specific symbol
-     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-position-mode
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#get-leverage
      * @param {string} symbol unified symbol of the market the order was made in
      * @param {object} [params] extra parameters specific to the exchange API endpoint
      * @returns {object} a [margin mode structure]{@link https://docs.ccxt.com/?id=margin-mode-structure}
      */
     async fetchMarginMode (symbol: string, params = {}): Promise<MarginMode> {
-        // btse do not have specific endpoint for marginMode
-        // both marginMode and positionMode are set and get with the same endpoints
-        // it terms of btse positionMode could be HEDGE, ONE_WAY or ISOLATED
-        // ISOLATED positionMode is always hedged and multi-position
         await this.loadMarkets ();
         const market = this.market (symbol);
         const request: Dict = {
             'symbol': market['id'],
         };
-        const response = await this.privateGetFuturesApiV23PositionMode (this.extend (request, params));
+        const response = await this.privateGetFuturesApiV23Leverage (this.extend (request, params));
         const data = this.safeDict (response, 0, {});
         return this.parseMarginMode (data, market);
     }
@@ -2847,12 +2826,14 @@ export default class btse extends Exchange {
         //
         //     {
         //         "symbol": "ETH-PERP",
-        //         "positionMode": "HEDGE"
+        //         "leverage": 10,
+        //         "marginMode": "ISOLATED",
+        //         "positionDirection": "SHORT"
         //     }
         //
         const marketId = this.safeString (marginMode, 'symbol');
         market = this.safeMarket (marketId, market);
-        const positionMode = this.safeStringLower (marginMode, 'positionMode');
+        const positionMode = this.safeStringLower (marginMode, 'marginMode');
         let marginModeValue = 'cross';
         if (positionMode === 'isolated') {
             marginModeValue = 'isolated';
@@ -2946,6 +2927,93 @@ export default class btse extends Exchange {
         const response = await this.privatePostFuturesApiV23OrderClosePosition (this.extend (request, params));
         const order = this.safeDict (response, 0, {});
         return this.parseOrder (order, market);
+    }
+
+    /**
+     * @method
+     * @name btse#fetchLeverage
+     * @description fetch the leverage for a market
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#get-leverage
+     * @param {string} symbol unified market symbol
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} a [leverage structure]{@link https://docs.ccxt.com/?id=leverage-structure}
+     */
+    async fetchLeverage (symbol: string, params = {}): Promise<Leverage> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+        };
+        const response = await this.privateGetFuturesApiV23Leverage (this.extend (request, params));
+        //
+        //     [
+        //         {
+        //             "symbol": "ETH-PERP",
+        //             "leverage": 10,
+        //             "marginMode": "ISOLATED",
+        //             "positionDirection": "LONG"
+        //         },
+        //         {
+        //             "symbol": "ETH-PERP",
+        //             "leverage": 10,
+        //             "marginMode": "ISOLATED",
+        //             "positionDirection": "SHORT"
+        //         }
+        //     ]
+        //
+        let safeResponse = [];
+        if (Array.isArray (response)) {
+            safeResponse = response;
+        }
+        const result: Dict = {
+            'info': response,
+            'symbol': symbol,
+        };
+        let longLeverage = undefined;
+        let shortLeverage = undefined;
+        let marginMode = undefined;
+        for (let i = 0; i < safeResponse.length; i++) {
+            const entrty = safeResponse[i];
+            const leverageValue = this.safeInteger (entrty, 'leverage');
+            const positionDirection = this.safeString (entrty, 'positionDirection');
+            marginMode = this.safeStringLower (entrty, 'marginMode');
+            if (positionDirection === 'LONG') {
+                longLeverage = leverageValue;
+            } else if (positionDirection === 'SHORT') {
+                shortLeverage = leverageValue;
+            } else if (positionDirection === undefined) {
+                longLeverage = leverageValue;
+                shortLeverage = leverageValue;
+            }
+        }
+        result['marginMode'] = marginMode;
+        result['longLeverage'] = longLeverage;
+        result['shortLeverage'] = shortLeverage;
+        return result as Leverage;
+    }
+
+    /**
+     * @method
+     * @name btse#setLeverage
+     * @description set the level of leverage for a market
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#set-leverage
+     * @param {float} leverage the rate of leverage
+     * @param {string} symbol unified market symbol
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} response from the exchange
+     */
+    async setLeverage (leverage: int, symbol: Str = undefined, params = {}) {
+        if (symbol === undefined) {
+            throw new ArgumentsRequired (this.id + ' setLeverage() requires a symbol argument');
+        }
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+            'leverage': leverage,
+        };
+        const response = await this.privatePostFuturesApiV23Leverage (this.extend (request, params));
+        return response;
     }
 
     sign (path, api: any = 'public', method = 'GET', params = {}, headers: any = undefined, body: any = undefined) {
