@@ -3,6 +3,29 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchPositionMode": [
+            {
+                "description": "fetch position mode for market",
+                "method": "fetchPositionMode",
+                "input": [
+                    "ETH/USDT:USDT"
+                ],
+                "httpResponse": [
+                    {
+                        "symbol": "ETH-PERP",
+                        "positionMode": "HEDGE"
+                    }
+                ],
+                "parsedResponse": {
+                    "info": {
+                        "symbol": "ETH-PERP",
+                        "positionMode": "HEDGE"
+                    },
+                    "symbol": "ETH/USDT:USDT",
+                    "hedged": true
+                }
+            }
+        ],
         "fetchPositions": [
             {
                 "description": "fetch positions",
