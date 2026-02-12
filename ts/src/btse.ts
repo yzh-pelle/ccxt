@@ -146,7 +146,7 @@ export default class btse extends Exchange {
                 'fetchOrderWithClientOrderId': false,
                 'fetchPosition': false,
                 'fetchPositionHistory': false,
-                'fetchPositionMode': false,
+                'fetchPositionMode': true,
                 'fetchPositions': true,
                 'fetchPositionsForSymbol': true,
                 'fetchPositionsHistory': false,
@@ -179,7 +179,7 @@ export default class btse extends Exchange {
                 'setLeverage': false,
                 'setMargin': false,
                 'setMarginMode': false,
-                'setPositionMode': false,
+                'setPositionMode': true,
                 'signIn': false,
                 'transfer': false,
                 'watchMyLiquidationsForSymbols': false,
@@ -238,11 +238,11 @@ export default class btse extends Exchange {
                         'futures/api/v2.3/user/open_orders': 1, // done
                         'futures/api/v2.3/user/trade_history': 5, // done
                         'futures/api/v2.3/user/positions': 5, // done
-                        'futures/api/v2.3/risk_limit': 5,
+                        'futures/api/v2.3/risk_limit': 5, // not used
                         'futures/api/v2.3/leverage': 5,
                         'futures/api/v2.3/user/fees': 5, // done
-                        'futures/api/v2.3/position_mode': 5,
-                        'futures/api/v2.3/user/margin_setting': 5,
+                        'futures/api/v2.3/position_mode': 5, // done
+                        'futures/api/v2.3/user/margin_setting': 5, // not used
                         'futures/api/v2.3/user/wallet': 5,
                         'futures/api/v2.3/user/wallet_history': 5,
                         'futures/api/v2.3/user/unifiedWallet/margin': 5,
@@ -265,11 +265,11 @@ export default class btse extends Exchange {
                         'futures/api/v2.3/order/peg': 1, // done
                         'futures/api/v2.3/order/cancelAllAfter': 1, // done
                         'futures/api/v2.3/order/close_position': 1,
-                        'futures/api/v2.3/risk_limit': 5,
+                        'futures/api/v2.3/risk_limit': 5, // not used
                         'futures/api/v2.3/leverage': 5,
                         'futures/api/v2.3/settle_in': 5,
                         'futures/api/v2.3/order/bind/tpsl': 1,
-                        'futures/api/v2.3/position_mode': 5,
+                        'futures/api/v2.3/position_mode': 5, // done
                         'futures/api/v2.3/user/wallet/transfer': 5,
                         'futures/api/v2.3/subaccount/wallet/transfer': 5,
                         'otc/api/v1/quote': 1,
@@ -460,6 +460,7 @@ export default class btse extends Exchange {
             },
             'exceptions': {
                 'exact': {
+                    // {"status":400,"errorCode":134,"message":"failure","extraData":"Remaining positions."}
                     // {"status":400,"errorCode":-2,"message":"symbol parameter is mandatory","extraData":null}
                     // {"status":400,"errorCode":33001003,"message":"You can not SELL ETH lower than 1825.24 USDT","extraData":["SELL","ETH","lower","1825.24","USDT"]}
                     // {"code":400,"msg":"BADREQUEST: startTime can not before than 1569888000000 (2019-10-01T00:00)","time":1770828108074,"data":null,"success":false}
@@ -2730,6 +2731,69 @@ export default class btse extends Exchange {
             'sell': 'short',
         };
         return this.safeString (sides, side, side);
+    }
+
+    /**
+     * @method
+     * @name btse#fetchPositionMode
+     * @description fetchs the position mode, hedged or one way, hedged for binance is set identically for all linear markets or all inverse markets
+     * @see https://btsecom.github.io/docs/futuresV2_3/en/#query-position-mode
+     * @param {string} symbol unified symbol of the market to fetch entry for
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} an object detailing whether the market is in hedged or one-way mode
+     */
+    async fetchPositionMode (symbol: Str = undefined, params = {}) {
+        if (symbol === undefined) {
+            throw new ArgumentsRequired (this.id + ' fetchPositionMode() requires a symbol argument');
+        }
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+        };
+        const response = await this.privateGetFuturesApiV23PositionMode (this.extend (request, params));
+        //
+        //     [
+        //         {
+        //             "symbol": "ETH-PERP",
+        //             "positionMode": "HEDGE"
+        //         }
+        //     ]
+        //
+        const data = this.safeDict (response, 0, {});
+        const positionMode = this.safeString (data, 'positionMode');
+        return {
+            'info': data,
+            'symbol': symbol,
+            'hedged': positionMode === 'HEDGE',
+        };
+    }
+
+    /**
+     * @method
+     * @name btse#setPositionMode
+     * @description set hedged to true or false for a market
+     * @see https://bingx-api.github.io/docs/#/en-us/swapV2/trade-api.html#Set%20Position%20Mode
+     * @param {bool} hedged set to true to use dualSidePosition
+     * @param {string} symbol unified symbol of the market to set position mode for
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} response from the exchange
+     */
+    async setPositionMode (hedged: boolean, symbol: Str = undefined, params = {}) {
+        if (symbol === undefined) {
+            throw new ArgumentsRequired (this.id + ' setPositionMode() requires a symbol argument');
+        }
+        // btse do not have specific endpoint for marginMode
+        // both marginMode and positionMode are set and get with the same endpoints
+        // it terms of btse positionMode could be HEDGE, ONE_WAY or ISOLATED
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const positionMode = hedged ? 'HEDGE' : 'ONE_WAY';
+        const request: Dict = {
+            'symbol': market['id'],
+            'positionMode': positionMode,
+        };
+        return await this.privatePostFuturesApiV23PositionMode (this.extend (request, params));
     }
 
     sign (path, api: any = 'public', method = 'GET', params = {}, headers: any = undefined, body: any = undefined) {
