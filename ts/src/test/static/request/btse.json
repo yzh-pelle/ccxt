@@ -3,6 +3,45 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "closePosition": [
+            {
+                "description": "close one-way position with market order",
+                "method": "closePosition",
+                "url": "https://api.btse.com/futures/api/v2.3/order/close_position",
+                "input": [
+                    "ETH/USDT:USDT"
+                ],
+                "output": "{\"symbol\":\"ETH-PERP\",\"type\":\"MARKET\"}"
+            },
+            {
+                "description": "close isolated position with limit order",
+                "method": "closePosition",
+                "url": "https://api.btse.com/futures/api/v2.3/order/close_position",
+                "input": [
+                    "ETH/USDT:USDT",
+                    null,
+                    {
+                        "positionId": "ETH-PERP-USDT|6#1",
+                        "type": "limit",
+                        "price": 1980
+                    }
+                ],
+                "output": "{\"symbol\":\"ETH-PERP\",\"type\":\"LIMIT\",\"price\":1980,\"positionId\":\"ETH-PERP-USDT|6#1\"}"
+            },
+            {
+                "description": "close isolated position",
+                "method": "closePosition",
+                "url": "https://api.btse.com/futures/api/v2.3/order/close_position",
+                "input": [
+                    "ETH/USDT:USDT",
+                    null,
+                    {
+                        "positionId": "ETH-PERP-USDT|4#1"
+                    }
+                ],
+                "output": "{\"symbol\":\"ETH-PERP\",\"type\":\"MARKET\",\"positionId\":\"ETH-PERP-USDT|4#1\"}"
+            }
+        ],
         "setMarginMode": [
             {
                 "description": "set margin mode to cross and hedged",
