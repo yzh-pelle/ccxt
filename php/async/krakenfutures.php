@@ -2439,7 +2439,7 @@ class krakenfutures extends Exchange {
         //         "fundingRate" => -0.000000756414717067,
         //         "fundingRatePrediction" => 0.000000195218676,
         //         "suspended" => false,
-        //         "indexPrice" => 0.043392,
+        //         "indexPrice" => 0.043391,
         //         "postOnly" => false,
         //         "change24h" => -0.46
         //     }
@@ -2452,14 +2452,14 @@ class krakenfutures extends Exchange {
         $fundingRateResult = Precise::string_div($fundingRateString, $markPriceString);
         $nextFundingRateString = $this->safe_string($ticker, 'fundingRatePrediction');
         $nextFundingRateResult = Precise::string_div($nextFundingRateString, $markPriceString);
-        if ($fundingRateResult > '0.25') {
+        if (Precise::string_gt($fundingRateResult, '0.25')) {
             $fundingRateResult = '0.25';
-        } elseif ($fundingRateResult > '-0.25') {
+        } elseif (Precise::string_lt($fundingRateResult, '-0.25')) {
             $fundingRateResult = '-0.25';
         }
-        if ($nextFundingRateResult > '0.25') {
+        if (Precise::string_gt($nextFundingRateResult, '0.25')) {
             $nextFundingRateResult = '0.25';
-        } elseif ($nextFundingRateResult > '-0.25') {
+        } elseif (Precise::string_lt($nextFundingRateResult, '-0.25')) {
             $nextFundingRateResult = '-0.25';
         }
         return array(
