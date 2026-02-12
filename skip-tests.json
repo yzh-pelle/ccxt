@@ -2189,6 +2189,9 @@
     },
     "btse": {
         "skipMethods": {
+            "loadMarkets": {
+                "contractSize": "broken for some markets"
+            },
             "fetchTickers": {
                 "checkActiveSymbols": "todo"
             },
