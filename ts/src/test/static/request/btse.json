@@ -3,6 +3,26 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchPositionsForSymbol": [
+            {
+                "description": "fetch positions for market",
+                "method": "fetchPositionsForSymbol",
+                "url": "https://api.btse.com/futures/api/v2.3/user/positions?symbol=ETH-PERP",
+                "input": [
+                    "ETH/USDT:USDT"
+                ],
+                "output": null
+            }
+        ],
+        "fetchPositions": [
+            {
+                "description": "fetch positions",
+                "method": "fetchPositions",
+                "url": "https://api.btse.com/futures/api/v2.3/user/positions",
+                "input": [],
+                "output": null
+            }
+        ],
         "fetchTradingFees": [
             {
                 "description": "fetch trading fees for contract",
