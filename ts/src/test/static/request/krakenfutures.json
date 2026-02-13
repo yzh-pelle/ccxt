@@ -3,6 +3,17 @@
     "skipKeys": [],
     "outputType": "urlencoded",
     "methods": {
+        "fetchOrder": [
+            {
+                "description": "fetch limit order",
+                "method": "fetchOrder",
+                "url": "https://futures.kraken.com/derivatives/api/v3/orders/status?orderIds=a111dd96-d128-436a-bc32-76dba050b9f5",
+                "input": [
+                    "a111dd96-d128-436a-bc32-76dba050b9f5"
+                ],
+                "output": null
+            }
+        ],
         "fetchCanceledOrders": [
             {
                 "description": "canceled trigger orders",
