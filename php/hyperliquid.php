@@ -3423,6 +3423,10 @@ class hyperliquid extends Exchange {
         if ($crossed !== null) {
             $takerOrMaker = $crossed ? 'taker' : 'maker';
         }
+        $builderFee = $this->safe_string($trade, 'builderFee');
+        if ($builderFee !== null) {
+            $fee = Precise::string_add($fee, $builderFee);
+        }
         return $this->safe_trade(array(
             'info' => $trade,
             'timestamp' => $timestamp,
