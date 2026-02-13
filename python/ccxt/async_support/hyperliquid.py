@@ -3232,6 +3232,9 @@ class hyperliquid(Exchange, ImplicitAPI):
         crossed = self.safe_bool(trade, 'crossed')
         if crossed is not None:
             takerOrMaker = 'taker' if crossed else 'maker'
+        builderFee = self.safe_string(trade, 'builderFee')
+        if builderFee is not None:
+            fee = Precise.string_add(fee, builderFee)
         return self.safe_trade({
             'info': trade,
             'timestamp': timestamp,
