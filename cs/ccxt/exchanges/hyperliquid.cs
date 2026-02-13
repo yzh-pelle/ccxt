@@ -3783,6 +3783,11 @@ public partial class hyperliquid : Exchange
         {
             takerOrMaker = ((bool) isTrue(crossed)) ? "taker" : "maker";
         }
+        object builderFee = this.safeString(trade, "builderFee");
+        if (isTrue(!isEqual(builderFee, null)))
+        {
+            fee = Precise.stringAdd(fee, builderFee);
+        }
         return this.safeTrade(new Dictionary<string, object>() {
             { "info", trade },
             { "timestamp", timestamp },
