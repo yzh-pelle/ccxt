@@ -1688,6 +1688,12 @@ export default class krakenfutures extends Exchange {
             'notFound': 'rejected', // the order was not found, either because it had already been cancelled or it never existed
             'untouched': 'open', // the entire size of the order is unfilled
             'partiallyFilled': 'open', // the size of the order is partially but not entirely filled
+            'ENTERED_BOOK': 'open',
+            'CANCELLED': 'canceled',
+            'FULLY_EXECUTED': 'closed',
+            'REJECTED': 'rejected',
+            'TRIGGER_PLACED': 'open',
+            'TRIGGER_ACTIVATION_FAILURE': 'rejected',
         };
         return this.safeString (statuses, status, status);
     }
@@ -1968,7 +1974,13 @@ export default class krakenfutures extends Exchange {
             statusId = this.safeString (order, 'status');
         }
         if (details === undefined) {
-            details = order;
+            if ('order' in order) {
+                // handling limit orders from fetchOrder
+                details = this.safeDict (order, 'order');
+                statusId = this.safeString (order, 'status');
+            } else {
+                details = order;
+            }
         }
         if (statusId === undefined) {
             statusId = this.safeString (details, 'status');
@@ -1980,7 +1992,7 @@ export default class krakenfutures extends Exchange {
         const marketId = this.safeString (details, 'symbol');
         market = this.safeMarket (marketId, market);
         const timestamp = this.parse8601 (this.safeString2 (details, 'timestamp', 'receivedTime'));
-        const lastUpdateTimestamp = this.parse8601 (this.safeString (details, 'lastUpdateTime'));
+        const lastUpdateTimestamp = this.parse8601 (this.safeString2 (details, 'lastUpdateTime', 'lastUpdateTimestamp'));
         if (price === undefined) {
             price = this.safeString (details, 'limitPrice');
         }
