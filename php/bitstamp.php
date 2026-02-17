@@ -1813,6 +1813,73 @@ class bitstamp extends Exchange {
         return $this->parse_trades($result, $market, $since, $limit);
     }
 
+    public function fetch_funding_rate_history(?string $symbol = null, ?int $since = null, ?int $limit = null, $params = array ()) {
+        /**
+         * fetches historical funding rate prices
+         *
+         * @see https://www.bitstamp.net/api/#tag/Market-info/operation/GetFundingRateHistory
+         *
+         * @param {string} $symbol unified $symbol of the $market to fetch the funding rate history for
+         * @param {int} [$since] timestamp in ms of the earliest funding rate to fetch
+         * @param {int} [$limit] the maximum amount of ~@link https://docs.ccxt.com/?id=funding-rate-history-structure funding rate structures~ to fetch
+         * @param {array} [$params] extra parameters specific to the exchange API endpoint
+         * @param {int} [$params->until] timestamp in ms of the latest funding rate
+         * @param {boolean} [$params->paginate] default false, when true will automatically $paginate by calling this endpoint multiple times. See in the docs all the [available parameters](https://github.com/ccxt/ccxt/wiki/Manual#pagination-$params)
+         * @param {string} [$params->subType] "linear" or "inverse"
+         * @return {array[]} a list of ~@link https://docs.ccxt.com/?id=funding-rate-history-structure funding rate structures~
+         */
+        $paginate = false;
+        list($paginate, $params) = $this->handle_option_and_params($params, 'fetchFundingRateHistory', 'paginate');
+        if ($paginate) {
+            return $this->fetch_paginated_call_deterministic('fetchFundingRateHistory', $symbol, $since, $limit, '8h', $params);
+        }
+        $this->load_markets();
+        $request = array();
+        $market = null;
+        if ($symbol !== null) {
+            $market = $this->market($symbol);
+            $request['pair'] = $market['id'];
+        }
+        if ($since !== null) {
+            $request['since_timestamp'] = (int) round($since / 1000);
+        }
+        list($request, $params) = $this->handle_until_option('until_timestamp', $request, $params, 0.001);
+        if ($limit !== null) {
+            $request['limit'] = $limit;
+        }
+        $response = $this->publicGetFundingRateHistoryPair ($this->extend($request, $params));
+        //
+        //     {
+        //         "market" => "BTC/USD-PERP",
+        //         "funding_rate_history" => array(
+        //             {
+        //                 "funding_rate" => "0.0024",
+        //                 "timestamp" => "1644406050"
+        //             }
+        //         )
+        //     }
+        //
+        $values = $this->safe_value($response, 'funding_rate_history', array());
+        return $this->parse_funding_rate_histories($values, $market, $since, $limit);
+    }
+
+    public function parse_funding_rate_history($contract, ?array $market = null) {
+        //
+        //     {
+        //         "funding_rate" => "0.0024",
+        //         "timestamp" => "1644406050"
+        //     }
+        //
+        $timestamp = $this->safe_integer_product($contract, 'timestamp', 0.001);
+        return array(
+            'info' => $contract,
+            'symbol' => null,
+            'fundingRate' => $this->safe_number($contract, 'funding_rate'),
+            'timestamp' => $timestamp,
+            'datetime' => $this->iso8601($timestamp),
+        );
+    }
+
     public function fetch_deposits_withdrawals(?string $code = null, ?int $since = null, ?int $limit = null, $params = array ()): array {
         /**
          * fetch history of deposits and withdrawals
