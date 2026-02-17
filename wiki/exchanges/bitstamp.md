@@ -23,6 +23,7 @@
 * [cancelAllOrders](#cancelallorders)
 * [fetchOrder](#fetchorder)
 * [fetchMyTrades](#fetchmytrades)
+* [fetchFundingRateHistory](#fetchfundingratehistory)
 * [fetchDepositsWithdrawals](#fetchdepositswithdrawals)
 * [fetchWithdrawals](#fetchwithdrawals)
 * [fetchLedger](#fetchledger)
@@ -446,6 +447,32 @@ fetch all trades made by the user
 
 ```javascript
 bitstamp.fetchMyTrades (symbol[, since, limit, params])
+```
+
+
+<a name="fetchFundingRateHistory" id="fetchfundingratehistory"></a>
+
+### fetchFundingRateHistory{docsify-ignore}
+fetches historical funding rate prices
+
+**Kind**: instance method of [<code>bitstamp</code>](#bitstamp)  
+**Returns**: <code>Array&lt;object&gt;</code> - a list of [funding rate structures](https://docs.ccxt.com/?id=funding-rate-history-structure)
+
+**See**: https://www.bitstamp.net/api/#tag/Market-info/operation/GetFundingRateHistory  
+
+| Param | Type | Required | Description |
+| --- | --- | --- | --- |
+| symbol | <code>string</code> | Yes | unified symbol of the market to fetch the funding rate history for |
+| since | <code>int</code> | No | timestamp in ms of the earliest funding rate to fetch |
+| limit | <code>int</code> | No | the maximum amount of [funding rate structures](https://docs.ccxt.com/?id=funding-rate-history-structure) to fetch |
+| params | <code>object</code> | No | extra parameters specific to the exchange API endpoint |
+| params.until | <code>int</code> | No | timestamp in ms of the latest funding rate |
+| params.paginate | <code>boolean</code> | No | default false, when true will automatically paginate by calling this endpoint multiple times. See in the docs all the [available parameters](https://github.com/ccxt/ccxt/wiki/Manual#pagination-params) |
+| params.subType | <code>string</code> | No | "linear" or "inverse" |
+
+
+```javascript
+bitstamp.fetchFundingRateHistory (symbol[, since, limit, params])
 ```
 
 

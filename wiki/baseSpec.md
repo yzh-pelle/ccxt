@@ -2933,6 +2933,7 @@ fetches historical funding rate prices
 * [bitget](/exchanges/bitget.md#fetchfundingratehistory)
 * [bitmart](/exchanges/bitmart.md#fetchfundingratehistory)
 * [bitmex](/exchanges/bitmex.md#fetchfundingratehistory)
+* [bitstamp](/exchanges/bitstamp.md#fetchfundingratehistory)
 * [blofin](/exchanges/blofin.md#fetchfundingratehistory)
 * [bullish](/exchanges/bullish.md#fetchfundingratehistory)
 * [bybit](/exchanges/bybit.md#fetchfundingratehistory)

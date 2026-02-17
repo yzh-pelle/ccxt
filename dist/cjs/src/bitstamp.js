@@ -1805,6 +1805,71 @@ class bitstamp extends bitstamp$1["default"] {
     }
     /**
      * @method
+     * @name bitstamp#fetchFundingRateHistory
+     * @description fetches historical funding rate prices
+     * @see https://www.bitstamp.net/api/#tag/Market-info/operation/GetFundingRateHistory
+     * @param {string} symbol unified symbol of the market to fetch the funding rate history for
+     * @param {int} [since] timestamp in ms of the earliest funding rate to fetch
+     * @param {int} [limit] the maximum amount of [funding rate structures]{@link https://docs.ccxt.com/?id=funding-rate-history-structure} to fetch
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {int} [params.until] timestamp in ms of the latest funding rate
+     * @param {boolean} [params.paginate] default false, when true will automatically paginate by calling this endpoint multiple times. See in the docs all the [available parameters](https://github.com/ccxt/ccxt/wiki/Manual#pagination-params)
+     * @param {string} [params.subType] "linear" or "inverse"
+     * @returns {object[]} a list of [funding rate structures]{@link https://docs.ccxt.com/?id=funding-rate-history-structure}
+     */
+    async fetchFundingRateHistory(symbol = undefined, since = undefined, limit = undefined, params = {}) {
+        let paginate = false;
+        [paginate, params] = this.handleOptionAndParams(params, 'fetchFundingRateHistory', 'paginate');
+        if (paginate) {
+            return await this.fetchPaginatedCallDeterministic('fetchFundingRateHistory', symbol, since, limit, '8h', params);
+        }
+        await this.loadMarkets();
+        let request = {};
+        let market = undefined;
+        if (symbol !== undefined) {
+            market = this.market(symbol);
+            request['pair'] = market['id'];
+        }
+        if (since !== undefined) {
+            request['since_timestamp'] = Math.round(since / 1000);
+        }
+        [request, params] = this.handleUntilOption('until_timestamp', request, params, 0.001);
+        if (limit !== undefined) {
+            request['limit'] = limit;
+        }
+        const response = await this.publicGetFundingRateHistoryPair(this.extend(request, params));
+        //
+        //     {
+        //         "market": "BTC/USD-PERP",
+        //         "funding_rate_history": [
+        //             {
+        //                 "funding_rate": "0.0024",
+        //                 "timestamp": "1644406050"
+        //             }
+        //         ]
+        //     }
+        //
+        const values = this.safeValue(response, 'funding_rate_history', []);
+        return this.parseFundingRateHistories(values, market, since, limit);
+    }
+    parseFundingRateHistory(contract, market = undefined) {
+        //
+        //     {
+        //         "funding_rate": "0.0024",
+        //         "timestamp": "1644406050"
+        //     }
+        //
+        const timestamp = this.safeIntegerProduct(contract, 'timestamp', 0.001);
+        return {
+            'info': contract,
+            'symbol': undefined,
+            'fundingRate': this.safeNumber(contract, 'funding_rate'),
+            'timestamp': timestamp,
+            'datetime': this.iso8601(timestamp),
+        };
+    }
+    /**
+     * @method
      * @name bitstamp#fetchDepositsWithdrawals
      * @description fetch history of deposits and withdrawals
      * @see https://www.bitstamp.net/api/#tag/Transactions-private/operation/GetUserTransactions
