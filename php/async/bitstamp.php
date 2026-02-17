@@ -1641,6 +1641,45 @@ class bitstamp extends Exchange {
         }) ();
     }
 
+    public function edit_order(string $id, string $symbol, string $type, string $side, ?float $amount = null, ?float $price = null, $params = array ()) {
+        return Async\async(function () use ($id, $symbol, $type, $side, $amount, $price, $params) {
+            /**
+             * edit a trade $order
+             *
+             * @see https://www.bitstamp.net/api/#tag/Orders/operation/ReplaceOrder
+             *
+             * @param {string} $id $order $id
+             * @param {string} [$symbol] unified $symbol of the $market to create an $order in
+             * @param {string} [$type] 'market', 'limit' or 'stop_limit'
+             * @param {string} [$side] 'buy' or 'sell'
+             * @param {float} [$amount] how much of the currency you want to trade in units of the base currency
+             * @param {float} [$price] the $price for the $order, in units of the quote currency, ignored in $market orders
+             * @param {array} [$params] extra parameters specific to the exchange API endpoint
+             * @param {string} [$params->triggerPrice] the $price to trigger a stop $order
+             * @param {string} [$params->timeInForce] for crypto trading either 'gtc' or 'ioc' can be used
+             * @param {string} [$params->clientOrderId] a unique identifier for the $order, automatically generated if not sent
+             * @return {array} an ~@link https://docs.ccxt.com/?$id=$order-structure $order structure~
+             */
+            Async\await($this->load_markets());
+            $market = $this->market($symbol);
+            $request = array(
+                'amount' => $this->amount_to_precision($symbol, $amount),
+                'price' => $this->price_to_precision($symbol, $price),
+            );
+            $clientOrderId = $this->safe_string_2($params, 'client_order_id', 'clientOrderId');
+            if ($clientOrderId !== null) {
+                $request['client_order_id'] = $clientOrderId;
+                $params = $this->omit($params, array( 'clientOrderId' ));
+            } else {
+                $request['id'] = $id;
+            }
+            $response = Async\await($this->privatePostReplaceOrder ($this->extend($request, $params)));
+            $order = $this->parse_order($response, $market);
+            $order['type'] = $type;
+            return $order;
+        }) ();
+    }
+
     public function cancel_order(string $id, ?string $symbol = null, $params = array ()) {
         return Async\async(function () use ($id, $symbol, $params) {
             /**
