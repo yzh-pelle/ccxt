@@ -1748,6 +1748,67 @@ class bitstamp(Exchange, ImplicitAPI):
         result = self.filter_by(response, 'type', '2')
         return self.parse_trades(result, market, since, limit)
 
+    async def fetch_funding_rate_history(self, symbol: Str = None, since: Int = None, limit: Int = None, params={}):
+        """
+        fetches historical funding rate prices
+
+        https://www.bitstamp.net/api/#tag/Market-info/operation/GetFundingRateHistory
+
+        :param str symbol: unified symbol of the market to fetch the funding rate history for
+        :param int [since]: timestamp in ms of the earliest funding rate to fetch
+        :param int [limit]: the maximum amount of `funding rate structures <https://docs.ccxt.com/?id=funding-rate-history-structure>` to fetch
+        :param dict [params]: extra parameters specific to the exchange API endpoint
+        :param int [params.until]: timestamp in ms of the latest funding rate
+        :param boolean [params.paginate]: default False, when True will automatically paginate by calling self endpoint multiple times. See in the docs all the [available parameters](https://github.com/ccxt/ccxt/wiki/Manual#pagination-params)
+        :param str [params.subType]: "linear" or "inverse"
+        :returns dict[]: a list of `funding rate structures <https://docs.ccxt.com/?id=funding-rate-history-structure>`
+        """
+        paginate = False
+        paginate, params = self.handle_option_and_params(params, 'fetchFundingRateHistory', 'paginate')
+        if paginate:
+            return await self.fetch_paginated_call_deterministic('fetchFundingRateHistory', symbol, since, limit, '8h', params)
+        await self.load_markets()
+        request: dict = {}
+        market = None
+        if symbol is not None:
+            market = self.market(symbol)
+            request['pair'] = market['id']
+        if since is not None:
+            request['since_timestamp'] = int(round(since / 1000))
+        request, params = self.handle_until_option('until_timestamp', request, params, 0.001)
+        if limit is not None:
+            request['limit'] = limit
+        response = await self.publicGetFundingRateHistoryPair(self.extend(request, params))
+        #
+        #     {
+        #         "market": "BTC/USD-PERP",
+        #         "funding_rate_history": [
+        #             {
+        #                 "funding_rate": "0.0024",
+        #                 "timestamp": "1644406050"
+        #             }
+        #         ]
+        #     }
+        #
+        values = self.safe_value(response, 'funding_rate_history', [])
+        return self.parse_funding_rate_histories(values, market, since, limit)
+
+    def parse_funding_rate_history(self, contract, market: Market = None):
+        #
+        #     {
+        #         "funding_rate": "0.0024",
+        #         "timestamp": "1644406050"
+        #     }
+        #
+        timestamp = self.safe_integer_product(contract, 'timestamp', 0.001)
+        return {
+            'info': contract,
+            'symbol': None,
+            'fundingRate': self.safe_number(contract, 'funding_rate'),
+            'timestamp': timestamp,
+            'datetime': self.iso8601(timestamp),
+        }
+
     async def fetch_deposits_withdrawals(self, code: Str = None, since: Int = None, limit: Int = None, params={}) -> List[Transaction]:
         """
         fetch history of deposits and withdrawals
