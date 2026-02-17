@@ -18,6 +18,7 @@
 * [fetchTransactionFees](#fetchtransactionfees)
 * [fetchDepositWithdrawFees](#fetchdepositwithdrawfees)
 * [createOrder](#createorder)
+* [editOrder](#editorder)
 * [cancelOrder](#cancelorder)
 * [cancelAllOrders](#cancelallorders)
 * [fetchOrder](#fetchorder)
@@ -320,6 +321,35 @@ create a trade order
 
 ```javascript
 bitstamp.createOrder (symbol, type, side, amount[, price, params])
+```
+
+
+<a name="editOrder" id="editorder"></a>
+
+### editOrder{docsify-ignore}
+edit a trade order
+
+**Kind**: instance method of [<code>bitstamp</code>](#bitstamp)  
+**Returns**: <code>object</code> - an [order structure](https://docs.ccxt.com/?id=order-structure)
+
+**See**: https://www.bitstamp.net/api/#tag/Orders/operation/ReplaceOrder  
+
+| Param | Type | Required | Description |
+| --- | --- | --- | --- |
+| id | <code>string</code> | Yes | order id |
+| symbol | <code>string</code> | No | unified symbol of the market to create an order in |
+| type | <code>string</code> | No | 'market', 'limit' or 'stop_limit' |
+| side | <code>string</code> | No | 'buy' or 'sell' |
+| amount | <code>float</code> | No | how much of the currency you want to trade in units of the base currency |
+| price | <code>float</code> | No | the price for the order, in units of the quote currency, ignored in market orders |
+| params | <code>object</code> | No | extra parameters specific to the exchange API endpoint |
+| params.triggerPrice | <code>string</code> | No | the price to trigger a stop order |
+| params.timeInForce | <code>string</code> | No | for crypto trading either 'gtc' or 'ioc' can be used |
+| params.clientOrderId | <code>string</code> | No | a unique identifier for the order, automatically generated if not sent |
+
+
+```javascript
+bitstamp.editOrder (id[, symbol, type, side, amount, price, params])
 ```
 
 
