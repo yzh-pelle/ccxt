@@ -417,6 +417,52 @@ func (this *Bitstamp) CreateOrder(symbol string, typeVar string, side string, am
 
 /**
  * @method
+ * @name bitstamp#editOrder
+ * @description edit a trade order
+ * @see https://www.bitstamp.net/api/#tag/Orders/operation/ReplaceOrder
+ * @param {string} id order id
+ * @param {string} [symbol] unified symbol of the market to create an order in
+ * @param {string} [type] 'market', 'limit' or 'stop_limit'
+ * @param {string} [side] 'buy' or 'sell'
+ * @param {float} [amount] how much of the currency you want to trade in units of the base currency
+ * @param {float} [price] the price for the order, in units of the quote currency, ignored in market orders
+ * @param {object} [params] extra parameters specific to the exchange API endpoint
+ * @param {string} [params.triggerPrice] the price to trigger a stop order
+ * @param {string} [params.timeInForce] for crypto trading either 'gtc' or 'ioc' can be used
+ * @param {string} [params.clientOrderId] a unique identifier for the order, automatically generated if not sent
+ * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+ */
+func (this *Bitstamp) EditOrder(id string, symbol string, typeVar string, side string, options ...EditOrderOptions) (Order, error) {
+
+	opts := EditOrderOptionsStruct{}
+
+	for _, opt := range options {
+		opt(&opts)
+	}
+
+	var amount interface{} = nil
+	if opts.Amount != nil {
+		amount = *opts.Amount
+	}
+
+	var price interface{} = nil
+	if opts.Price != nil {
+		price = *opts.Price
+	}
+
+	var params interface{} = nil
+	if opts.Params != nil {
+		params = *opts.Params
+	}
+	res := <-this.Core.EditOrder(id, symbol, typeVar, side, amount, price, params)
+	if IsError(res) {
+		return Order{}, CreateReturnError(res)
+	}
+	return NewOrder(res), nil
+}
+
+/**
+ * @method
  * @name bitstamp#cancelOrder
  * @description cancels an open order
  * @see https://www.bitstamp.net/api/#tag/Orders/operation/CancelOrder
@@ -989,9 +1035,6 @@ func (this *Bitstamp) EditLimitOrder(id string, symbol string, side string, amou
 }
 func (this *Bitstamp) EditLimitSellOrder(id string, symbol string, amount float64, options ...EditLimitSellOrderOptions) (Order, error) {
 	return this.exchangeTyped.EditLimitSellOrder(id, symbol, amount, options...)
-}
-func (this *Bitstamp) EditOrder(id string, symbol string, typeVar string, side string, options ...EditOrderOptions) (Order, error) {
-	return this.exchangeTyped.EditOrder(id, symbol, typeVar, side, options...)
 }
 func (this *Bitstamp) EditOrderWithClientOrderId(clientOrderId string, symbol string, typeVar string, side string, options ...EditOrderWithClientOrderIdOptions) (Order, error) {
 	return this.exchangeTyped.EditOrderWithClientOrderId(clientOrderId, symbol, typeVar, side, options...)
