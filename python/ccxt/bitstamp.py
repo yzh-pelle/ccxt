@@ -1555,6 +1555,41 @@ class bitstamp(Exchange, ImplicitAPI):
         order['type'] = type
         return order
 
+    def edit_order(self, id: str, symbol: str, type: OrderType, side: OrderSide, amount: Num = None, price: Num = None, params={}):
+        """
+        edit a trade order
+
+        https://www.bitstamp.net/api/#tag/Orders/operation/ReplaceOrder
+
+        :param str id: order id
+        :param str [symbol]: unified symbol of the market to create an order in
+        :param str [type]: 'market', 'limit' or 'stop_limit'
+        :param str [side]: 'buy' or 'sell'
+        :param float [amount]: how much of the currency you want to trade in units of the base currency
+        :param float [price]: the price for the order, in units of the quote currency, ignored in market orders
+        :param dict [params]: extra parameters specific to the exchange API endpoint
+        :param str [params.triggerPrice]: the price to trigger a stop order
+        :param str [params.timeInForce]: for crypto trading either 'gtc' or 'ioc' can be used
+        :param str [params.clientOrderId]: a unique identifier for the order, automatically generated if not sent
+        :returns dict: an `order structure <https://docs.ccxt.com/?id=order-structure>`
+        """
+        self.load_markets()
+        market = self.market(symbol)
+        request: dict = {
+            'amount': self.amount_to_precision(symbol, amount),
+            'price': self.price_to_precision(symbol, price),
+        }
+        clientOrderId = self.safe_string_2(params, 'client_order_id', 'clientOrderId')
+        if clientOrderId is not None:
+            request['client_order_id'] = clientOrderId
+            params = self.omit(params, ['clientOrderId'])
+        else:
+            request['id'] = id
+        response = self.privatePostReplaceOrder(self.extend(request, params))
+        order = self.parse_order(response, market)
+        order['type'] = type
+        return order
+
     def cancel_order(self, id: str, symbol: Str = None, params={}):
         """
         cancels an open order
