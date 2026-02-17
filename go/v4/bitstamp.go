@@ -2119,6 +2119,103 @@ func (this *BitstampCore) FetchMyTrades(optionalArgs ...interface{}) <-chan inte
 
 /**
  * @method
+ * @name bitstamp#fetchFundingRateHistory
+ * @description fetches historical funding rate prices
+ * @see https://www.bitstamp.net/api/#tag/Market-info/operation/GetFundingRateHistory
+ * @param {string} symbol unified symbol of the market to fetch the funding rate history for
+ * @param {int} [since] timestamp in ms of the earliest funding rate to fetch
+ * @param {int} [limit] the maximum amount of [funding rate structures]{@link https://docs.ccxt.com/?id=funding-rate-history-structure} to fetch
+ * @param {object} [params] extra parameters specific to the exchange API endpoint
+ * @param {int} [params.until] timestamp in ms of the latest funding rate
+ * @param {boolean} [params.paginate] default false, when true will automatically paginate by calling this endpoint multiple times. See in the docs all the [available parameters](https://github.com/ccxt/ccxt/wiki/Manual#pagination-params)
+ * @param {string} [params.subType] "linear" or "inverse"
+ * @returns {object[]} a list of [funding rate structures]{@link https://docs.ccxt.com/?id=funding-rate-history-structure}
+ */
+func (this *BitstampCore) FetchFundingRateHistory(optionalArgs ...interface{}) <-chan interface{} {
+	ch := make(chan interface{})
+	go func() interface{} {
+		defer close(ch)
+		defer ReturnPanicError(ch)
+		symbol := GetArg(optionalArgs, 0, nil)
+		_ = symbol
+		since := GetArg(optionalArgs, 1, nil)
+		_ = since
+		limit := GetArg(optionalArgs, 2, nil)
+		_ = limit
+		params := GetArg(optionalArgs, 3, map[string]interface{}{})
+		_ = params
+		var paginate interface{} = false
+		paginateparamsVariable := this.HandleOptionAndParams(params, "fetchFundingRateHistory", "paginate")
+		paginate = GetValue(paginateparamsVariable, 0)
+		params = GetValue(paginateparamsVariable, 1)
+		if IsTrue(paginate) {
+
+			retRes183819 := (<-this.FetchPaginatedCallDeterministic("fetchFundingRateHistory", symbol, since, limit, "8h", params))
+			PanicOnError(retRes183819)
+			ch <- retRes183819
+			return nil
+		}
+
+		retRes18408 := (<-this.LoadMarkets())
+		PanicOnError(retRes18408)
+		var request interface{} = map[string]interface{}{}
+		var market interface{} = nil
+		if IsTrue(!IsEqual(symbol, nil)) {
+			market = this.Market(symbol)
+			AddElementToObject(request, "pair", GetValue(market, "id"))
+		}
+		if IsTrue(!IsEqual(since, nil)) {
+			AddElementToObject(request, "since_timestamp", MathRound(Divide(since, 1000)))
+		}
+		requestparamsVariable := this.HandleUntilOption("until_timestamp", request, params, 0.001)
+		request = GetValue(requestparamsVariable, 0)
+		params = GetValue(requestparamsVariable, 1)
+		if IsTrue(!IsEqual(limit, nil)) {
+			AddElementToObject(request, "limit", limit)
+		}
+
+		response := (<-this.PublicGetFundingRateHistoryPair(this.Extend(request, params)))
+		PanicOnError(response)
+		//
+		//     {
+		//         "market": "BTC/USD-PERP",
+		//         "funding_rate_history": [
+		//             {
+		//                 "funding_rate": "0.0024",
+		//                 "timestamp": "1644406050"
+		//             }
+		//         ]
+		//     }
+		//
+		var values interface{} = this.SafeValue(response, "funding_rate_history", []interface{}{})
+
+		ch <- this.ParseFundingRateHistories(values, market, since, limit)
+		return nil
+
+	}()
+	return ch
+}
+func (this *BitstampCore) ParseFundingRateHistory(contract interface{}, optionalArgs ...interface{}) interface{} {
+	//
+	//     {
+	//         "funding_rate": "0.0024",
+	//         "timestamp": "1644406050"
+	//     }
+	//
+	market := GetArg(optionalArgs, 0, nil)
+	_ = market
+	var timestamp interface{} = this.SafeIntegerProduct(contract, "timestamp", 0.001)
+	return map[string]interface{}{
+		"info":        contract,
+		"symbol":      nil,
+		"fundingRate": this.SafeNumber(contract, "funding_rate"),
+		"timestamp":   timestamp,
+		"datetime":    this.Iso8601(timestamp),
+	}
+}
+
+/**
+ * @method
  * @name bitstamp#fetchDepositsWithdrawals
  * @description fetch history of deposits and withdrawals
  * @see https://www.bitstamp.net/api/#tag/Transactions-private/operation/GetUserTransactions
@@ -2142,8 +2239,8 @@ func (this *BitstampCore) FetchDepositsWithdrawals(optionalArgs ...interface{}) 
 		params := GetArg(optionalArgs, 3, map[string]interface{}{})
 		_ = params
 
-		retRes18328 := (<-this.LoadMarkets())
-		PanicOnError(retRes18328)
+		retRes18998 := (<-this.LoadMarkets())
+		PanicOnError(retRes18998)
 		var request interface{} = map[string]interface{}{}
 		if IsTrue(!IsEqual(limit, nil)) {
 			AddElementToObject(request, "limit", limit)
@@ -2215,8 +2312,8 @@ func (this *BitstampCore) FetchWithdrawals(optionalArgs ...interface{}) <-chan i
 		params := GetArg(optionalArgs, 3, map[string]interface{}{})
 		_ = params
 
-		retRes18848 := (<-this.LoadMarkets())
-		PanicOnError(retRes18848)
+		retRes19518 := (<-this.LoadMarkets())
+		PanicOnError(retRes19518)
 		var request interface{} = map[string]interface{}{}
 		if IsTrue(!IsEqual(since, nil)) {
 			AddElementToObject(request, "timedelta", Subtract(this.Milliseconds(), since))
@@ -2614,8 +2711,8 @@ func (this *BitstampCore) FetchLedger(optionalArgs ...interface{}) <-chan interf
 		params := GetArg(optionalArgs, 3, map[string]interface{}{})
 		_ = params
 
-		retRes22618 := (<-this.LoadMarkets())
-		PanicOnError(retRes22618)
+		retRes23288 := (<-this.LoadMarkets())
+		PanicOnError(retRes23288)
 		var request interface{} = map[string]interface{}{}
 		if IsTrue(!IsEqual(limit, nil)) {
 			AddElementToObject(request, "limit", limit)
@@ -2652,8 +2749,8 @@ func (this *BitstampCore) FetchFundingRate(symbol interface{}, optionalArgs ...i
 		params := GetArg(optionalArgs, 0, map[string]interface{}{})
 		_ = params
 
-		retRes22848 := (<-this.LoadMarkets())
-		PanicOnError(retRes22848)
+		retRes23518 := (<-this.LoadMarkets())
+		PanicOnError(retRes23518)
 		var market interface{} = this.Market(symbol)
 		var request interface{} = map[string]interface{}{
 			"market_symbol": GetValue(market, "id"),
@@ -2739,8 +2836,8 @@ func (this *BitstampCore) FetchOpenOrders(optionalArgs ...interface{}) <-chan in
 		_ = params
 		var market interface{} = nil
 
-		retRes23498 := (<-this.LoadMarkets())
-		PanicOnError(retRes23498)
+		retRes24168 := (<-this.LoadMarkets())
+		PanicOnError(retRes24168)
 		if IsTrue(!IsEqual(symbol, nil)) {
 			market = this.Market(symbol)
 		}
@@ -2852,8 +2949,8 @@ func (this *BitstampCore) Withdraw(code interface{}, amount interface{}, address
 		tag = GetValue(tagparamsVariable, 0)
 		params = GetValue(tagparamsVariable, 1)
 
-		retRes24328 := (<-this.LoadMarkets())
-		PanicOnError(retRes24328)
+		retRes24998 := (<-this.LoadMarkets())
+		PanicOnError(retRes24998)
 		this.CheckAddress(address)
 		var request interface{} = map[string]interface{}{
 			"amount": amount,
@@ -2911,8 +3008,8 @@ func (this *BitstampCore) Transfer(code interface{}, amount interface{}, fromAcc
 		params := GetArg(optionalArgs, 0, map[string]interface{}{})
 		_ = params
 
-		retRes24768 := (<-this.LoadMarkets())
-		PanicOnError(retRes24768)
+		retRes25438 := (<-this.LoadMarkets())
+		PanicOnError(retRes25438)
 		var currency interface{} = this.Currency(code)
 		var request interface{} = map[string]interface{}{
 			"amount":   this.ParseToNumeric(this.CurrencyToPrecision(code, amount)),
