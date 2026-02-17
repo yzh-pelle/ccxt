@@ -1890,6 +1890,84 @@ public partial class bitstamp : Exchange
 
     /**
      * @method
+     * @name bitstamp#fetchFundingRateHistory
+     * @description fetches historical funding rate prices
+     * @see https://www.bitstamp.net/api/#tag/Market-info/operation/GetFundingRateHistory
+     * @param {string} symbol unified symbol of the market to fetch the funding rate history for
+     * @param {int} [since] timestamp in ms of the earliest funding rate to fetch
+     * @param {int} [limit] the maximum amount of [funding rate structures]{@link https://docs.ccxt.com/?id=funding-rate-history-structure} to fetch
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {int} [params.until] timestamp in ms of the latest funding rate
+     * @param {boolean} [params.paginate] default false, when true will automatically paginate by calling this endpoint multiple times. See in the docs all the [available parameters](https://github.com/ccxt/ccxt/wiki/Manual#pagination-params)
+     * @param {string} [params.subType] "linear" or "inverse"
+     * @returns {object[]} a list of [funding rate structures]{@link https://docs.ccxt.com/?id=funding-rate-history-structure}
+     */
+    public async override Task<object> fetchFundingRateHistory(object symbol = null, object since = null, object limit = null, object parameters = null)
+    {
+        parameters ??= new Dictionary<string, object>();
+        object paginate = false;
+        var paginateparametersVariable = this.handleOptionAndParams(parameters, "fetchFundingRateHistory", "paginate");
+        paginate = ((IList<object>)paginateparametersVariable)[0];
+        parameters = ((IList<object>)paginateparametersVariable)[1];
+        if (isTrue(paginate))
+        {
+            return await this.fetchPaginatedCallDeterministic("fetchFundingRateHistory", symbol, since, limit, "8h", parameters);
+        }
+        await this.loadMarkets();
+        object request = new Dictionary<string, object>() {};
+        object market = null;
+        if (isTrue(!isEqual(symbol, null)))
+        {
+            market = this.market(symbol);
+            ((IDictionary<string,object>)request)["pair"] = getValue(market, "id");
+        }
+        if (isTrue(!isEqual(since, null)))
+        {
+            ((IDictionary<string,object>)request)["since_timestamp"] = Math.Round(Convert.ToDouble(divide(since, 1000)));
+        }
+        var requestparametersVariable = this.handleUntilOption("until_timestamp", request, parameters, 0.001);
+        request = ((IList<object>)requestparametersVariable)[0];
+        parameters = ((IList<object>)requestparametersVariable)[1];
+        if (isTrue(!isEqual(limit, null)))
+        {
+            ((IDictionary<string,object>)request)["limit"] = limit;
+        }
+        object response = await this.publicGetFundingRateHistoryPair(this.extend(request, parameters));
+        //
+        //     {
+        //         "market": "BTC/USD-PERP",
+        //         "funding_rate_history": [
+        //             {
+        //                 "funding_rate": "0.0024",
+        //                 "timestamp": "1644406050"
+        //             }
+        //         ]
+        //     }
+        //
+        object values = this.safeValue(response, "funding_rate_history", new List<object>() {});
+        return this.parseFundingRateHistories(values, market, since, limit);
+    }
+
+    public override object parseFundingRateHistory(object contract, object market = null)
+    {
+        //
+        //     {
+        //         "funding_rate": "0.0024",
+        //         "timestamp": "1644406050"
+        //     }
+        //
+        object timestamp = this.safeIntegerProduct(contract, "timestamp", 0.001);
+        return new Dictionary<string, object>() {
+            { "info", contract },
+            { "symbol", null },
+            { "fundingRate", this.safeNumber(contract, "funding_rate") },
+            { "timestamp", timestamp },
+            { "datetime", this.iso8601(timestamp) },
+        };
+    }
+
+    /**
+     * @method
      * @name bitstamp#fetchDepositsWithdrawals
      * @description fetch history of deposits and withdrawals
      * @see https://www.bitstamp.net/api/#tag/Transactions-private/operation/GetUserTransactions
