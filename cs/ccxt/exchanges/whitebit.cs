@@ -184,9 +184,7 @@ public partial class whitebit : Exchange
                     { "margin", "collateral" },
                     { "trade", "spot" },
                 } },
-                { "networksById", new Dictionary<string, object>() {
-                    { "BEP20", "BSC" },
-                } },
+                { "networksById", new Dictionary<string, object>() {} },
                 { "defaultType", "spot" },
                 { "brokerId", "ccxt" },
             } },
