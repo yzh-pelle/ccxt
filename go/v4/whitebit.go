@@ -191,11 +191,9 @@ func (this *WhitebitCore) Describe() interface{} {
 				"margin":  "collateral",
 				"trade":   "spot",
 			},
-			"networksById": map[string]interface{}{
-				"BEP20": "BSC",
-			},
-			"defaultType": "spot",
-			"brokerId":    "ccxt",
+			"networksById": map[string]interface{}{},
+			"defaultType":  "spot",
+			"brokerId":     "ccxt",
 		},
 		"features": map[string]interface{}{
 			"default": map[string]interface{}{
@@ -339,8 +337,8 @@ func (this *WhitebitCore) FetchMarkets(optionalArgs ...interface{}) <-chan inter
 		_ = params
 		if IsTrue(GetValue(this.Options, "adjustForTimeDifference")) {
 
-			retRes45212 := (<-this.LoadTimeDifference())
-			PanicOnError(retRes45212)
+			retRes45012 := (<-this.LoadTimeDifference())
+			PanicOnError(retRes45012)
 		}
 
 		markets := (<-this.V4PublicGetMarkets())
