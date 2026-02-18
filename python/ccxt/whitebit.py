@@ -321,9 +321,7 @@ class whitebit(Exchange, ImplicitAPI):
                     'margin': 'collateral',
                     'trade': 'spot',
                 },
-                'networksById': {
-                    'BEP20': 'BSC',
-                },
+                'networksById': {},
                 'defaultType': 'spot',
                 'brokerId': 'ccxt',
             },
