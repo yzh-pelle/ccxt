@@ -13,7 +13,7 @@ var time = require('./functions/time.js');
 var throttle = require('./functions/throttle.js');
 var misc = require('./functions/misc.js');
 
-// ----------------------------------------------------------------------------
+/*  ------------------------------------------------------------------------ */
 /*  ------------------------------------------------------------------------ */
 
 exports.isBrowser = platform.isBrowser;
@@ -142,7 +142,6 @@ exports.milliseconds = time.milliseconds;
 exports.now = time.now;
 exports.parse8601 = time.parse8601;
 exports.parseDate = time.parseDate;
-exports.rfc2616 = time.rfc2616;
 exports.seconds = time.seconds;
 exports.setTimeout_safe = time.setTimeout_safe;
 exports.sleep = time.sleep;

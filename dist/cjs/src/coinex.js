@@ -9,7 +9,7 @@ var number = require('./base/functions/number.js');
 var sha256 = require('./static_dependencies/noble-hashes/sha256.js');
 var md5 = require('./static_dependencies/noble-hashes/md5.js');
 
-// ----------------------------------------------------------------------------
+//  ---------------------------------------------------------------------------
 //  ---------------------------------------------------------------------------
 /**
  * @class coinex
@@ -420,6 +420,8 @@ class coinex extends coinex$1["default"] {
                             'futures/stop-order': 20,
                             'futures/batch-order': 1,
                             'futures/batch-stop-order': 1,
+                            'futures/cancel-position-stop-loss': 20,
+                            'futures/cancel-position-take-profit': 20,
                             'futures/modify-order': 20,
                             'futures/modify-stop-order': 20,
                             'futures/batch-modify-order': 20,
