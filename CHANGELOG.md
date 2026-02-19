@@ -1,3 +1,38 @@
+<a id="v4.5.39"></a>
+# [v4.5.39](https://github.com/ccxt/ccxt/releases/tag/v4.5.39) - 2026-02-19
+
+## What's Changed
+* chore: delist Probit by [@carlosmiei](https://github.com/carlosmiei) in [#27897](https://github.com/ccxt/ccxt/pull/27897)
+* chore(binance): change limit down to 1000 fetchohlcv by [@ttodua](https://github.com/ttodua) in [#27856](https://github.com/ccxt/ccxt/pull/27856)
+* toobit.has margin and option methods by [@samgermain](https://github.com/samgermain) in [#27910](https://github.com/ccxt/ccxt/pull/27910)
+* fix(okx): watchPositions for net 0 by [@pcriadoperez](https://github.com/pcriadoperez) in [#27912](https://github.com/ccxt/ccxt/pull/27912)
+* fix(krakenfutures): missing order status by [@carlosmiei](https://github.com/carlosmiei) in [#27914](https://github.com/ccxt/ccxt/pull/27914)
+* feat(binance): update margin websocket by [@pcriadoperez](https://github.com/pcriadoperez) in [#27873](https://github.com/ccxt/ccxt/pull/27873)
+* fix(btcmarkets): invalid withdraw request param by [@simbesh](https://github.com/simbesh) in [#27920](https://github.com/ccxt/ccxt/pull/27920)
+* fix(coinspot): add v2 API endpoints and update markets by [@simbesh](https://github.com/simbesh) in [#27918](https://github.com/ccxt/ccxt/pull/27918)
+* bitvavo institutional endpoints by [@ndubel](https://github.com/ndubel) in [#27922](https://github.com/ccxt/ccxt/pull/27922)
+* fix(bitstamp): fetchMarkets new endpoint by [@ttodua](https://github.com/ttodua) in [#27924](https://github.com/ccxt/ccxt/pull/27924)
+* feat(bitstamp): implement fetchFundingRate by [@ttodua](https://github.com/ttodua) in [#27927](https://github.com/ccxt/ccxt/pull/27927)
+* perf(bitmart): multi request by [@ttodua](https://github.com/ttodua) in [#27923](https://github.com/ccxt/ccxt/pull/27923)
+* feat(bitstamp): add editorder by [@ttodua](https://github.com/ttodua) in [#27925](https://github.com/ccxt/ccxt/pull/27925)
+* feat(bitstamp): fetchFundingRateHistory by [@ttodua](https://github.com/ttodua) in [#27926](https://github.com/ccxt/ccxt/pull/27926)
+* tokocrypto.has contract methods by [@samgermain](https://github.com/samgermain) in [#27936](https://github.com/ccxt/ccxt/pull/27936)
+* bitget new endpoints by [@ndubel](https://github.com/ndubel) in [#27933](https://github.com/ccxt/ccxt/pull/27933)
+* fix(whitebit): added networks mapping into fetchCurrencies by [@Galllarate](https://github.com/Galllarate) in [#27932](https://github.com/ccxt/ccxt/pull/27932)
+* fix(whitebit): unify Whitebit BEP20 network code by [@Galllarate](https://github.com/Galllarate) in [#27931](https://github.com/ccxt/ccxt/pull/27931)
+* feat(binance): add discount buy endpoints by [@Dan-krm](https://github.com/Dan-krm) in [#27938](https://github.com/ccxt/ccxt/pull/27938)
+* fix(go): isEqual handle syn.map == nil comparisons by [@carlosmiei](https://github.com/carlosmiei) in [#27937](https://github.com/ccxt/ccxt/pull/27937)
+* feat(bybit): update liquidations endpoint by [@pcriadoperez](https://github.com/pcriadoperez) in [#27941](https://github.com/ccxt/ccxt/pull/27941)
+* fix(hyperliquid): deduplicate orders in fetchOrders by [@4Mathleu](https://github.com/4Mathleu) in [#27930](https://github.com/ccxt/ccxt/pull/27930)
+
+## New Contributors
+* [@4Mathleu](https://github.com/4Mathleu) made their first contribution in [#27930](https://github.com/ccxt/ccxt/pull/27930)
+
+**Full Changelog**: https://github.com/ccxt/ccxt/compare/go/v4.5.38...v4.5.39
+
+[Changes][v4.5.39]
+
+
 <a id="v4.5.38"></a>
 # [v4.5.38](https://github.com/ccxt/ccxt/releases/tag/v4.5.38) - 2026-02-13
 
@@ -12418,6 +12453,7 @@ We highly recommend downloading and installing the most recent release of CCXT v
 [Changes][4.0.3]
 
 
+[v4.5.39]: https://github.com/ccxt/ccxt/compare/v4.5.38...v4.5.39
 [v4.5.38]: https://github.com/ccxt/ccxt/compare/v4.5.37...v4.5.38
 [v4.5.37]: https://github.com/ccxt/ccxt/compare/v4.5.36...v4.5.37
 [v4.5.36]: https://github.com/ccxt/ccxt/compare/v4.5.35...v4.5.36
