@@ -2000,7 +2000,7 @@ public partial class okx : ccxt.okx
         {
             object rawPosition = getValue(data, i);
             object position = this.parsePosition(rawPosition);
-            if (isTrue(isEqual(getValue(position, "contracts"), 0)))
+            if (isTrue(isTrue(isEqual(getValue(position, "contracts"), 0)) && isTrue(isEqual(getValue(rawPosition, "posSide"), "net"))))
             {
                 ((IDictionary<string,object>)position)["side"] = "long";
                 object shortPosition = this.clone(position);
