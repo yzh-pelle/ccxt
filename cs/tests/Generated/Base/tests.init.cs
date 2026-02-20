@@ -37,6 +37,7 @@ public partial class BaseTest
             testExtractParams();
             testArraysConcat();
             testEthMethods();
+            testKeysort();
             await testSleep();
         }
 }
