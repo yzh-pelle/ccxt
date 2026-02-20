@@ -38,6 +38,7 @@ include_once __DIR__ . '/test_parse_precision.php';
 include_once __DIR__ . '/test_arrays_concat.php';
 include_once __DIR__ . '/test_sleep.php';
 include_once __DIR__ . '/test_eth_methods.php';
+include_once __DIR__ . '/test_keysort.php';
 include_once __DIR__ . '/test_capitalize.php';
 
 function base_tests_init() {
@@ -70,6 +71,7 @@ function base_tests_init() {
         test_extract_params();
         test_arrays_concat();
         test_eth_methods();
+        test_keysort();
         Async\await(test_sleep());
     }) ();
 }
