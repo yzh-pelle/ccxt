@@ -45,9 +45,11 @@ from ccxt.test.base.test_sleep import test_sleep  # noqa E402
 from ccxt.test.base.test_eth_methods import test_eth_methods  # noqa E402
 from ccxt.test.base.test_keysort import test_keysort  # noqa E402
 from ccxt.test.base.test_capitalize import test_capitalize  # noqa E402
+from ccxt.test.base.test_constants import test_constants  # noqa E402
 
 async def base_tests_init():
     test_language_specific()
+    test_constants()
     test_after_constructor()
     test_extend()
     test_deep_extend()
