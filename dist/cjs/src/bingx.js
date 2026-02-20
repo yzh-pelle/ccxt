@@ -8,7 +8,7 @@ var Precise = require('./base/Precise.js');
 var sha256 = require('./static_dependencies/noble-hashes/sha256.js');
 var number = require('./base/functions/number.js');
 
-//  ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 //  ---------------------------------------------------------------------------
 /**
  * @class bingx
@@ -1770,10 +1770,10 @@ class bingx extends bingx$1["default"] {
         if (limit !== undefined) {
             request['limit'] = limit;
         }
-        const until = this.safeInteger2(params, 'until', 'startTime');
+        const until = this.safeInteger2(params, 'until', 'endTime');
         if (until !== undefined) {
             params = this.omit(params, ['until']);
-            request['startTime'] = until;
+            request['endTime'] = until;
         }
         const response = await this.swapV2PublicGetQuoteFundingRate(this.extend(request, params));
         //
