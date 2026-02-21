@@ -11,6 +11,31 @@
     "options": {
     },
     "methods": {
+        "fetchOrdersByStatus": [
+            {
+                "description": "Fetch open swap orders",
+                "method": "fetchOrdersByStatus",
+                "url": "https://api-futures.kucoin.com/api/v1/orders?status=active&symbol=LTCUSDTM",
+                "input": [
+                    "open",
+                    "LTC/USDT:USDT"
+                ]
+            },
+            {
+                "description": "Fetch open swap stop orders",
+                "method": "fetchOrdersByStatus",
+                "url": "https://api-futures.kucoin.com/api/v1/stopOrders?symbol=LTCUSDTM&startAt=1",
+                "input": [
+                    "open",
+                    "LTC/USDT:USDT",
+                    1,
+                    100,
+                    {
+                        "stop": true
+                    }
+                ]
+            }
+        ],
         "fetchFundingRateHistory": [
             {
                 "description": "fetch funding rate history by futures endpoint",
@@ -474,6 +499,14 @@
         ],
         "fetchOpenOrders": [
             {
+                "description": "Swap open orders",
+                "method": "fetchOpenOrders",
+                "url": "https://api-futures.kucoin.com/api/v1/orders?status=active&symbol=LTCUSDTM",
+                "input": [
+                    "LTC/USDT:USDT"
+                ]
+            },
+            {
                 "description": "Spot open orders",
                 "method": "fetchOpenOrders",
                 "url": "https://api.kucoin.com/api/v1/orders?status=active&symbol=LTC-USDT&tradeType=TRADE",
@@ -509,6 +542,14 @@
             }
         ],
         "fetchClosedOrders": [
+            {
+                "description": "Swap closed orders",
+                "method": "fetchClosedOrders",
+                "url": "https://api-futures.kucoin.com/api/v1/orders?status=done&symbol=LTCUSDTM",
+                "input": [
+                    "LTC/USDT:USDT"
+                ]
+            },
             {
                 "description": "Spot closed orders",
                 "method": "fetchClosedOrders",
