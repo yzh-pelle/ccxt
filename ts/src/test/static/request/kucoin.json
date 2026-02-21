@@ -1225,7 +1225,28 @@
         ],
         "fetchOrder": [
             {
-                "description": "fetch order",
+                "description": "Fetch swap order by order id",
+                "method": "fetchOrder",
+                "url": "https://api-futures.kucoin.com/api/v1/orders/1234567890",
+                "input": [
+                    "1234567890",
+                    "LTC/USDT:USDT"
+                ]
+            },
+            {
+                "description": "Fetch swap order by client order id",
+                "method": "fetchOrder",
+                "url": "https://api-futures.kucoin.com/api/v1/orders/?clientOid=2234567890",
+                "input": [
+                    "",
+                    "LTC/USDT:USDT",
+                    {
+                        "clientOid": "2234567890"
+                    }
+                ]
+            },
+            {
+                "description": "fetch spot order",
                 "method": "fetchOrder",
                 "url": "https://api.kucoin.com/api/v1/orders/65e371dd0ddaa40007cb437b",
                 "input": [
