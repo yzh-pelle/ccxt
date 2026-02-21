@@ -1,5 +1,5 @@
 
-// ---------------------------------------------------------------------------
+//  ---------------------------------------------------------------------------
 
 import Exchange from './abstract/kucoin.js';
 import { ExchangeError, ExchangeNotAvailable, InsufficientFunds, OrderNotFound, InvalidOrder, AccountSuspended, InvalidNonce, NotSupported, BadRequest, AuthenticationError, BadSymbol, RateLimitExceeded, PermissionDenied, InvalidAddress, ArgumentsRequired, RestrictedLocation } from './base/errors.js';
@@ -2318,6 +2318,12 @@ export default class kucoin extends Exchange {
     }
 
     parseTicker (ticker: Dict, market: Market = undefined): Ticker {
+        // wrapper for parseTickers
+        // parseTickers used only in methods for contract markets
+        return this.parseContractTicker (ticker, market);
+    }
+
+    parseContractTicker (ticker: Dict, market: Market = undefined): Ticker {
         //
         //     {
         //         "symbol": "LTCUSDTM",
