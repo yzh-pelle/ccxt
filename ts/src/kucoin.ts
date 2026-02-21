@@ -4300,7 +4300,48 @@ export default class kucoin extends Exchange {
     /**
      * @method
      * @name kucoin#fetchOrdersByStatus
-     * @description fetch a list of orders
+     * @description fetches a list of orders placed on the exchange
+     * @see https://docs.kucoin.com/spot#list-orders
+     * @see https://docs.kucoin.com/spot#list-stop-orders
+     * @see https://docs.kucoin.com/spot-hf/#obtain-list-of-active-hf-orders
+     * @see https://docs.kucoin.com/spot-hf/#obtain-list-of-filled-hf-orders
+     * @see https://docs.kucoin.com/futures/#get-order-list
+     * @see https://docs.kucoin.com/futures/#get-untriggered-stop-order-list
+     * @param {string} status 'active' or 'closed', only 'active' is valid for stop orders
+     * @param {string} symbol unified symbol for the market to retrieve orders from
+     * @param {int} [since] timestamp in ms of the earliest order to retrieve
+     * @param {int} [limit] The maximum number of orders to retrieve
+     * @param {object} [params] exchange specific parameters
+     * Check fetchSpotOrdersByStatus() and fetchContractOrdersByStatus() for more details on the extra parameters that can be used in params
+     * @returns An [array of order structures]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async fetchOrdersByStatus (status, symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
+        await this.loadMarkets ();
+        let marketType = 'spot';
+        if (symbol === undefined) {
+            const type = this.safeString (params, 'type'); // exchange has specific param for order type
+            // todo check for better way to determine market type without symbol
+            if (type === 'spot' || type === 'swap' || type === 'future' || type === 'contract') {
+                marketType = type;
+                params = this.omit (params, 'type');
+            } else {
+                [ marketType, params ] = this.handleMarketTypeAndParams ('fetchOrdersByStatus', undefined, {}, marketType);
+            }
+        } else {
+            const market = this.market (symbol);
+            marketType = market['type'];
+        }
+        if (marketType === 'spot') {
+            return await this.fetchSpotOrdersByStatus (status, symbol, since, limit, params);
+        } else {
+            return await this.fetchContractOrdersByStatus (status, symbol, since, limit, params);
+        }
+    }
+
+    /**
+     * @method
+     * @name kucoin#fetchSpotOrdersByStatus
+     * @description fetch a list of spot orders
      * @see https://docs.kucoin.com/spot#list-orders
      * @see https://docs.kucoin.com/spot#list-stop-orders
      * @see https://docs.kucoin.com/spot-hf/#obtain-list-of-active-hf-orders
@@ -4320,7 +4361,7 @@ export default class kucoin extends Exchange {
      * @param {bool} [params.hf] false, // true for hf order
      * @returns An [array of order structures]{@link https://docs.ccxt.com/?id=order-structure}
      */
-    async fetchOrdersByStatus (status, symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
+    async fetchSpotOrdersByStatus (status, symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
         await this.loadMarkets ();
         let lowercaseStatus = status.toLowerCase ();
         const until = this.safeInteger (params, 'until');
@@ -4414,6 +4455,118 @@ export default class kucoin extends Exchange {
         if (listData !== undefined) {
             return this.parseOrders (listData, market, since, limit);
         }
+        const responseData = this.safeDict (response, 'data', {});
+        const orders = this.safeList (responseData, 'items', []);
+        return this.parseOrders (orders, market, since, limit);
+    }
+
+    /**
+     * @method
+     * @name kucoin#fetchContractOrdersByStatus
+     * @description fetches a list of contract orders placed on the exchange
+     * @see https://docs.kucoin.com/futures/#get-order-list
+     * @see https://docs.kucoin.com/futures/#get-untriggered-stop-order-list
+     * @param {string} status 'active' or 'closed', only 'active' is valid for stop orders
+     * @param {string} symbol unified symbol for the market to retrieve orders from
+     * @param {int} [since] timestamp in ms of the earliest order to retrieve
+     * @param {int} [limit] The maximum number of orders to retrieve
+     * @param {object} [params] exchange specific parameters
+     * @param {bool} [params.trigger] set to true to retrieve untriggered stop orders
+     * @param {int} [params.until] End time in ms
+     * @param {string} [params.side] buy or sell
+     * @param {string} [params.type] limit or market
+     * @param {boolean} [params.paginate] default false, when true will automatically paginate by calling this endpoint multiple times. See in the docs all the [availble parameters](https://github.com/ccxt/ccxt/wiki/Manual#pagination-params)
+     * @returns An [array of order structures]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async fetchContractOrdersByStatus (status, symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
+        await this.loadMarkets ();
+        let paginate = false;
+        [ paginate, params ] = this.handleOptionAndParams (params, 'fetchOrdersByStatus', 'paginate');
+        if (paginate) {
+            return await this.fetchPaginatedCallDynamic ('fetchOrdersByStatus', symbol, since, limit, params) as Order[];
+        }
+        const trigger = this.safeBool2 (params, 'stop', 'trigger');
+        const until = this.safeInteger (params, 'until');
+        params = this.omit (params, [ 'stop', 'until', 'trigger' ]);
+        if (status === 'closed') {
+            status = 'done';
+        } else if (status === 'open') {
+            status = 'active';
+        }
+        const request: Dict = {};
+        if (!trigger) {
+            request['status'] = status;
+        } else if (status !== 'active') {
+            throw new BadRequest (this.id + ' fetchOrdersByStatus() can only fetch untriggered stop orders');
+        }
+        let market = undefined;
+        if (symbol !== undefined) {
+            market = this.market (symbol);
+            request['symbol'] = market['id'];
+        }
+        if (since !== undefined) {
+            request['startAt'] = since;
+        }
+        if (until !== undefined) {
+            request['endAt'] = until;
+        }
+        let response = undefined;
+        if (trigger) {
+            response = await this.futuresPrivateGetStopOrders (this.extend (request, params));
+        } else {
+            response = await this.futuresPrivateGetOrders (this.extend (request, params));
+        }
+        //
+        //     {
+        //         "code": "200000",
+        //         "data": {
+        //             "currentPage": 1,
+        //             "pageSize": 50,
+        //             "totalNum": 4,
+        //             "totalPage": 1,
+        //             "items": [
+        //                 {
+        //                     "id": "64507d02921f1c0001ff6892",
+        //                     "symbol": "XBTUSDTM",
+        //                     "type": "market",
+        //                     "side": "buy",
+        //                     "price": null,
+        //                     "size": 1,
+        //                     "value": "27.992",
+        //                     "dealValue": "27.992",
+        //                     "dealSize": 1,
+        //                     "stp": "",
+        //                     "stop": "",
+        //                     "stopPriceType": "",
+        //                     "stopTriggered": false,
+        //                     "stopPrice": null,
+        //                     "timeInForce": "GTC",
+        //                     "postOnly": false,
+        //                     "hidden": false,
+        //                     "iceberg": false,
+        //                     "leverage": "17",
+        //                     "forceHold": false,
+        //                     "closeOrder": false,
+        //                     "visibleSize": null,
+        //                     "clientOid": null,
+        //                     "remark": null,
+        //                     "tags": null,
+        //                     "isActive": false,
+        //                     "cancelExist": false,
+        //                     "createdAt": 1682996482000,
+        //                     "updatedAt": 1682996483062,
+        //                     "endAt": 1682996483062,
+        //                     "orderTime": 1682996482953900677,
+        //                     "settleCurrency": "USDT",
+        //                     "status": "done",
+        //                     "filledValue": "27.992",
+        //                     "filledSize": 1,
+        //                     "reduceOnly": false
+        //                 }
+        //             ]
+        //         }
+        //     }
+        //
         const responseData = this.safeDict (response, 'data', {});
         const orders = this.safeList (responseData, 'items', []);
         return this.parseOrders (orders, market, since, limit);
