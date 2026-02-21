@@ -4639,7 +4639,41 @@ export default class kucoin extends Exchange {
     /**
      * @method
      * @name kucoin#fetchOrder
-     * @description fetch an order
+     * @description fetches information on an order made by the user
+     * @see https://docs.kucoin.com/spot#get-an-order
+     * @see https://docs.kucoin.com/spot#get-single-active-order-by-clientoid
+     * @see https://docs.kucoin.com/spot#get-single-order-info
+     * @see https://docs.kucoin.com/spot#get-single-order-by-clientoid
+     * @see https://docs.kucoin.com/spot-hf/#details-of-a-single-hf-order
+     * @see https://docs.kucoin.com/spot-hf/#obtain-details-of-a-single-hf-order-using-clientoid
+     * @see https://docs.kucoin.com/futures/#get-details-of-a-single-order
+     * @param {string} id order id
+     * @param {string} symbol unified symbol of the market the order was made in
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.type] 'spot' or 'swap', used if symbol is not provided (default is 'spot')
+     * Check fetchSpotOrder() and fetchContractOrder() for more details on the extra parameters that can be used in params
+     * @returns {object} An [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async fetchOrder (id: Str, symbol: Str = undefined, params = {}) {
+        await this.loadMarkets ();
+        let marketType = 'spot';
+        if (symbol === undefined) {
+            [ marketType, params ] = this.handleMarketTypeAndParams ('fetchOrder', undefined, params, marketType);
+        } else {
+            const market = this.market (symbol);
+            marketType = market['type'];
+        }
+        if (marketType === 'spot') {
+            return await this.fetchSpotOrder (id, symbol, params);
+        } else {
+            return await this.fetchContractOrder (id, symbol, params);
+        }
+    }
+
+    /**
+     * @method
+     * @name kucoin#fetchSpotOrder
+     * @description fetch a spot order
      * @see https://docs.kucoin.com/spot#get-an-order
      * @see https://docs.kucoin.com/spot#get-single-active-order-by-clientoid
      * @see https://docs.kucoin.com/spot#get-single-order-info
@@ -4654,7 +4688,7 @@ export default class kucoin extends Exchange {
      * @param {bool} [params.clientOid] unique order id created by users to identify their orders
      * @returns An [order structure]{@link https://docs.ccxt.com/?id=order-structure}
      */
-    async fetchOrder (id: string, symbol: Str = undefined, params = {}) {
+    async fetchSpotOrder (id: string, symbol: Str = undefined, params = {}) {
         await this.loadMarkets ();
         const request: Dict = {};
         const clientOrderId = this.safeString2 (params, 'clientOid', 'clientOrderId');
@@ -4705,6 +4739,80 @@ export default class kucoin extends Exchange {
         if (Array.isArray (responseData)) {
             responseData = this.safeValue (responseData, 0);
         }
+        return this.parseOrder (responseData, market);
+    }
+
+    /**
+     * @method
+     * @name kucoin#fetchContractOrder
+     * @description fetc contract order
+     * @see https://docs.kucoin.com/futures/#get-details-of-a-single-order
+     * @param {string} id order id
+     * @param {string} symbol unified symbol of the market the order was made in
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} An [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async fetchContractOrder (id: Str, symbol: Str = undefined, params = {}) {
+        await this.loadMarkets ();
+        const request: Dict = {};
+        let response = undefined;
+        if (id === undefined) {
+            const clientOrderId = this.safeString2 (params, 'clientOid', 'clientOrderId');
+            if (clientOrderId === undefined) {
+                throw new InvalidOrder (this.id + ' fetchOrder() requires parameter id or params.clientOid');
+            }
+            request['clientOid'] = clientOrderId;
+            params = this.omit (params, [ 'clientOid', 'clientOrderId' ]);
+            response = await this.futuresPrivateGetOrdersByClientOid (this.extend (request, params));
+        } else {
+            request['orderId'] = id;
+            response = await this.futuresPrivateGetOrdersOrderId (this.extend (request, params));
+        }
+        //
+        //     {
+        //         "code": "200000",
+        //         "data": {
+        //             "id": "64507d02921f1c0001ff6892",
+        //             "symbol": "XBTUSDTM",
+        //             "type": "market",
+        //             "side": "buy",
+        //             "price": null,
+        //             "size": 1,
+        //             "value": "27.992",
+        //             "dealValue": "27.992",
+        //             "dealSize": 1,
+        //             "stp": "",
+        //             "stop": "",
+        //             "stopPriceType": "",
+        //             "stopTriggered": false,
+        //             "stopPrice": null,
+        //             "timeInForce": "GTC",
+        //             "postOnly": false,
+        //             "hidden": false,
+        //             "iceberg": false,
+        //             "leverage": "17",
+        //             "forceHold": false,
+        //             "closeOrder": false,
+        //             "visibleSize": null,
+        //             "clientOid": null,
+        //             "remark": null,
+        //             "tags": null,
+        //             "isActive": false,
+        //             "cancelExist": false,
+        //             "createdAt": 1682996482000,
+        //             "updatedAt": 1682996483000,
+        //             "endAt": 1682996483000,
+        //             "orderTime": 1682996482953900677,
+        //             "settleCurrency": "USDT",
+        //             "status": "done",
+        //             "filledSize": 1,
+        //             "filledValue": "27.992",
+        //             "reduceOnly": false
+        //         }
+        //     }
+        //
+        const market = (symbol !== undefined) ? this.market (symbol) : undefined;
+        const responseData = this.safeDict (response, 'data');
         return this.parseOrder (responseData, market);
     }
 
