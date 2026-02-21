@@ -6,7 +6,7 @@ import { ExchangeError, ExchangeNotAvailable, InsufficientFunds, OrderNotFound, 
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE, TRUNCATE } from './base/functions/number.js';
 import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { TransferEntry, Int, OrderSide, OrderType, Order, OHLCV, Trade, Balances, OrderRequest, Str, Transaction, Ticker, OrderBook, Tickers, Strings, Currency, Market, Num, Account, Dict, Bool, TradingFeeInterface, Currencies, int, LedgerEntry, DepositAddress, BorrowInterest, FundingRate } from './base/types.js';
+import type { TransferEntry, Int, OrderSide, OrderType, Order, OHLCV, Trade, Balances, Str, Transaction, Ticker, OrderBook, OrderRequest, Tickers, Strings, Currency, Market, Num, Account, Dict, Bool, TradingFeeInterface, Currencies, int, LedgerEntry, DepositAddress, BorrowInterest, FundingRate } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -401,6 +401,7 @@ export default class kucoin extends Exchange {
                         'transfer-in': 30, // 20MW
                         // futures
                         'orders': 3, // 2FW
+                        'st-orders': 3,
                         'orders/test': 3, // 2FW
                         'orders/multi': 4.5, // 3FW
                         'position/margin/auto-deposit-status': 6, // 4FW
@@ -3252,6 +3253,40 @@ export default class kucoin extends Exchange {
      * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-order-test
      * @see https://www.kucoin.com/docs/rest/margin-trading/orders/place-margin-order-test
      * @see https://www.kucoin.com/docs/rest/spot-trading/spot-hf-trade-pro-account/sync-place-hf-order
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/place-order
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/place-take-profit-and-stop-loss-order#http-request
+     * @param {string} symbol Unified CCXT market symbol
+     * @param {string} type 'limit' or 'market'
+     * @param {string} side 'buy' or 'sell'
+     * @param {float} amount the amount of currency to trade
+     * @param {float} [price] the price at which the order is to be fulfilled, in units of the quote currency, ignored in market orders
+     * @param {object} [params]  extra parameters specific to the exchange API endpoint
+     * Check createSpotOrder() and createContractOrder() for more details on the extra parameters that can be used in params
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        if (market['spot']) {
+            return await this.createSpotOrder (symbol, type, side, amount, price, params);
+        } else if (market['contract']) {
+            return await this.createContractOrder (symbol, type, side, amount, price, params);
+        } else {
+            throw new NotSupported (this.id + ' createOrder() does not support market ' + market['type']);
+        }
+    }
+
+    /**
+     * @method
+     * @name kucoin#createSpotOrder
+     * @description helper method for creating spot orders
+     * @see https://docs.kucoin.com/spot#place-a-new-order
+     * @see https://docs.kucoin.com/spot#place-a-new-order-2
+     * @see https://docs.kucoin.com/spot#place-a-margin-order
+     * @see https://docs.kucoin.com/spot-hf/#place-hf-order
+     * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-order-test
+     * @see https://www.kucoin.com/docs/rest/margin-trading/orders/place-margin-order-test
+     * @see https://www.kucoin.com/docs/rest/spot-trading/spot-hf-trade-pro-account/sync-place-hf-order
      * @param {string} symbol Unified CCXT market symbol
      * @param {string} type 'limit' or 'market'
      * @param {string} side 'buy' or 'sell'
@@ -3285,7 +3320,7 @@ export default class kucoin extends Exchange {
      * @param {bool} [params.sync] set to true to use the hf sync call
      * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
      */
-    async createOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
+    async createSpotOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
         await this.loadMarkets ();
         const market = this.market (symbol);
         const testOrder = this.safeBool (params, 'test', false);
@@ -3301,7 +3336,7 @@ export default class kucoin extends Exchange {
         const marginMode = this.safeString (marginResult, 0);
         const isMarginOrder = tradeType === 'MARGIN_TRADE' || marginMode !== undefined;
         // don't omit anything before calling createOrderRequest
-        const orderRequest = this.createOrderRequest (symbol, type, side, amount, price, params);
+        const orderRequest = this.createSpotOrderRequest (symbol, type, side, amount, price, params);
         let response = undefined;
         if (testOrder) {
             if (isMarginOrder) {
@@ -3334,155 +3369,7 @@ export default class kucoin extends Exchange {
         return this.parseOrder (data, market);
     }
 
-    /**
-     * @method
-     * @name kucoin#createMarketOrderWithCost
-     * @description create a market order by providing the symbol, side and cost
-     * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-order
-     * @param {string} symbol unified symbol of the market to create an order in
-     * @param {string} side 'buy' or 'sell'
-     * @param {float} cost how much you want to trade in units of the quote currency
-     * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
-     */
-    async createMarketOrderWithCost (symbol: string, side: OrderSide, cost: number, params = {}) {
-        await this.loadMarkets ();
-        const req = {
-            'cost': cost,
-        };
-        return await this.createOrder (symbol, 'market', side, cost, undefined, this.extend (req, params));
-    }
-
-    /**
-     * @method
-     * @name kucoin#createMarketBuyOrderWithCost
-     * @description create a market buy order by providing the symbol and cost
-     * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-order
-     * @param {string} symbol unified symbol of the market to create an order in
-     * @param {float} cost how much you want to trade in units of the quote currency
-     * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
-     */
-    async createMarketBuyOrderWithCost (symbol: string, cost: number, params = {}) {
-        await this.loadMarkets ();
-        return await this.createMarketOrderWithCost (symbol, 'buy', cost, params);
-    }
-
-    /**
-     * @method
-     * @name kucoin#createMarketSellOrderWithCost
-     * @description create a market sell order by providing the symbol and cost
-     * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-order
-     * @param {string} symbol unified symbol of the market to create an order in
-     * @param {float} cost how much you want to trade in units of the quote currency
-     * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
-     */
-    async createMarketSellOrderWithCost (symbol: string, cost: number, params = {}) {
-        await this.loadMarkets ();
-        return await this.createMarketOrderWithCost (symbol, 'sell', cost, params);
-    }
-
-    /**
-     * @method
-     * @name kucoin#createOrders
-     * @description create a list of trade orders
-     * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-multiple-orders
-     * @see https://www.kucoin.com/docs/rest/spot-trading/spot-hf-trade-pro-account/place-multiple-hf-orders
-     * @see https://www.kucoin.com/docs/rest/spot-trading/spot-hf-trade-pro-account/sync-place-multiple-hf-orders
-     * @param {Array} orders list of orders to create, each object should contain the parameters required by createOrder, namely symbol, type, side, amount, price and params
-     * @param {object} [params]  extra parameters specific to the exchange API endpoint
-     * @param {bool} [params.hf] false, // true for hf orders
-     * @param {bool} [params.sync] false, // true to use the hf sync call
-     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
-     */
-    async createOrders (orders: OrderRequest[], params = {}) {
-        await this.loadMarkets ();
-        const ordersRequests = [];
-        let symbol = undefined;
-        for (let i = 0; i < orders.length; i++) {
-            const rawOrder = orders[i];
-            const marketId = this.safeString (rawOrder, 'symbol');
-            if (symbol === undefined) {
-                symbol = marketId;
-            } else {
-                if (symbol !== marketId) {
-                    throw new BadRequest (this.id + ' createOrders() requires all orders to have the same symbol');
-                }
-            }
-            const type = this.safeString (rawOrder, 'type');
-            if (type !== 'limit') {
-                throw new BadRequest (this.id + ' createOrders() only supports limit orders');
-            }
-            const side = this.safeString (rawOrder, 'side');
-            const amount = this.safeValue (rawOrder, 'amount');
-            const price = this.safeValue (rawOrder, 'price');
-            const orderParams = this.safeValue (rawOrder, 'params', {});
-            const orderRequest = this.createOrderRequest (marketId, type, side, amount, price, orderParams);
-            ordersRequests.push (orderRequest);
-        }
-        const market = this.market (symbol);
-        const request: Dict = {
-            'symbol': market['id'],
-            'orderList': ordersRequests,
-        };
-        let hf = undefined;
-        [ hf, params ] = this.handleHfAndParams (params);
-        let useSync = false;
-        [ useSync, params ] = this.handleOptionAndParams (params, 'createOrders', 'sync', false);
-        let response = undefined;
-        if (useSync) {
-            response = await this.privatePostHfOrdersMultiSync (this.extend (request, params));
-        } else if (hf) {
-            response = await this.privatePostHfOrdersMulti (this.extend (request, params));
-        } else {
-            response = await this.privatePostOrdersMulti (this.extend (request, params));
-        }
-        //
-        // {
-        //     "code": "200000",
-        //     "data": {
-        //        "data": [
-        //           {
-        //              "symbol": "LTC-USDT",
-        //              "type": "limit",
-        //              "side": "sell",
-        //              "price": "90",
-        //              "size": "0.1",
-        //              "funds": null,
-        //              "stp": "",
-        //              "stop": "",
-        //              "stopPrice": null,
-        //              "timeInForce": "GTC",
-        //              "cancelAfter": 0,
-        //              "postOnly": false,
-        //              "hidden": false,
-        //              "iceberge": false,
-        //              "iceberg": false,
-        //              "visibleSize": null,
-        //              "channel": "API",
-        //              "id": "6539148443fcf500079d15e5",
-        //              "status": "success",
-        //              "failMsg": null,
-        //              "clientOid": "5c4c5398-8ab2-4b4e-af8a-e2d90ad2488f"
-        //           },
-        // }
-        //
-        let data = this.safeDict (response, 'data', {});
-        data = this.safeList (data, 'data', []);
-        return this.parseOrders (data);
-    }
-
-    marketOrderAmountToPrecision (symbol: string, amount) {
-        const market = this.market (symbol);
-        const result = this.decimalToPrecision (amount, TRUNCATE, market['info']['quoteIncrement'], this.precisionMode, this.paddingMode);
-        if (result === '0') {
-            throw new InvalidOrder (this.id + ' amount of ' + market['symbol'] + ' must be greater than minimum amount precision of ' + this.numberToString (market['precision']['amount']));
-        }
-        return result;
-    }
-
-    createOrderRequest (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
+    createSpotOrderRequest (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
         const market = this.market (symbol);
         // required param, cannot be used twice
         const clientOrderId = this.safeString2 (params, 'clientOid', 'clientOrderId', this.uuid ());
@@ -3546,6 +3433,425 @@ export default class kucoin extends Exchange {
             request['postOnly'] = true;
         }
         return this.extend (request, params);
+    }
+
+    marketOrderAmountToPrecision (symbol: string, amount) {
+        const market = this.market (symbol);
+        const result = this.decimalToPrecision (amount, TRUNCATE, market['info']['quoteIncrement'], this.precisionMode, this.paddingMode);
+        if (result === '0') {
+            throw new InvalidOrder (this.id + ' amount of ' + market['symbol'] + ' must be greater than minimum amount precision of ' + this.numberToString (market['precision']['amount']));
+        }
+        return result;
+    }
+
+    /**
+     * @method
+     * @name kucoin#createContractOrder
+     * @description helper method for creating contract orders
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/place-order
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/place-take-profit-and-stop-loss-order#http-request
+     * @param {string} symbol Unified CCXT market symbol
+     * @param {string} type 'limit' or 'market'
+     * @param {string} side 'buy' or 'sell'
+     * @param {float} amount the amount of currency to trade
+     * @param {float} [price] the price at which the order is to be fulfilled, in units of the quote currency, ignored in market orders
+     * @param {object} [params]  extra parameters specific to the exchange API endpoint
+     * @param {object} [params.takeProfit] *takeProfit object in params* containing the triggerPrice at which the attached take profit order will be triggered and the triggerPriceType
+     * @param {object} [params.stopLoss] *stopLoss object in params* containing the triggerPrice at which the attached stop loss order will be triggered and the triggerPriceType
+     * @param {float} [params.triggerPrice] The price a trigger order is triggered at
+     * @param {float} [params.stopLossPrice] price to trigger stop-loss orders
+     * @param {float} [params.takeProfitPrice] price to trigger take-profit orders
+     * @param {bool} [params.reduceOnly] A mark to reduce the position size only. Set to false by default. Need to set the position size when reduceOnly is true.
+     * @param {string} [params.timeInForce] GTC, GTT, IOC, or FOK, default is GTC, limit orders only
+     * @param {string} [params.postOnly] Post only flag, invalid when timeInForce is IOC or FOK
+     * @param {float} [params.cost] the cost of the order in units of USDT
+     * @param {string} [params.marginMode] 'cross' or 'isolated', default is 'isolated'
+     * @param {bool} [params.hedged] *swap and future only* true for hedged mode, false for one way mode, default is false
+     * ----------------- Exchange Specific Parameters -----------------
+     * @param {float} [params.leverage] Leverage size of the order (mandatory param in request, default is 1)
+     * @param {string} [params.clientOid] client order id, defaults to uuid if not passed
+     * @param {string} [params.remark] remark for the order, length cannot exceed 100 utf8 characters
+     * @param {string} [params.stop] 'up' or 'down', the direction the triggerPrice is triggered from, requires triggerPrice. down: Triggers when the price reaches or goes below the triggerPrice. up: Triggers when the price reaches or goes above the triggerPrice.
+     * @param {string} [params.triggerPriceType] "last", "mark", "index" - defaults to "mark"
+     * @param {string} [params.stopPriceType] exchange-specific alternative for triggerPriceType: TP, IP or MP
+     * @param {bool} [params.closeOrder] set to true to close position
+     * @param {bool} [params.test] set to true to use the test order endpoint (does not submit order, use to validate params)
+     * @param {bool} [params.forceHold] A mark to forcely hold the funds for an order, even though it's an order to reduce the position size. This helps the order stay on the order book and not get canceled when the position size changes. Set to false by default.\
+     * @param {string} [params.positionSide] *swap and future only* hedged two-way position side, LONG or SHORT
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createContractOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const testOrder = this.safeBool (params, 'test', false);
+        params = this.omit (params, 'test');
+        const hasTpOrSlOrder = (this.safeValue (params, 'stopLoss') !== undefined) || (this.safeValue (params, 'takeProfit') !== undefined);
+        const orderRequest = this.createContractOrderRequest (symbol, type, side, amount, price, params);
+        let response = undefined;
+        if (testOrder) {
+            response = await this.futuresPrivatePostOrdersTest (orderRequest);
+        } else {
+            if (hasTpOrSlOrder) {
+                response = await this.futuresPrivatePostStOrders (orderRequest);
+            } else {
+                response = await this.futuresPrivatePostOrders (orderRequest);
+            }
+        }
+        //
+        //    {
+        //        "code": "200000",
+        //        "data": {
+        //            "orderId": "619717484f1d010001510cde",
+        //        },
+        //    }
+        //
+        const data = this.safeDict (response, 'data', {});
+        return this.parseOrder (data, market);
+    }
+
+    createContractOrderRequest (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
+        const market = this.market (symbol);
+        // required param, cannot be used twice
+        const clientOrderId = this.safeString2 (params, 'clientOid', 'clientOrderId', this.uuid ());
+        params = this.omit (params, [ 'clientOid', 'clientOrderId' ]);
+        const request: Dict = {
+            'clientOid': clientOrderId,
+            'side': side,
+            'symbol': market['id'],
+            'type': type, // limit or market
+            'leverage': 1,
+        };
+        const marginModeUpper = this.safeStringUpper (params, 'marginMode');
+        if (marginModeUpper !== undefined) {
+            params = this.omit (params, 'marginMode');
+            request['marginMode'] = marginModeUpper;
+        }
+        const cost = this.safeString (params, 'cost');
+        params = this.omit (params, 'cost');
+        if (cost !== undefined) {
+            request['valueQty'] = this.costToPrecision (symbol, cost);
+        } else {
+            if (amount < 1) {
+                throw new InvalidOrder (this.id + ' createOrder() minimum contract order amount is 1');
+            }
+            request['size'] = parseInt (this.amountToPrecision (symbol, amount));
+        }
+        const [ triggerPrice, stopLossPrice, takeProfitPrice ] = this.handleTriggerPrices (params);
+        const stopLoss = this.safeDict (params, 'stopLoss');
+        const takeProfit = this.safeDict (params, 'takeProfit');
+        const hasStopLoss = stopLoss !== undefined;
+        const hasTakeProfit = takeProfit !== undefined;
+        // const isTpAndSl = stopLossPrice && takeProfitPrice;
+        const triggerPriceTypes: Dict = {
+            'mark': 'MP',
+            'last': 'TP',
+            'index': 'IP',
+        };
+        const triggerPriceType = this.safeString (params, 'triggerPriceType', 'mark');
+        const triggerPriceTypeValue = this.safeString (triggerPriceTypes, triggerPriceType, triggerPriceType);
+        params = this.omit (params, [ 'stopLossPrice', 'takeProfitPrice', 'triggerPrice', 'stopPrice', 'takeProfit', 'stopLoss' ]);
+        if (triggerPrice) {
+            request['stop'] = (side === 'buy') ? 'up' : 'down';
+            request['stopPrice'] = this.priceToPrecision (symbol, triggerPrice);
+            request['stopPriceType'] = triggerPriceTypeValue;
+        } else if (hasStopLoss || hasTakeProfit) {
+            let priceType = triggerPriceTypeValue;
+            if (hasStopLoss) {
+                const slPrice = this.safeString2 (stopLoss, 'triggerPrice', 'stopPrice');
+                request['triggerStopDownPrice'] = this.priceToPrecision (symbol, slPrice);
+                priceType = this.safeString (stopLoss, 'triggerPriceType', 'mark');
+                priceType = this.safeString (triggerPriceTypes, priceType, priceType);
+            }
+            if (hasTakeProfit) {
+                const tpPrice = this.safeString2 (takeProfit, 'triggerPrice', 'takeProfitPrice');
+                request['triggerStopUpPrice'] = this.priceToPrecision (symbol, tpPrice);
+                priceType = this.safeString (takeProfit, 'triggerPriceType', 'mark');
+                priceType = this.safeString (triggerPriceTypes, priceType, priceType);
+            }
+            request['stopPriceType'] = priceType;
+        } else if (stopLossPrice || takeProfitPrice) {
+            if (stopLossPrice) {
+                request['stop'] = (side === 'buy') ? 'up' : 'down';
+                request['stopPrice'] = this.priceToPrecision (symbol, stopLossPrice);
+            } else {
+                request['stop'] = (side === 'buy') ? 'down' : 'up';
+                request['stopPrice'] = this.priceToPrecision (symbol, takeProfitPrice);
+            }
+            request['reduceOnly'] = true;
+            request['stopPriceType'] = triggerPriceTypeValue;
+        }
+        const uppercaseType = type.toUpperCase ();
+        const timeInForce = this.safeStringUpper (params, 'timeInForce');
+        if (uppercaseType === 'LIMIT') {
+            if (price === undefined) {
+                throw new ArgumentsRequired (this.id + ' createOrder() requires a price argument for limit orders');
+            } else {
+                request['price'] = this.priceToPrecision (symbol, price);
+            }
+            if (timeInForce !== undefined) {
+                request['timeInForce'] = timeInForce;
+            }
+        }
+        let postOnly = undefined;
+        [ postOnly, params ] = this.handlePostOnly (type === 'market', false, params);
+        if (postOnly) {
+            request['postOnly'] = true;
+        }
+        const hidden = this.safeValue (params, 'hidden');
+        if (postOnly && (hidden !== undefined)) {
+            throw new BadRequest (this.id + ' createOrder() does not support the postOnly parameter together with a hidden parameter');
+        }
+        const iceberg = this.safeValue (params, 'iceberg');
+        if (iceberg) {
+            const visibleSize = this.safeValue (params, 'visibleSize');
+            if (visibleSize === undefined) {
+                throw new ArgumentsRequired (this.id + ' createOrder() requires a visibleSize parameter for iceberg orders');
+            }
+        }
+        const reduceOnly = this.safeBool (params, 'reduceOnly', false);
+        let hedged = undefined;
+        [ hedged, params ] = this.handleParamBool (params, 'hedged', false);
+        if (reduceOnly) {
+            request['reduceOnly'] = reduceOnly;
+            if (hedged) {
+                const reduceOnlyPosSide = (side === 'sell') ? 'LONG' : 'SHORT';
+                request['positionSide'] = reduceOnlyPosSide;
+            }
+        } else {
+            if (hedged) {
+                const posSide = (side === 'buy') ? 'LONG' : 'SHORT';
+                request['positionSide'] = posSide;
+            }
+        }
+        params = this.omit (params, [ 'timeInForce', 'stopPrice', 'triggerPrice', 'stopLossPrice', 'takeProfitPrice', 'reduceOnly', 'hedged' ]); // Time in force only valid for limit orders, exchange error when gtc for market orders
+        return this.extend (request, params);
+    }
+
+    /**
+     * @method
+     * @name kucoin#createMarketOrderWithCost
+     * @description create a market order by providing the symbol, side and cost
+     * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-order
+     * @param {string} symbol unified symbol of the market to create an order in
+     * @param {string} side 'buy' or 'sell'
+     * @param {float} cost how much you want to trade in units of the quote currency
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createMarketOrderWithCost (symbol: string, side: OrderSide, cost: number, params = {}) {
+        await this.loadMarkets ();
+        const req = {
+            'cost': cost,
+        };
+        return await this.createOrder (symbol, 'market', side, cost, undefined, this.extend (req, params));
+    }
+
+    /**
+     * @method
+     * @name kucoin#createMarketBuyOrderWithCost
+     * @description create a market buy order by providing the symbol and cost
+     * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-order
+     * @param {string} symbol unified symbol of the market to create an order in
+     * @param {float} cost how much you want to trade in units of the quote currency
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createMarketBuyOrderWithCost (symbol: string, cost: number, params = {}) {
+        await this.loadMarkets ();
+        return await this.createMarketOrderWithCost (symbol, 'buy', cost, params);
+    }
+
+    /**
+     * @method
+     * @name kucoin#createMarketSellOrderWithCost
+     * @description create a market sell order by providing the symbol and cost
+     * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-order
+     * @param {string} symbol unified symbol of the market to create an order in
+     * @param {float} cost how much you want to trade in units of the quote currency
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createMarketSellOrderWithCost (symbol: string, cost: number, params = {}) {
+        await this.loadMarkets ();
+        return await this.createMarketOrderWithCost (symbol, 'sell', cost, params);
+    }
+
+    /**
+     * @method
+     * @name kucoin#createOrders
+     * @description create a list of trade orders
+     * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-multiple-orders
+     * @see https://www.kucoin.com/docs/rest/spot-trading/spot-hf-trade-pro-account/place-multiple-hf-orders
+     * @see https://www.kucoin.com/docs/rest/spot-trading/spot-hf-trade-pro-account/sync-place-multiple-hf-orders
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/place-multiple-orders
+     * @param {Array} orders list of orders to create, each object should contain the parameters required by createOrder, namely symbol, type, side, amount, price and params
+     * @param {object} [params]  extra parameters specific to the exchange API endpoint
+     * Check createSpotOrders() and createContractOrders() for more details on the extra parameters that can be used in params
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createOrders (orders: OrderRequest[], params = {}) {
+        await this.loadMarkets ();
+        let isSpot = false;
+        let isContract = false;
+        for (let i = 0; i < orders.length; i++) {
+            const order = this.safeDict (orders, i);
+            const symbol = this.safeString (order, 'symbol');
+            const market = this.market (symbol);
+            if (market['spot']) {
+                isSpot = true;
+            } else if (market['contract']) {
+                isContract = true;
+            }
+        }
+        if (isSpot && isContract) {
+            throw new BadRequest (this.id + ' createOrders() requires all orders to be either spot or contract');
+        } else if (isSpot) {
+            return await this.createSpotOrders (orders, params);
+        } else if (isContract) {
+            return await this.createContractOrders (orders, params);
+        } else {
+            throw new NotSupported (this.id + ' createOrders() does not support the markets of the orders provided');
+        }
+    }
+
+    /**
+     * @method
+     * @name kucoin#createSpotOrders
+     * @description helper method for creating spot orders in batch
+     * @see https://www.kucoin.com/docs/rest/spot-trading/orders/place-multiple-orders
+     * @see https://www.kucoin.com/docs/rest/spot-trading/spot-hf-trade-pro-account/place-multiple-hf-orders
+     * @see https://www.kucoin.com/docs/rest/spot-trading/spot-hf-trade-pro-account/sync-place-multiple-hf-orders
+     * @param {Array} orders list of orders to create, each object should contain the parameters required by createOrder, namely symbol, type, side, amount, price and params
+     * @param {object} [params]  extra parameters specific to the exchange API endpoint
+     * @param {bool} [params.hf] false, // true for hf orders
+     * @param {bool} [params.sync] false, // true to use the hf sync call
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createSpotOrders (orders: OrderRequest[], params = {}) {
+        await this.loadMarkets ();
+        const ordersRequests = [];
+        let symbol = undefined;
+        for (let i = 0; i < orders.length; i++) {
+            const rawOrder = orders[i];
+            const marketId = this.safeString (rawOrder, 'symbol');
+            if (symbol === undefined) {
+                symbol = marketId;
+            } else {
+                if (symbol !== marketId) {
+                    throw new BadRequest (this.id + ' createOrders() requires all orders to have the same symbol');
+                }
+            }
+            const type = this.safeString (rawOrder, 'type');
+            if (type !== 'limit') {
+                throw new BadRequest (this.id + ' createOrders() only supports limit orders');
+            }
+            const side = this.safeString (rawOrder, 'side');
+            const amount = this.safeValue (rawOrder, 'amount');
+            const price = this.safeValue (rawOrder, 'price');
+            const orderParams = this.safeValue (rawOrder, 'params', {});
+            const orderRequest = this.createSpotOrderRequest (marketId, type, side, amount, price, orderParams);
+            ordersRequests.push (orderRequest);
+        }
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+            'orderList': ordersRequests,
+        };
+        let hf = undefined;
+        [ hf, params ] = this.handleHfAndParams (params);
+        let useSync = false;
+        [ useSync, params ] = this.handleOptionAndParams (params, 'createOrders', 'sync', false);
+        let response = undefined;
+        if (useSync) {
+            response = await this.privatePostHfOrdersMultiSync (this.extend (request, params));
+        } else if (hf) {
+            response = await this.privatePostHfOrdersMulti (this.extend (request, params));
+        } else {
+            response = await this.privatePostOrdersMulti (this.extend (request, params));
+        }
+        //
+        // {
+        //     "code": "200000",
+        //     "data": {
+        //        "data": [
+        //           {
+        //              "symbol": "LTC-USDT",
+        //              "type": "limit",
+        //              "side": "sell",
+        //              "price": "90",
+        //              "size": "0.1",
+        //              "funds": null,
+        //              "stp": "",
+        //              "stop": "",
+        //              "stopPrice": null,
+        //              "timeInForce": "GTC",
+        //              "cancelAfter": 0,
+        //              "postOnly": false,
+        //              "hidden": false,
+        //              "iceberge": false,
+        //              "iceberg": false,
+        //              "visibleSize": null,
+        //              "channel": "API",
+        //              "id": "6539148443fcf500079d15e5",
+        //              "status": "success",
+        //              "failMsg": null,
+        //              "clientOid": "5c4c5398-8ab2-4b4e-af8a-e2d90ad2488f"
+        //           },
+        // }
+        //
+        let data = this.safeDict (response, 'data', {});
+        data = this.safeList (data, 'data', []);
+        return this.parseOrders (data);
+    }
+
+    /**
+     * @method
+     * @name kucoin#createContractOrders
+     * @description helper method for creating contract orders in batch
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/place-multiple-orders
+     * @param {Array} orders list of orders to create, each object should contain the parameters required by createOrder, namely symbol, type, side, amount, price and params
+     * @param {object} [params]  extra parameters specific to the exchange API endpoint
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createContractOrders (orders: OrderRequest[], params = {}) {
+        await this.loadMarkets ();
+        const ordersRequests = [];
+        for (let i = 0; i < orders.length; i++) {
+            const rawOrder = orders[i];
+            const symbol = this.safeString (rawOrder, 'symbol');
+            const market = this.market (symbol);
+            const type = this.safeString (rawOrder, 'type');
+            const side = this.safeString (rawOrder, 'side');
+            const amount = this.safeValue (rawOrder, 'amount');
+            const price = this.safeValue (rawOrder, 'price');
+            const orderParams = this.safeValue (rawOrder, 'params', {});
+            const orderRequest = this.createContractOrderRequest (market['id'], type, side, amount, price, orderParams);
+            ordersRequests.push (orderRequest);
+        }
+        const response = await this.futuresPrivatePostOrdersMulti (ordersRequests);
+        //
+        //     {
+        //         "code": "200000",
+        //         "data": [
+        //             {
+        //                 "orderId": "135241412609331200",
+        //                 "clientOid": "3d8fcc13-0b13-447f-ad30-4b3441e05213",
+        //                 "symbol": "LTCUSDTM",
+        //                 "code": "200000",
+        //                 "msg": "success"
+        //             },
+        //             {
+        //                 "orderId": "135241412747743234",
+        //                 "clientOid": "b878c7ee-ae3e-4d63-a20b-038acbb7306f",
+        //                 "symbol": "LTCUSDTM",
+        //                 "code": "200000",
+        //                 "msg": "success"
+        //             }
+        //         ]
+        //     }
+        //
+        const data = this.safeList (response, 'data', []);
+        return this.parseOrders (data);
     }
 
     /**
