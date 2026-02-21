@@ -4188,6 +4188,36 @@ export default class kucoin extends Exchange {
      * @see https://docs.kucoin.com/spot#cancel-all-orders
      * @see https://docs.kucoin.com/spot#cancel-orders
      * @see https://docs.kucoin.com/spot-hf/#cancel-all-hf-orders-by-symbol
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/cancel-multiple-futures-limit-orders
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/cancel-multiple-futures-stop-orders
+     * @param {string} symbol unified market symbol, only orders in the market of this symbol are cancelled when symbol is not undefined
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.type] 'spot' or 'swap', used if symbol is not provided (default is 'spot')
+     * @returns Response from the exchange
+     */
+    async cancelAllOrders (symbol: Str = undefined, params = {}) {
+        await this.loadMarkets ();
+        let marketType = 'spot';
+        if (symbol === undefined) {
+            [ marketType, params ] = this.handleMarketTypeAndParams ('cancelOrder', undefined, params, marketType);
+        } else {
+            const market = this.market (symbol);
+            marketType = market['type'];
+        }
+        if (marketType === 'spot') {
+            return await this.cancelAllSpotOrders (symbol, params);
+        } else {
+            return await this.cancelAllContractOrders (symbol, params);
+        }
+    }
+
+    /**
+     * @method
+     * @name kucoin#cancelAllSpotOrders
+     * @description helper method for cancelling all spot orders
+     * @see https://docs.kucoin.com/spot#cancel-all-orders
+     * @see https://docs.kucoin.com/spot#cancel-orders
+     * @see https://docs.kucoin.com/spot-hf/#cancel-all-hf-orders-by-symbol
      * @param {string} symbol unified market symbol, only orders in the market of this symbol are cancelled when symbol is not undefined
      * @param {object} [params] extra parameters specific to the exchange API endpoint
      * @param {bool} [params.trigger] *invalid for isolated margin* true if cancelling all stop orders
@@ -4196,7 +4226,7 @@ export default class kucoin extends Exchange {
      * @param {bool} [params.hf] false, // true for hf order
      * @returns Response from the exchange
      */
-    async cancelAllOrders (symbol: Str = undefined, params = {}) {
+    async cancelAllSpotOrders (symbol: Str = undefined, params = {}) {
         await this.loadMarkets ();
         const request: Dict = {};
         const trigger = this.safeBool2 (params, 'trigger', 'stop', false);
@@ -4226,6 +4256,45 @@ export default class kucoin extends Exchange {
             response = await this.privateDeleteOrders (this.extend (request, query));
         }
         return [ this.safeOrder ({ 'info': response }) ];
+    }
+
+    /**
+     * @method
+     * @name kucoin#cancelAllContractOrders
+     * @description helper method for cancelling all contract orders
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/cancel-multiple-futures-limit-orders
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/cancel-multiple-futures-stop-orders
+     * @param {string} symbol unified market symbol, only orders in the market of this symbol are cancelled when symbol is not undefined
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {object} [params.trigger] When true, all the trigger orders will be cancelled
+     * @returns Response from the exchange
+     */
+    async cancelAllContractOrders (symbol: Str = undefined, params = {}) {
+        await this.loadMarkets ();
+        const request: Dict = {};
+        if (symbol !== undefined) {
+            request['symbol'] = this.marketId (symbol);
+        }
+        const trigger = this.safeValue2 (params, 'stop', 'trigger');
+        params = this.omit (params, [ 'stop', 'trigger' ]);
+        let response = undefined;
+        if (trigger) {
+            response = await this.futuresPrivateDeleteStopOrders (this.extend (request, params));
+        } else {
+            response = await this.futuresPrivateDeleteOrders (this.extend (request, params));
+        }
+        //
+        //   {
+        //       "code": "200000",
+        //       "data": {
+        //           "cancelledOrderIds": [
+        //                "619714b8b6353000014c505a",
+        //           ],
+        //       },
+        //   }
+        //
+        const data = this.safeDict (response, 'data');
+        return [ this.safeOrder ({ 'info': data }) ];
     }
 
     /**
