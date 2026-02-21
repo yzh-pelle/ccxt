@@ -1174,13 +1174,90 @@ export default class kucoin extends Exchange {
                         'limit': 1500,
                     },
                 },
+                'forDerivs': {
+                    'sandbox': false,
+                    'createOrder': {
+                        'marginMode': true,
+                        'triggerPrice': true,
+                        'triggerPriceType': {
+                            'last': true,
+                            'mark': true,
+                            'index': true,
+                        },
+                        'triggerDirection': true,
+                        'stopLossPrice': true,
+                        'takeProfitPrice': true,
+                        'attachedStopLossTakeProfit': {
+                            'triggerPriceType': undefined,
+                            'price': true,
+                        },
+                        'timeInForce': {
+                            'IOC': true,
+                            'FOK': false,
+                            'PO': true,
+                            'GTD': false,
+                        },
+                        'hedged': false,
+                        'trailing': false,
+                        'leverage': true, // todo implement
+                        'marketBuyByCost': true,
+                        'marketBuyRequiresPrice': false,
+                        'selfTradePrevention': true, // todo implement
+                        'iceberg': true,
+                    },
+                    'createOrders': {
+                        'max': 20,
+                    },
+                    'fetchMyTrades': {
+                        'marginMode': true,
+                        'limit': 1000,
+                        'daysBack': undefined,
+                        'untilDays': 7,
+                        'symbolRequired': false,
+                    },
+                    'fetchOrder': {
+                        'marginMode': false,
+                        'trigger': false,
+                        'trailing': false,
+                        'symbolRequired': false,
+                    },
+                    'fetchOpenOrders': {
+                        'marginMode': false,
+                        'limit': 1000,
+                        'trigger': true,
+                        'trailing': false,
+                        'symbolRequired': false,
+                    },
+                    'fetchOrders': undefined,
+                    'fetchClosedOrders': {
+                        'marginMode': false,
+                        'limit': 1000,
+                        'daysBack': undefined,
+                        'daysBackCanceled': undefined,
+                        'untilDays': undefined,
+                        'trigger': true,
+                        'trailing': false,
+                        'symbolRequired': false,
+                    },
+                    'fetchOHLCV': {
+                        'limit': 500,
+                    },
+                },
                 'swap': {
-                    'linear': undefined,
-                    'inverse': undefined,
+                    'linear': {
+                        'extends': 'forDerivs',
+                    },
+                    'inverse': {
+                        'extends': 'forDerivs',
+                    },
                 },
                 'future': {
-                    'linear': undefined,
-                    'inverse': undefined,
+                    'linear': {
+                        'extends': 'forDerivs',
+                    },
+                    'inverse': {
+                        'extends': 'forDerivs',
+                    },
                 },
             },
         });
@@ -4333,6 +4410,150 @@ export default class kucoin extends Exchange {
     }
 
     parseOrder (order: Dict, market: Market = undefined): Order {
+        const marketId = this.safeString (order, 'symbol');
+        market = this.safeMarket (marketId, market);
+        if ((market !== undefined) && (market['contract'])) {
+            return this.parseContractOrder (order, market);
+        } else {
+            return this.parseSpotOrder (order, market);
+        }
+    }
+
+    parseContractOrder (order: Dict, market: Market = undefined): Order {
+        //
+        // fetchOrder, fetchOrdersByStatus
+        //
+        //     {
+        //         "id": "64507d02921f1c0001ff6892",
+        //         "symbol": "XBTUSDTM",
+        //         "type": "market",
+        //         "side": "buy",
+        //         "price": null,
+        //         "size": 1,
+        //         "value": "27.992",
+        //         "dealValue": "27.992",
+        //         "dealSize": 1,
+        //         "stp": "",
+        //         "stop": "",
+        //         "stopPriceType": "",
+        //         "stopTriggered": false,
+        //         "stopPrice": null,
+        //         "timeInForce": "GTC",
+        //         "postOnly": false,
+        //         "hidden": false,
+        //         "iceberg": false,
+        //         "leverage": "17",
+        //         "forceHold": false,
+        //         "closeOrder": false,
+        //         "visibleSize": null,
+        //         "clientOid": null,
+        //         "remark": null,
+        //         "tags": null,
+        //         "isActive": false,
+        //         "cancelExist": false,
+        //         "createdAt": 1682996482000,
+        //         "updatedAt": 1682996483062,
+        //         "endAt": 1682996483062,
+        //         "orderTime": 1682996482953900677,
+        //         "settleCurrency": "USDT",
+        //         "status": "done",
+        //         "filledValue": "27.992",
+        //         "filledSize": 1,
+        //         "reduceOnly": false
+        //     }
+        //
+        // createOrder
+        //
+        //     {
+        //         "orderId": "619717484f1d010001510cde"
+        //     }
+        //
+        // createOrders
+        //
+        //     {
+        //         "orderId": "80465574458560512",
+        //         "clientOid": "5c52e11203aa677f33e491",
+        //         "symbol": "ETHUSDTM",
+        //         "code": "200000",
+        //         "msg": "success"
+        //     }
+        //
+        const marketId = this.safeString (order, 'symbol');
+        market = this.safeMarket (marketId, market);
+        const symbol = market['symbol'];
+        const orderId = this.safeString2 (order, 'id', 'orderId');
+        const type = this.safeString (order, 'type');
+        const timestamp = this.safeInteger (order, 'createdAt');
+        const datetime = this.iso8601 (timestamp);
+        const price = this.safeString (order, 'price');
+        // price is zero for market order
+        // omitZero is called in safeOrder2
+        const side = this.safeString (order, 'side');
+        const feeCurrencyId = this.safeString (order, 'feeCurrency');
+        const feeCurrency = this.safeCurrencyCode (feeCurrencyId);
+        const feeCost = this.safeNumber (order, 'fee');
+        const amount = this.safeString (order, 'size');
+        const filled = this.safeString (order, 'filledSize');
+        const cost = this.safeString (order, 'filledValue');
+        let average = this.safeString (order, 'avgDealPrice');
+        if ((average === undefined) && Precise.stringGt (filled, '0')) {
+            const contractSize = this.safeString (market, 'contractSize');
+            if (market['linear']) {
+                average = Precise.stringDiv (cost, Precise.stringMul (contractSize, filled));
+            } else {
+                average = Precise.stringDiv (Precise.stringMul (contractSize, filled), cost);
+            }
+        }
+        // precision reported by their api is 8 d.p.
+        // const average = Precise.stringDiv (cost, Precise.stringMul (filled, market['contractSize']));
+        // bool
+        const isActive = this.safeValue (order, 'isActive');
+        const cancelExist = this.safeBool (order, 'cancelExist', false);
+        let status = undefined;
+        if (isActive !== undefined) {
+            status = isActive ? 'open' : 'closed';
+        }
+        status = cancelExist ? 'canceled' : status;
+        let fee = undefined;
+        if (feeCost !== undefined) {
+            fee = {
+                'currency': feeCurrency,
+                'cost': feeCost,
+            };
+        }
+        const clientOrderId = this.safeString (order, 'clientOid');
+        const timeInForce = this.safeString (order, 'timeInForce');
+        const postOnly = this.safeValue (order, 'postOnly');
+        const reduceOnly = this.safeValue (order, 'reduceOnly');
+        const lastUpdateTimestamp = this.safeInteger (order, 'updatedAt');
+        return this.safeOrder ({
+            'id': orderId,
+            'clientOrderId': clientOrderId,
+            'symbol': symbol,
+            'type': type,
+            'timeInForce': timeInForce,
+            'postOnly': postOnly,
+            'reduceOnly': reduceOnly,
+            'side': side,
+            'amount': amount,
+            'price': price,
+            'triggerPrice': this.safeNumber (order, 'stopPrice'),
+            'cost': cost,
+            'filled': filled,
+            'remaining': undefined,
+            'timestamp': timestamp,
+            'datetime': datetime,
+            'fee': fee,
+            'status': status,
+            'info': order,
+            'lastTradeTimestamp': undefined,
+            'lastUpdateTimestamp': lastUpdateTimestamp,
+            'average': average,
+            'trades': undefined,
+        }, market);
+    }
+
+    parseSpotOrder (order: Dict, market: Market = undefined): Order {
         //
         // createOrder
         //
