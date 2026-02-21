@@ -3998,12 +3998,47 @@ export default class kucoin extends Exchange {
      * @param {string} id order id
      * @param {string} symbol unified symbol of the market the order was made in
      * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.type] 'spot' or 'swap', used if symbol is not provided (default is 'spot')
+     * Check cancelSpotOrder() and cancelContractOrder() for more details on the extra parameters that can be used in params
+     * @returns Response from the exchange
+     */
+    async cancelOrder (id: string, symbol: Str = undefined, params = {}) {
+        await this.loadMarkets ();
+        let marketType = 'spot';
+        if (symbol === undefined) {
+            [ marketType, params ] = this.handleMarketTypeAndParams ('cancelOrder', undefined, params, marketType);
+        } else {
+            const market = this.market (symbol);
+            marketType = market['type'];
+        }
+        if (marketType === 'spot') {
+            return await this.cancelSpotOrder (id, symbol, params);
+        } else {
+            return await this.cancelContractOrder (id, symbol, params);
+        }
+    }
+
+    /**
+     * @method
+     * @name kucoin#cancelSpotOrder
+     * @description helper method for cancelling spot orders
+     * @see https://docs.kucoin.com/spot#cancel-an-order
+     * @see https://docs.kucoin.com/spot#cancel-an-order-2
+     * @see https://docs.kucoin.com/spot#cancel-single-order-by-clientoid
+     * @see https://docs.kucoin.com/spot#cancel-single-order-by-clientoid-2
+     * @see https://docs.kucoin.com/spot-hf/#cancel-orders-by-orderid
+     * @see https://docs.kucoin.com/spot-hf/#cancel-order-by-clientoid
+     * @see https://www.kucoin.com/docs/rest/spot-trading/spot-hf-trade-pro-account/sync-cancel-hf-order-by-orderid
+     * @see https://www.kucoin.com/docs/rest/spot-trading/spot-hf-trade-pro-account/sync-cancel-hf-order-by-clientoid
+     * @param {string} id order id
+     * @param {string} symbol unified symbol of the market the order was made in
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
      * @param {bool} [params.trigger] True if cancelling a stop order
      * @param {bool} [params.hf] false, // true for hf order
      * @param {bool} [params.sync] false, // true to use the hf sync call
      * @returns Response from the exchange
      */
-    async cancelOrder (id: string, symbol: Str = undefined, params = {}) {
+    async cancelSpotOrder (id: string, symbol: Str = undefined, params = {}) {
         await this.loadMarkets ();
         const request: Dict = {};
         const clientOrderId = this.safeString2 (params, 'clientOid', 'clientOrderId');
@@ -4102,6 +4137,48 @@ export default class kucoin extends Exchange {
                 'id': orderId,
             });
         }
+    }
+
+    /**
+     * @method
+     * @name kucoin#cancelContractOrder
+     * @description helper method for cancelling contract orders
+     * @see https://www.kucoin.com/docs/rest/futures-trading/orders/cancel-futures-order-by-orderid
+     * @param {string} id order id
+     * @param {string} symbol unified symbol of the market the order was made in
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.clientOrderId] cancel order by client order id
+     * @returns {object} An [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async cancelContractOrder (id: string, symbol: Str = undefined, params = {}) {
+        await this.loadMarkets ();
+        const clientOrderId = this.safeString2 (params, 'clientOid', 'clientOrderId');
+        params = this.omit (params, [ 'clientOrderId' ]);
+        const request: Dict = {};
+        let response = undefined;
+        if (clientOrderId !== undefined) {
+            if (symbol === undefined) {
+                throw new ArgumentsRequired (this.id + ' cancelOrder() requires a symbol argument when cancelling by clientOrderId');
+            }
+            const market = this.market (symbol);
+            request['symbol'] = market['id'];
+            request['clientOid'] = clientOrderId;
+            response = await this.futuresPrivateDeleteOrdersClientOrderClientOid (this.extend (request, params));
+        } else {
+            request['orderId'] = id;
+            response = await this.futuresPrivateDeleteOrdersOrderId (this.extend (request, params));
+        }
+        //
+        //   {
+        //       "code": "200000",
+        //       "data": {
+        //           "cancelledOrderIds": [
+        //                "619714b8b6353000014c505a",
+        //           ],
+        //       },
+        //   }
+        //
+        return this.safeOrder ({ 'info': response });
     }
 
     /**
