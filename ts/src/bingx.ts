@@ -4122,7 +4122,7 @@ export default class bingx extends Exchange {
             //         }
             //     }
             //
-        } else if (market['swap']) {
+        } else if (marketType === 'swap') {
             if (subType === 'inverse') {
                 response = await this.cswapV1PrivateDeleteTradeAllOpenOrders (this.extend (request, params));
                 //
