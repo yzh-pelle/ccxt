@@ -1911,5 +1911,525 @@
                 ]
             ]
         }
+    },
+    "LTC/USDT:USDT": {
+        "id": "LTCUSDTM",
+        "lowercaseId": null,
+        "symbol": "LTC/USDT:USDT",
+        "base": "LTC",
+        "quote": "USDT",
+        "settle": "USDT",
+        "baseId": "LTC",
+        "quoteId": "USDT",
+        "settleId": "USDT",
+        "type": "swap",
+        "spot": false,
+        "margin": false,
+        "swap": true,
+        "future": false,
+        "option": false,
+        "index": null,
+        "active": true,
+        "contract": true,
+        "linear": true,
+        "inverse": false,
+        "subType": "linear",
+        "taker": 0.0006,
+        "maker": 0.0002,
+        "contractSize": 0.1,
+        "expiry": null,
+        "expiryDatetime": null,
+        "strike": null,
+        "optionType": null,
+        "precision": {
+            "amount": 1,
+            "price": 0.01
+        },
+        "limits": {
+            "leverage": {
+                "min": 1,
+                "max": 75
+            },
+            "amount": {
+                "min": 1,
+                "max": 1000000
+            },
+            "price": {
+                "min": 0.01,
+                "max": 1000000
+            },
+            "cost": {
+                "min": null,
+                "max": null
+            }
+        },
+        "marginModes": {
+            "cross": null,
+            "isolated": null
+        },
+        "created": 1604390400000,
+        "info": {
+            "symbol": "LTCUSDTM",
+            "displaySymbol": "LTCUSDTM",
+            "rootSymbol": "USDT",
+            "type": "FFWCSX",
+            "firstOpenDate": 1604390400000,
+            "expireDate": null,
+            "settleDate": null,
+            "baseCurrency": "LTC",
+            "displayBaseCurrency": "LTC",
+            "quoteCurrency": "USDT",
+            "settleCurrency": "USDT",
+            "maxOrderQty": 1000000,
+            "marketMaxOrderQty": 1000000,
+            "maxPrice": 1000000,
+            "lotSize": 1,
+            "tickSize": 0.01,
+            "indexPriceTickSize": 0.01,
+            "multiplier": 0.1,
+            "initialMargin": 0.014,
+            "maintainMargin": 0.007,
+            "maxRiskLimit": 15000,
+            "minRiskLimit": 15000,
+            "riskStep": 7500,
+            "makerFeeRate": 0.0002,
+            "takerFeeRate": 0.0006,
+            "takerFixFee": 0,
+            "makerFixFee": 0,
+            "settlementFee": null,
+            "isDeleverage": true,
+            "isQuanto": true,
+            "isInverse": false,
+            "markMethod": "FairPrice",
+            "fairMethod": "FundingRate",
+            "fundingBaseSymbol": ".LTCINT8H",
+            "fundingQuoteSymbol": ".USDTINT8H",
+            "fundingRateSymbol": ".LTCUSDTMFPI8H",
+            "indexSymbol": ".KLTCUSDT",
+            "settlementSymbol": "",
+            "status": "Open",
+            "fundingFeeRate": 0.00004,
+            "predictedFundingFeeRate": null,
+            "dailyInterestRate": 0.0003,
+            "fundingRateGranularity": 28800000,
+            "fundingRateCap": 0.00525,
+            "fundingRateFloor": -0.00525,
+            "period": 1,
+            "effectiveFundingRateCycleStartTime": null,
+            "currentFundingRateGranularity": null,
+            "openInterest": "1599029",
+            "turnoverOf24h": 8251044.53436264,
+            "volumeOf24h": 150147.8,
+            "markPrice": 55.35,
+            "indexPrice": 55.36,
+            "lastTradePrice": 55.35,
+            "nextFundingRateTime": 6162840,
+            "nextFundingRateDateTime": 1771689600000,
+            "maxLeverage": 75,
+            "sourceExchanges": [
+                "binance",
+                "okex",
+                "kucoin",
+                "bybit",
+                "bitget"
+            ],
+            "premiumsSymbol1M": ".LTCUSDTMPI",
+            "premiumsSymbol8H": ".LTCUSDTMPI8H",
+            "fundingBaseSymbol1M": ".LTCINT",
+            "fundingQuoteSymbol1M": ".USDTINT",
+            "lowPrice": 53.25,
+            "highPrice": 55.6,
+            "priceChgPct": 0.037,
+            "priceChg": 1.98,
+            "k": 18500,
+            "m": 12400,
+            "f": 1.3,
+            "mmrLimit": 0.3,
+            "mmrLevConstant": 75,
+            "supportCross": true,
+            "buyLimit": 60.88,
+            "sellLimit": 49.82,
+            "adjustK": null,
+            "adjustM": null,
+            "adjustMmrLevConstant": null,
+            "adjustActiveTime": null,
+            "crossRiskLimit": 12000000,
+            "marketStage": "NORMAL",
+            "preMarketToPerpDate": null,
+            "orderPriceRange": 0.1,
+            "marketType": "CRYPTO"
+        },
+        "tierBased": true,
+        "percentage": true,
+        "tiers": {
+            "taker": [
+                [
+                    0,
+                    0.001
+                ],
+                [
+                    50,
+                    0.001
+                ],
+                [
+                    200,
+                    0.0009
+                ],
+                [
+                    500,
+                    0.0008
+                ],
+                [
+                    1000,
+                    0.0007
+                ],
+                [
+                    2000,
+                    0.0007
+                ],
+                [
+                    4000,
+                    0.0006
+                ],
+                [
+                    8000,
+                    0.0005
+                ],
+                [
+                    15000,
+                    0.00045
+                ],
+                [
+                    25000,
+                    0.0004
+                ],
+                [
+                    40000,
+                    0.00035
+                ],
+                [
+                    60000,
+                    0.0003
+                ],
+                [
+                    80000,
+                    0.00025
+                ]
+            ],
+            "maker": [
+                [
+                    0,
+                    0.001
+                ],
+                [
+                    50,
+                    0.0009
+                ],
+                [
+                    200,
+                    0.0007
+                ],
+                [
+                    500,
+                    0.0005
+                ],
+                [
+                    1000,
+                    0.0003
+                ],
+                [
+                    2000,
+                    0
+                ],
+                [
+                    4000,
+                    0
+                ],
+                [
+                    8000,
+                    0
+                ],
+                [
+                    15000,
+                    -0.00005
+                ],
+                [
+                    25000,
+                    -0.00005
+                ],
+                [
+                    40000,
+                    -0.00005
+                ],
+                [
+                    60000,
+                    -0.00005
+                ],
+                [
+                    80000,
+                    -0.00005
+                ]
+            ]
+        }
+    },
+    "ADA/USDT:USDT": {
+        "id": "ADAUSDTM",
+        "lowercaseId": null,
+        "symbol": "ADA/USDT:USDT",
+        "base": "ADA",
+        "quote": "USDT",
+        "settle": "USDT",
+        "baseId": "ADA",
+        "quoteId": "USDT",
+        "settleId": "USDT",
+        "type": "swap",
+        "spot": false,
+        "margin": false,
+        "swap": true,
+        "future": false,
+        "option": false,
+        "index": null,
+        "active": true,
+        "contract": true,
+        "linear": true,
+        "inverse": false,
+        "subType": "linear",
+        "taker": 0.0006,
+        "maker": 0.0002,
+        "contractSize": 10,
+        "expiry": null,
+        "expiryDatetime": null,
+        "strike": null,
+        "optionType": null,
+        "precision": {
+            "amount": 1,
+            "price": 0.00001
+        },
+        "limits": {
+            "leverage": {
+                "min": 1,
+                "max": 75
+            },
+            "amount": {
+                "min": 1,
+                "max": 1000000
+            },
+            "price": {
+                "min": 0.00001,
+                "max": 1000000
+            },
+            "cost": {
+                "min": null,
+                "max": null
+            }
+        },
+        "marginModes": {
+            "cross": null,
+            "isolated": null
+        },
+        "created": 1603180800000,
+        "info": {
+            "symbol": "ADAUSDTM",
+            "displaySymbol": "ADAUSDTM",
+            "rootSymbol": "USDT",
+            "type": "FFWCSX",
+            "firstOpenDate": 1603180800000,
+            "expireDate": null,
+            "settleDate": null,
+            "baseCurrency": "ADA",
+            "displayBaseCurrency": "ADA",
+            "quoteCurrency": "USDT",
+            "settleCurrency": "USDT",
+            "maxOrderQty": 1000000,
+            "marketMaxOrderQty": 1000000,
+            "maxPrice": 1000000,
+            "lotSize": 1,
+            "tickSize": 0.00001,
+            "indexPriceTickSize": 0.00001,
+            "multiplier": 10,
+            "initialMargin": 0.014,
+            "maintainMargin": 0.007,
+            "maxRiskLimit": 25000,
+            "minRiskLimit": 25000,
+            "riskStep": 12500,
+            "makerFeeRate": 0.0002,
+            "takerFeeRate": 0.0006,
+            "takerFixFee": 0,
+            "makerFixFee": 0,
+            "settlementFee": null,
+            "isDeleverage": true,
+            "isQuanto": true,
+            "isInverse": false,
+            "markMethod": "FairPrice",
+            "fairMethod": "FundingRate",
+            "fundingBaseSymbol": ".ADAINT8H",
+            "fundingQuoteSymbol": ".USDTINT8H",
+            "fundingRateSymbol": ".ADAUSDTMFPI8H",
+            "indexSymbol": ".KADAUSDT",
+            "settlementSymbol": "",
+            "status": "Open",
+            "fundingFeeRate": -0.000048,
+            "predictedFundingFeeRate": null,
+            "dailyInterestRate": 0.0003,
+            "fundingRateGranularity": 28800000,
+            "fundingRateCap": 0.00525,
+            "fundingRateFloor": -0.00525,
+            "period": 1,
+            "effectiveFundingRateCycleStartTime": 1750147200000,
+            "currentFundingRateGranularity": 28800000,
+            "openInterest": "4385908",
+            "turnoverOf24h": 26184401.90698665,
+            "volumeOf24h": 92334820,
+            "markPrice": 0.28292,
+            "indexPrice": 0.283,
+            "lastTradePrice": 0.28291,
+            "nextFundingRateTime": 6105347,
+            "nextFundingRateDateTime": 1771689600000,
+            "maxLeverage": 75,
+            "sourceExchanges": [
+                "okex",
+                "binance",
+                "kucoin",
+                "bybit",
+                "bitget"
+            ],
+            "premiumsSymbol1M": ".ADAUSDTMPI",
+            "premiumsSymbol8H": ".ADAUSDTMPI8H",
+            "fundingBaseSymbol1M": ".ADAINT",
+            "fundingQuoteSymbol1M": ".USDTINT",
+            "lowPrice": 0.27331,
+            "highPrice": 0.29382,
+            "priceChgPct": 0.0348,
+            "priceChg": 0.00953,
+            "k": 1850000,
+            "m": 1240000,
+            "f": 1.3,
+            "mmrLimit": 0.3,
+            "mmrLevConstant": 75,
+            "supportCross": true,
+            "buyLimit": 0.31121,
+            "sellLimit": 0.25463,
+            "adjustK": null,
+            "adjustM": null,
+            "adjustMmrLevConstant": null,
+            "adjustActiveTime": null,
+            "crossRiskLimit": 20000000,
+            "marketStage": "NORMAL",
+            "preMarketToPerpDate": null,
+            "orderPriceRange": 0.1,
+            "marketType": "CRYPTO"
+        },
+        "tierBased": true,
+        "percentage": true,
+        "tiers": {
+            "taker": [
+                [
+                    0,
+                    0.001
+                ],
+                [
+                    50,
+                    0.001
+                ],
+                [
+                    200,
+                    0.0009
+                ],
+                [
+                    500,
+                    0.0008
+                ],
+                [
+                    1000,
+                    0.0007
+                ],
+                [
+                    2000,
+                    0.0007
+                ],
+                [
+                    4000,
+                    0.0006
+                ],
+                [
+                    8000,
+                    0.0005
+                ],
+                [
+                    15000,
+                    0.00045
+                ],
+                [
+                    25000,
+                    0.0004
+                ],
+                [
+                    40000,
+                    0.00035
+                ],
+                [
+                    60000,
+                    0.0003
+                ],
+                [
+                    80000,
+                    0.00025
+                ]
+            ],
+            "maker": [
+                [
+                    0,
+                    0.001
+                ],
+                [
+                    50,
+                    0.0009
+                ],
+                [
+                    200,
+                    0.0007
+                ],
+                [
+                    500,
+                    0.0005
+                ],
+                [
+                    1000,
+                    0.0003
+                ],
+                [
+                    2000,
+                    0
+                ],
+                [
+                    4000,
+                    0
+                ],
+                [
+                    8000,
+                    0
+                ],
+                [
+                    15000,
+                    -0.00005
+                ],
+                [
+                    25000,
+                    -0.00005
+                ],
+                [
+                    40000,
+                    -0.00005
+                ],
+                [
+                    60000,
+                    -0.00005
+                ],
+                [
+                    80000,
+                    -0.00005
+                ]
+            ]
+        }
     }
 }
