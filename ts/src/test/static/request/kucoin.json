@@ -12,7 +12,33 @@
     "options": {
     },
     "methods": {
+        "fetchLeverageTiers": [
+            {
+                "description": "fetch leverage tiers",
+                "method": "fetchLeverageTiers",
+                "url": "https://api.kucoin.com/api/ua/v1/market/position-tiers?tradeType=FUTURES&marginMode=CROSS&data=RISK_LIMIT&accountType=UNIFIED&symbol=ETHUSDTM,XBTUSDTM",
+                "input": [
+                    [
+                        "ETH/USDT:USDT",
+                        "BTC/USDT:USDT"
+                    ]
+                ],
+                "output": null
+            }
+        ],
         "fetchMarketLeverageTiers": [
+            {
+                "description": "fetch market leverage tiers with uta",
+                "method": "fetchMarketLeverageTiers",
+                "url": "https://api.kucoin.com/api/ua/v1/market/position-tiers?tradeType=FUTURES&marginMode=CROSS&data=RISK_LIMIT&accountType=UNIFIED&symbol=ETHUSDM",
+                "input": [
+                    "ETH/USD:ETH",
+                    {
+                        "uta": true
+                    }
+                ],
+                "output": null
+            },
             {
                 "description": "fetch linear swap market leverage tiers",
                 "method": "fetchMarketLeverageTiers",
@@ -1844,6 +1870,17 @@
             }
         ],
         "fetchCurrencies": [
+            {
+                "description": "fetch currencies from uta",
+                "method": "fetchCurrencies",
+                "url": "https://api.kucoin.com/api/ua/v1/asset/currencies",
+                "input": [
+                    {
+                        "uta": true
+                    }
+                ],
+                "output": null
+            },
             {
                 "description": "fetchCurrencies",
                 "method": "fetchCurrencies",
