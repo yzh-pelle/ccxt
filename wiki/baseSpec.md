@@ -6376,6 +6376,24 @@ calculates the presumptive fee that would be charged for an order
 
 ---
 
+<a name="preLoadLighterLibrary" id="preloadlighterlibrary"></a>
+
+## preLoadLighterLibrary
+if the required credentials are available in options, it will pre-load the lighter Signer to avoid delaying sensitive calls like createOrder the first time they're executed
+
+**Kind**: instance   
+**Returns**: <code>boolean</code> - true if the signer was loaded, false otherwise
+
+
+| Param |
+| --- |
+| params | 
+
+##### Supported exchanges
+* [lighter](/exchanges/lighter.md#preloadlighterlibrary)
+
+---
+
 <a name="redeemGiftCode" id="redeemgiftcode"></a>
 
 ## redeemGiftCode
