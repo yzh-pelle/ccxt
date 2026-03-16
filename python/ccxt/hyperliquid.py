@@ -849,6 +849,9 @@ class hyperliquid(Exchange, ImplicitAPI):
             quoteTokenInfo = self.safe_dict(tokens, quoteTokenPos, {})
             baseName = self.safe_string(baseTokenInfo, 'name')
             quoteId = self.safe_string(quoteTokenInfo, 'name')
+            if baseName is None or quoteId is None:
+                continue
+                # why sandbox sending self? check it later
             # do spot currency mapping
             spotCurrencyMapping = self.safe_dict(self.options, 'spotCurrencyMapping', {})
             mappedBaseName = self.safe_string(spotCurrencyMapping, baseName, baseName)
