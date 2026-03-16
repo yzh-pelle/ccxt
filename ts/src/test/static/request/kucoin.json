@@ -30,9 +30,9 @@
             {
                 "description": "fetch market leverage tiers with uta",
                 "method": "fetchMarketLeverageTiers",
-                "url": "https://api.kucoin.com/api/ua/v1/market/position-tiers?tradeType=FUTURES&marginMode=CROSS&data=RISK_LIMIT&accountType=UNIFIED&symbol=ETHUSDM",
+                "url": "https://api.kucoin.com/api/ua/v1/market/position-tiers?tradeType=FUTURES&marginMode=CROSS&data=RISK_LIMIT&accountType=UNIFIED&symbol=XBTUSDM",
                 "input": [
-                    "ETH/USD:ETH",
+                    "BTC/USD:BTC",
                     {
                         "uta": true
                     }
