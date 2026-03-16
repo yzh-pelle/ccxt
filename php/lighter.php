@@ -392,7 +392,7 @@ class lighter extends Exchange {
         $apiKeyIndex = null;
         list($apiKeyIndex, $params) = $this->handle_option_and_params_2($params, 'loadAccount', 'apiKeyIndex', 'api_key_index');
         $accountIndex = null;
-        list($accountIndex, $params) = $this->handle_account_index($params, 'loadAccount', 'accountIndex', 'account_index');
+        list($accountIndex, $params) = $this->handle_option_and_params_2($params, 'loadAccount', 'accountIndex', 'account_index');
         $privateKeyIsSet = ($this->privateKey !== null) && ($this->privateKey !== '');
         if ($privateKeyIsSet && ($libraryPath !== null) && ($apiKeyIndex !== null) && ($accountIndex !== null)) {
             $signer = $this->load_lighter_library($libraryPath, $this->options['chainId'], $this->privateKey, $apiKeyIndex, $accountIndex);
