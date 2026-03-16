@@ -911,6 +911,10 @@ public partial class hyperliquid : Exchange
             object quoteTokenInfo = this.safeDict(tokens, quoteTokenPos, new Dictionary<string, object>() {});
             object baseName = this.safeString(baseTokenInfo, "name");
             object quoteId = this.safeString(quoteTokenInfo, "name");
+            if (isTrue(isTrue(isEqual(baseName, null)) || isTrue(isEqual(quoteId, null))))
+            {
+                continue;
+            }
             // do spot currency mapping
             object spotCurrencyMapping = this.safeDict(this.options, "spotCurrencyMapping", new Dictionary<string, object>() {});
             object mappedBaseName = this.safeString(spotCurrencyMapping, baseName, baseName);
