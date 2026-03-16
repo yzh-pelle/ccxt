@@ -6,7 +6,7 @@ import { AccountSuspended, ArgumentsRequired, AuthenticationError, BadRequest, B
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE, TRUNCATE } from './base/functions/number.js';
 import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { ADL, Account, Balances, Bool, BorrowInterest, Currency, Currencies, DepositAddress, Dict, FundingHistory, FundingRate, Int, int, LedgerEntry, Leverage, LeverageTier, MarginMode, MarginModification, Market, Num, OHLCV, Order, OrderBook, OrderRequest, OrderSide, OrderType, Position, Str, Strings, Ticker, Tickers, Trade, TradingFeeInterface, Transaction, TransferEntry } from './base/types.js';
+import type { ADL, Account, Balances, Bool, BorrowInterest, Currency, Currencies, DepositAddress, Dict, FundingHistory, FundingRate, Int, int, LedgerEntry, Leverage, LeverageTier, LeverageTiers, MarginMode, MarginModification, Market, Num, OHLCV, Order, OrderBook, OrderRequest, OrderSide, OrderType, Position, Str, Strings, Ticker, Tickers, Trade, TradingFeeInterface, Transaction, TransferEntry } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -533,7 +533,7 @@ export default class kucoin extends Exchange {
                     'get': {
                         'market/announcement': 40,
                         'market/currency': 6,
-                        'market/currencies': 6,
+                        'asset/currencies': 6,
                         'market/instrument': 8,
                         'market/ticker': 30,
                         'market/trade': 6,
@@ -1557,7 +1557,7 @@ export default class kucoin extends Exchange {
         let uta = undefined;
         [ uta, params ] = this.handleOptionAndParams (params, 'fetchMarkets', 'uta', false);
         if (uta) {
-            return await this.fetchUtaMarkets (params);
+            return await this.fetchUTAMarkets (params);
         }
         const defaultTypes = [ 'spot', 'swap', 'future', 'contract' ];
         const fetchMarketsOptions = this.safeDict (this.options, 'fetchMarkets');
@@ -1940,7 +1940,7 @@ export default class kucoin extends Exchange {
         return result;
     }
 
-    async fetchUtaMarkets (params = {}): Promise<Market[]> {
+    async fetchUTAMarkets (params = {}): Promise<Market[]> {
         const promises = [];
         promises.push (this.utaGetMarketInstrument (this.extend (params, { 'tradeType': 'SPOT' })));
         //
@@ -2157,48 +2157,91 @@ export default class kucoin extends Exchange {
      * @name kucoin#fetchCurrencies
      * @description fetches all available currencies on an exchange
      * @see https://www.kucoin.com/docs-new/rest/spot-trading/market-data/get-all-currencies
+     * @see https://www.kucoin.com/docs-new/rest/ua/get-currencies
      * @param {object} params extra parameters specific to the exchange API endpoint
+     * @param {boolean} [params.uta] set to true for the unified trading account (uta), defaults to false
      * @returns {object} an associative dictionary of currencies
      */
     async fetchCurrencies (params = {}): Promise<Currencies> {
-        const response = await this.publicGetCurrencies (params);
-        //
-        //    {
-        //        "code":"200000",
-        //        "data":[
-        //           {
-        //              "currency":"CSP",
-        //              "name":"CSP",
-        //              "fullName":"Caspian",
-        //              "precision":8,
-        //              "confirms":null,
-        //              "contractAddress":null,
-        //              "isMarginEnabled":false,
-        //              "isDebitEnabled":false,
-        //              "chains":[
-        //                 {
-        //                    "chainName":"ERC20",
-        //                    "chainId": "eth"
-        //                    "withdrawalMinSize":"2999",
-        //                    "depositMinSize":null,
-        //                    "withdrawFeeRate":"0",
-        //                    "withdrawalMinFee":"2999",
-        //                    "isWithdrawEnabled":false,
-        //                    "isDepositEnabled":false,
-        //                    "confirms":12,
-        //                    "preConfirms":12,
-        //                    "withdrawPrecision": 8,
-        //                    "maxWithdraw": null,
-        //                    "maxDeposit": null,
-        //                    "needTag": false,
-        //                    "contractAddress":"0xa6446d655a0c34bc4f05042ee88170d056cbaf45",
-        //                    "depositFeeRate": "0.001", // present for some currencies/networks
-        //                 }
-        //              ]
-        //           },
-        //        ]
-        //    }
-        //
+        let uta = false;
+        [ uta, params ] = this.handleOptionAndParams (params, 'fetchCurrencies', 'uta', uta);
+        let response = undefined;
+        if (uta) {
+            //
+            //     {
+            //         "code": "200000",
+            //         "data": [
+            //             {
+            //                 "currency": "CSP",
+            //                 "name": "CSP",
+            //                 "fullName": "Caspian",
+            //                 "precision": 8,
+            //                 "isMarginEnabled": false,
+            //                 "isDebitEnabled": false,
+            //                 "items": [
+            //                     {
+            //                         "chainName": "ERC20",
+            //                         "minWithdrawSize": "2999",
+            //                         "minDepositSize": null,
+            //                         "withdrawFeeRate": "0",
+            //                         "minWithdrawFee": "2999",
+            //                         "isWithdrawEnabled": false,
+            //                         "isDepositEnabled": false,
+            //                         "confirms": 96,
+            //                         "preConfirms": 32,
+            //                         "contractAddress": "0xa6446d655a0c34bc4f05042ee88170d056cbaf45",
+            //                         "withdrawPrecision": 8,
+            //                         "maxWithdrawSize": null,
+            //                         "maxDepositSize": null,
+            //                         "isMemoRequired": false,
+            //                         "chainId": "eth"
+            //                     }
+            //                 ]
+            //             }
+            //         ]
+            //     }
+            //
+            response = await this.utaGetAssetCurrencies (params);
+        } else {
+            //
+            //    {
+            //        "code":"200000",
+            //        "data":[
+            //           {
+            //              "currency":"CSP",
+            //              "name":"CSP",
+            //              "fullName":"Caspian",
+            //              "precision":8,
+            //              "confirms":null,
+            //              "contractAddress":null,
+            //              "isMarginEnabled":false,
+            //              "isDebitEnabled":false,
+            //              "chains":[
+            //                 {
+            //                    "chainName":"ERC20",
+            //                    "chainId": "eth"
+            //                    "withdrawalMinSize":"2999",
+            //                    "depositMinSize":null,
+            //                    "withdrawFeeRate":"0",
+            //                    "withdrawalMinFee":"2999",
+            //                    "isWithdrawEnabled":false,
+            //                    "isDepositEnabled":false,
+            //                    "confirms":12,
+            //                    "preConfirms":12,
+            //                    "withdrawPrecision": 8,
+            //                    "maxWithdraw": null,
+            //                    "maxDeposit": null,
+            //                    "needTag": false,
+            //                    "contractAddress":"0xa6446d655a0c34bc4f05042ee88170d056cbaf45",
+            //                    "depositFeeRate": "0.001", // present for some currencies/networks
+            //                 }
+            //              ]
+            //           },
+            //        ]
+            //    }
+            //
+            response = await this.publicGetCurrencies (params);
+        }
         const currenciesData = this.safeList (response, 'data', []);
         const brokenCurrencies = this.safeList (this.options, 'brokenCurrencies', [ '00', 'OPEN_ERROR', 'HUF', 'BDT' ]);
         const result: Dict = {};
@@ -2210,7 +2253,7 @@ export default class kucoin extends Exchange {
             }
             const code = this.safeCurrencyCode (id);
             const networks: Dict = {};
-            const chains = this.safeList (entry, 'chains', []);
+            const chains = this.safeList2 (entry, 'chains', 'items', []);
             const chainsLength = chains.length;
             for (let j = 0; j < chainsLength; j++) {
                 const chain = chains[j];
@@ -2222,18 +2265,18 @@ export default class kucoin extends Exchange {
                     'name': this.safeString (chain, 'chainName'),
                     'code': networkCode,
                     'active': undefined,
-                    'fee': this.safeNumber (chain, 'withdrawalMinFee'),
+                    'fee': this.safeNumber2 (chain, 'withdrawalMinFee', 'minWithdrawFee'),
                     'deposit': this.safeBool (chain, 'isDepositEnabled'),
                     'withdraw': this.safeBool (chain, 'isWithdrawEnabled'),
                     'precision': this.parseNumber (this.parsePrecision (this.safeString (chain, 'withdrawPrecision'))),
                     'limits': {
                         'withdraw': {
-                            'min': this.safeNumber (chain, 'withdrawalMinSize'),
-                            'max': this.safeNumber (chain, 'maxWithdraw'),
+                            'min': this.safeNumber2 (chain, 'withdrawalMinSize', 'minWithdrawSize'),
+                            'max': this.safeNumber2 (chain, 'maxWithdraw', 'maxWithdrawSize'),
                         },
                         'deposit': {
-                            'min': this.safeNumber (chain, 'depositMinSize'),
-                            'max': this.safeNumber (chain, 'maxDeposit'),
+                            'min': this.safeNumber2 (chain, 'depositMinSize', 'minDepositSize'),
+                            'max': this.safeNumber2 (chain, 'maxDeposit', 'maxDepositSize'),
                         },
                     },
                 };
@@ -2715,6 +2758,7 @@ export default class kucoin extends Exchange {
     typeToTradeType (type: Str): Str {
         const tradeTypes: Dict = {
             'spot': 'SPOT',
+            'margin': 'MARGIN',
             'swap': 'FUTURES',
         };
         return this.safeString (tradeTypes, type, type);
@@ -3167,7 +3211,7 @@ export default class kucoin extends Exchange {
         request['endAt'] = this.parseToInt (Math.floor (endAt / denominator));
         let type = undefined;
         [ type, params ] = this.handleMarketTypeAndParams ('fetchOHLCV', market, params);
-        if (type === 'spot') {
+        if ((type === 'spot') || (type === 'margin')) {
             request['tradeType'] = 'SPOT';
         } else {
             request['tradeType'] = 'FUTURES';
@@ -3534,7 +3578,7 @@ export default class kucoin extends Exchange {
             }
             request['limit'] = limit;
             request['symbol'] = market['id'];
-            if (type === 'spot') {
+            if ((type === 'spot') || (type === 'margin')) {
                 request['tradeType'] = 'SPOT';
             } else {
                 request['tradeType'] = 'FUTURES';
@@ -5874,7 +5918,7 @@ export default class kucoin extends Exchange {
         let type = undefined;
         [ type, params ] = this.handleMarketTypeAndParams ('fetchTrades', market, params);
         if (uta) {
-            if (type === 'spot') {
+            if ((type === 'spot') || (type === 'margin')) {
                 request['tradeType'] = 'SPOT';
             } else {
                 request['tradeType'] = 'FUTURES';
@@ -5900,7 +5944,7 @@ export default class kucoin extends Exchange {
             //
             const data = this.safeDict (response, 'data', {});
             trades = this.safeList (data, 'list', []);
-        } else if (type === 'spot') {
+        } else if ((type === 'spot') || (type === 'margin')) {
             response = await this.publicGetMarketHistories (this.extend (request, params));
             //
             //     {
@@ -8220,7 +8264,7 @@ export default class kucoin extends Exchange {
      * @see https://www.kucoin.com/docs-new/rest/futures-trading/funding-fees/get-current-funding-rate
      * @param {string} symbol unified market symbol
      * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @param {boolean} [params.uta] set to true for the unified trading account (uta), defaults to true
+     * @param {boolean} [params.uta] set to true for the unified trading account (uta)
      * @returns {object} a [funding rate structure]{@link https://docs.ccxt.com/?id=funding-rate-structure}
      */
     async fetchFundingRate (symbol: string, params = {}): Promise<FundingRate> {
@@ -8229,7 +8273,7 @@ export default class kucoin extends Exchange {
         const request: Dict = {
             'symbol': market['id'],
         };
-        let uta = false; // for backward compatibility, dafult endpoint is uta
+        let uta = false;
         [ uta, params ] = this.handleOptionAndParams (params, 'fetchFundingRate', 'uta', uta);
         let response = undefined;
         if (uta) {
@@ -9206,6 +9250,7 @@ export default class kucoin extends Exchange {
      * @see https://www.kucoin.com/docs-new/rest/futures-trading/positions/get-isolated-margin-risk-limit
      * @param {string} symbol unified market symbol
      * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {boolean} [params.uta] set to true to fetch leverage tiers for unified trading account instead of futures account (default is false)
      * @returns {object} a [leverage tiers structure]{@link https://docs.ccxt.com/?id=leverage-tiers-structure}
      */
     async fetchMarketLeverageTiers (symbol: string, params = {}): Promise<LeverageTier[]> {
@@ -9213,6 +9258,12 @@ export default class kucoin extends Exchange {
         const market = this.market (symbol);
         if (!market['contract']) {
             throw new BadRequest (this.id + ' fetchMarketLeverageTiers() supports contract markets only');
+        }
+        let uta = false;
+        [ uta, params ] = this.handleOptionAndParams (params, 'fetchMarketLeverageTiers', 'uta', uta);
+        if (uta) {
+            const result = await this.fetchLeverageTiers ([ symbol ], params);
+            return this.safeList (result, symbol, []);
         }
         const request: Dict = {
             'symbol': market['id'],
@@ -9248,6 +9299,7 @@ export default class kucoin extends Exchange {
          * @param {object} market CCXT market
          */
         //
+        // futures
         //    {
         //        "symbol": "ETHUSDTM",
         //        "level": 1,
@@ -9258,22 +9310,105 @@ export default class kucoin extends Exchange {
         //        "maintainMargin": 0.0050000000
         //    }
         //
+        // uta
+        //     {
+        //         "symbol": "XBTUSDTM",
+        //         "tier": 2,
+        //         "maxSize": "600000",
+        //         "minSize": "250000",
+        //         "maxLeverage": "100",
+        //         "initialMarginRate": "0.0100000000",
+        //         "maintainMarginRate": "0.0050000000"
+        //     }
+        //
         const tiers = [];
         for (let i = 0; i < info.length; i++) {
-            const tier = info[i];
+            const tier = this.safeDict (info, i);
             const marketId = this.safeString (tier, 'symbol');
+            market = this.safeMarket (marketId, market);
             tiers.push ({
-                'tier': this.safeNumber (tier, 'level'),
-                'symbol': this.safeSymbol (marketId, market, undefined, 'contract'),
+                'tier': this.safeNumber2 (tier, 'level', 'tier'),
+                'symbol': market['symbol'],
                 'currency': market['base'],
-                'minNotional': this.safeNumber (tier, 'minRiskLimit'),
-                'maxNotional': this.safeNumber (tier, 'maxRiskLimit'),
-                'maintenanceMarginRate': this.safeNumber (tier, 'maintainMargin'),
+                'minNotional': this.safeNumber2 (tier, 'minRiskLimit', 'minSize'),
+                'maxNotional': this.safeNumber2 (tier, 'maxRiskLimit', 'maxSize'),
+                'maintenanceMarginRate': this.safeNumber2 (tier, 'maintainMargin', 'maintainMarginRate'),
                 'maxLeverage': this.safeNumber (tier, 'maxLeverage'),
                 'info': tier,
             });
         }
         return tiers as LeverageTier[];
+    }
+
+    /**
+     * @method
+     * @name kucoin#fetchLeverageTiers
+     * @description retrieve information on the maximum leverage, and maintenance margin for trades of varying trade sizes
+     * @see https://www.kucoin.com/docs-new/rest/ua/get-position-tiers
+     * @param {string[]} symbols list of unified market symbols
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} a dictionary of [leverage tiers structures]{@link https://docs.ccxt.com/?id=leverage-tiers-structure}, indexed by market symbols
+     */
+    async fetchLeverageTiers (symbols: Strings = undefined, params = {}): Promise<LeverageTiers> {
+        await this.loadMarkets ();
+        if (symbols === undefined) {
+            throw new ArgumentsRequired (this.id + ' fetchLeverageTiers() requires a symbols argument');
+        }
+        symbols = this.marketSymbols (symbols, 'swap', false, true);
+        let marginMode = 'cross';
+        [ marginMode, params ] = this.handleMarginModeAndParams ('fetchLeverageTiers', params, marginMode);
+        marginMode = marginMode.toUpperCase ();
+        if (marginMode !== 'CROSS') {
+            throw new BadRequest (this.id + ' fetchLeverageTiers() supports cross margin only');
+        }
+        const marketIds = this.marketIds (symbols);
+        const request: Dict = {
+            'tradeType': 'FUTURES',
+            'marginMode': marginMode,
+            'data': 'RISK_LIMIT',
+            'accountType': 'UNIFIED',
+            'symbol': marketIds.join (','),
+        };
+        const response = await this.utaGetMarketPositionTiers (this.extend (request, params));
+        //
+        //     {
+        //         "code": "200000",
+        //         "data": [
+        //             {
+        //                 "symbol": "XBTUSDTM",
+        //                 "tier": 1,
+        //                 "maxSize": "250000",
+        //                 "minSize": "0",
+        //                 "maxLeverage": "125",
+        //                 "initialMarginRate": "0.0080000000",
+        //                 "maintainMarginRate": "0.0040000000"
+        //             },
+        //             {
+        //                 "symbol": "XBTUSDTM",
+        //                 "tier": 2,
+        //                 "maxSize": "600000",
+        //                 "minSize": "250000",
+        //                 "maxLeverage": "100",
+        //                 "initialMarginRate": "0.0100000000",
+        //                 "maintainMarginRate": "0.0050000000"
+        //             }
+        //         ]
+        //     }
+        //
+        const data = this.safeList (response, 'data', []);
+        const result = {};
+        const tiers = this.parseMarketLeverageTiers (data);
+        for (let i = 0; i < tiers.length; i++) {
+            const tier = this.safeDict (tiers, i);
+            const symbol = this.safeString (tier, 'symbol');
+            if (symbol !== undefined) {
+                if (!(symbol in result)) {
+                    result[symbol] = [];
+                }
+                result[symbol].push (tier);
+            }
+        }
+        return result;
     }
 
     sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
