@@ -5768,16 +5768,18 @@ func (this *HyperliquidCore) ParseIncome(income interface{}, optionalArgs ...int
 	var id interface{} = this.SafeString(income, "hash")
 	var timestamp interface{} = this.SafeInteger(income, "time")
 	var delta interface{} = this.SafeDict(income, "delta")
-	var baseId interface{} = this.SafeString(delta, "coin")
-	var marketSymbol interface{} = Add(baseId, "/USDC:USDC")
-	market = this.SafeMarket(marketSymbol)
-	var symbol interface{} = GetValue(market, "symbol")
+	var coin interface{} = this.SafeString(delta, "coin")
+	var marketId interface{} = nil
+	if IsTrue(!IsEqual(coin, nil)) {
+		marketId = this.CoinToMarketId(coin)
+	}
+	market = this.SafeMarket(marketId, market)
 	var amount interface{} = this.SafeString(delta, "usdc")
-	var code interface{} = this.SafeCurrencyCode("USDC")
+	var code interface{} = this.SafeString(market, "settle", "USDC")
 	var rate interface{} = this.SafeNumber(delta, "fundingRate")
 	return map[string]interface{}{
 		"info":      income,
-		"symbol":    symbol,
+		"symbol":    GetValue(market, "symbol"),
 		"code":      code,
 		"timestamp": timestamp,
 		"datetime":  this.Iso8601(timestamp),
