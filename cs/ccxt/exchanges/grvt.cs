@@ -624,7 +624,7 @@ public partial class grvt : Exchange
             { "signature", this.defaultSignature() },
         };
         request = this.createSignedRequest(request, "EIP712_WALLETLOGIN_TYPE");
-        object response = await ((Task<object>)callDynamically(this, "privateEdgePostAuthWalletLogin", new object[] { this.extend(request, parameters) }));
+        object response = await this.privateEdgePostAuthWalletLogin(this.extend(request, parameters));
         //
         //    {
         //        "location": "",
