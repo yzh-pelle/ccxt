@@ -20,6 +20,7 @@ class grvt extends Exchange {
             'rateLimit' => 10,
             'certified' => false,
             'version' => 'v1',
+            'dex' => true,
             'pro' => true,
             'has' => array(
                 'CORS' => null,
