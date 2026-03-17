@@ -1267,6 +1267,10 @@ class testMainClass {
                 'wasmExecPath' => $wasm_exec_path,
             ),
         );
+        if ($exchange_name === 'grvt') {
+            $options['apiKey'] = '';
+            $options['secret'] = '';
+        }
         $exchange = init_exchange($exchange_name, $options);
         $exchange->currencies = $currencies;
         // not working in python if assigned  in the config dict
