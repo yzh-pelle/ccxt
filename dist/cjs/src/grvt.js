@@ -27,6 +27,7 @@ class grvt extends grvt$1["default"] {
             'rateLimit': 10,
             'certified': false,
             'version': 'v1',
+            'dex': true,
             'pro': true,
             'has': {
                 'CORS': undefined,
