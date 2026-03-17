@@ -1334,6 +1334,10 @@ class testMainClass {
                 "wasmExecPath": wasmExecPath
             }
         };
+        if (exchangeName === 'grvt') {
+            options['apiKey'] = "";
+            options['secret'] = "";
+        }
         const exchange = initExchange(exchangeName, options);
         exchange.currencies = currencies;
         // not working in python if assigned  in the config dict
