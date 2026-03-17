@@ -16,6 +16,7 @@ public partial class grvt : Exchange
             { "rateLimit", 10 },
             { "certified", false },
             { "version", "v1" },
+            { "dex", true },
             { "pro", true },
             { "has", new Dictionary<string, object>() {
                 { "CORS", null },
