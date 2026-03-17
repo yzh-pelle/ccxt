@@ -10159,7 +10159,7 @@ func (this *Exchange) LoadMarketsAndSignIn() <-chan interface{} {
 		defer close(ch)
 		defer ReturnPanicError(ch)
 
-		retRes87668 := (<-promiseAll([]interface{}{this.LoadMarkets(), this.SignIn()}))
+		retRes87668 := (<-promiseAll([]interface{}{this.LoadMarkets(), <-this.callInternal("signIn")}))
 		PanicOnError(retRes87668)
 		return nil
 	}()
