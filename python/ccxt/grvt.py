@@ -36,6 +36,7 @@ class grvt(Exchange, ImplicitAPI):
             'rateLimit': 10,
             'certified': False,
             'version': 'v1',
+            'dex': True,
             'pro': True,
             'has': {
                 'CORS': None,
