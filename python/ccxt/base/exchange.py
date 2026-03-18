@@ -4,7 +4,7 @@
 
 # -----------------------------------------------------------------------------
 
-__version__ = '4.5.43'
+__version__ = '4.5.44'
 
 # -----------------------------------------------------------------------------
 
@@ -3483,6 +3483,9 @@ class Exchange(object):
         # i.e. isRoundNumber(1.000) returns True, while isInteger(1.000) returns False
         res = self.parse_to_numeric((value % 1))
         return res == 0
+
+    def non_empty_string(self, value):
+        return self.value_is_defined(value) and value != ''
 
     def safe_number_omit_zero(self, obj: object, key: IndexType, defaultValue: Num = None):
         value = self.safe_string(obj, key)

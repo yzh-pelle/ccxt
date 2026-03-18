@@ -46,11 +46,11 @@ use Lighter\Signer;
 
 use Exception;
 
-$version = '4.5.43';
+$version = '4.5.44';
 
 class Exchange extends \ccxt\Exchange {
 
-    const VERSION = '4.5.43';
+    const VERSION = '4.5.44';
 
     public $browser;
     public $marketsLoading = null;
@@ -1629,6 +1629,10 @@ class Exchange extends \ccxt\Exchange {
         // i.e. isRoundNumber(1.000) returns true, while isInteger(1.000) returns false
         $res = $this->parse_to_numeric((fmod($value, 1)));
         return $res === 0;
+    }
+
+    public function non_empty_string($value) {
+        return $this->value_is_defined($value) && $value !== '';
     }
 
     public function safe_number_omit_zero(array $obj, int|string $key, ?float $defaultValue = null) {
