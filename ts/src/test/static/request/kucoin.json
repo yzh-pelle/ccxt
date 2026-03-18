@@ -753,6 +753,13 @@
         ],
         "fetchOpenOrders": [
             {
+                "description": "spot open orders",
+                "method": "fetchOpenOrders",
+                "url": "https://api.kucoin.com/api/v1/orders?tradeType=TRADE&status=active",
+                "input": [],
+                "output": null
+            },
+            {
                 "description": "fetch open margin stop orders",
                 "method": "fetchOpenOrders",
                 "url": "https://api.kucoin.com/api/v3/hf/margin/stop-orders?symbol=DOGE-USDT&tradeType=MARGIN_TRADE",
@@ -825,6 +832,13 @@
             }
         ],
         "fetchClosedOrders": [
+            {
+                "description": "spot closed orders",
+                "method": "fetchClosedOrders",
+                "url": "https://api.kucoin.com/api/v1/orders?tradeType=TRADE&status=done",
+                "input": [],
+                "output": null
+            },
             {
                 "description": "Swap closed orders",
                 "method": "fetchClosedOrders",
@@ -1232,6 +1246,13 @@
             }
         ],
         "fetchMyTrades": [
+            {
+                "description": "spot trades",
+                "method": "fetchMyTrades",
+                "url": "https://api.kucoin.com/api/v1/fills",
+                "input": [],
+                "output": null
+            },
             {
                 "description": "fetch my margin trades",
                 "method": "fetchMyTrades",
