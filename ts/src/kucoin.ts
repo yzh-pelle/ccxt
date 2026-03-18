@@ -729,10 +729,10 @@ export default class kucoin extends Exchange {
                     '600101': InvalidOrder, // {"msg":"The order funds should more then 0.1 USDT.","code":"600101"}
                     '900014': BadRequest, // {"code":"900014","msg":"Invalid chainId"}
                     // futures errors
-                    '330012': InvalidOrder,      //  {"msg":"Your order is in One-Way Mode, while your account is set to Hedge Mode. Update your settings so they match and try again.","code":"330012"}
-                    '330005': InvalidOrder,    // {"msg":"The order's margin mode does not match the selected one. Please switch and try again.","code":"330005"}
-                    '100001': OrderNotFound,     // {"msg":"error.getOrder.orderNotExist","code":"100001"}
-                    '100004': BadRequest,       // {"code":"100004","msg":"Order is in not cancelable state"}
+                    '330012': InvalidOrder, // {"msg":"Your order is in One-Way Mode, while your account is set to Hedge Mode. Update your settings so they match and try again.","code":"330012"}
+                    '330005': InvalidOrder, // {"msg":"The order's margin mode does not match the selected one. Please switch and try again.","code":"330005"}
+                    '100001': OrderNotFound, // {"msg":"error.getOrder.orderNotExist","code":"100001"}
+                    '100004': BadRequest, // {"code":"100004","msg":"Order is in not cancelable state"}
                     '300003': InsufficientFunds,
                     '300012': InvalidOrder,
                     '404000': NotSupported, // URL Not Found -- The requested resource could not be found
