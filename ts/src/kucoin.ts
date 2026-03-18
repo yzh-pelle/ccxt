@@ -5667,12 +5667,11 @@ export default class kucoin extends Exchange {
     async fetchMyTrades (symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
         await this.loadMarkets ();
         let marketType = undefined;
-        if (symbol === undefined) {
-            [ marketType, params ] = this.handleMarketTypeAndParams ('fetchMyTrades', undefined, params);
-        } else {
-            const market = this.market (symbol);
-            marketType = market['type'];
+        let market = undefined;
+        if (symbol !== undefined) {
+            market = this.market (symbol);
         }
+        [ marketType, params ] = this.handleMarketTypeAndParams ('fetchMyTrades', market, params);
         if ((marketType === 'spot') || (marketType === 'margin')) {
             return await this.fetchMySpotTrades (symbol, since, limit, params);
         } else {
