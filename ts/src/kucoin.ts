@@ -3685,7 +3685,7 @@ export default class kucoin extends Exchange {
         if (timestamp === undefined) {
             const nanoseconds = this.safeInteger (data, 'ts');
             if (nanoseconds !== undefined) {
-                timestamp = Math.floor (nanoseconds / 1000000);
+                timestamp = this.parseToInt (nanoseconds / 1000000);
             }
         }
         const orderbook = this.parseOrderBook (data, market['symbol'], timestamp, 'bids', 'asks', level - 2, level - 1);
