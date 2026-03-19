@@ -229,10 +229,6 @@ func DynamicallyCreateInstance(exchangeId string, exchangeArgs map[string]interf
 		deepcoinItf := NewDeepcoinCore()
 		deepcoinItf.Init(exchangeArgs)
 		return deepcoinItf, true
-	case "defx":
-		defxItf := NewDefxCore()
-		defxItf.Init(exchangeArgs)
-		return defxItf, true
 	case "delta":
 		deltaItf := NewDeltaCore()
 		deltaItf.Init(exchangeArgs)
@@ -409,10 +405,6 @@ func DynamicallyCreateInstance(exchangeId string, exchangeArgs map[string]interf
 		poloniexItf := NewPoloniexCore()
 		poloniexItf.Init(exchangeArgs)
 		return poloniexItf, true
-	case "timex":
-		timexItf := NewTimexCore()
-		timexItf.Init(exchangeArgs)
-		return timexItf, true
 	case "tokocrypto":
 		tokocryptoItf := NewTokocryptoCore()
 		tokocryptoItf.Init(exchangeArgs)
