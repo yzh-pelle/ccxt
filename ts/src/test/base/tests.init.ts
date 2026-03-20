@@ -37,6 +37,7 @@ import testKeysort from './test.keysort.js';
 import testImplodeParams from './test.implodeParams.js';
 import testCapitalize from './test.capitalize.js';
 import testConstants from './test.constants.js';
+import testIsJsonEncodedObject from './test.isJsonEncodedObject.js';
 
 async function baseTestsInit () {
     await testLanguageSpecific ();
@@ -75,6 +76,7 @@ async function baseTestsInit () {
     testUnique ();
     await testSleep ();
     testIo ();
+    testIsJsonEncodedObject ();
 }
 
 export default baseTestsInit;
