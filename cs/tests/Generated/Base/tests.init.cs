@@ -30,6 +30,7 @@ public partial class BaseTest
             testOmit();
             testGroupBy();
             testIndexBy();
+            testInArray();
             testFilterBy();
             testHandleMethods();
             testRemoveRepeatedElementsFromArray();
@@ -45,5 +46,6 @@ public partial class BaseTest
             testUnique();
             await testSleep();
             testIo();
+            testIsJsonEncodedObject();
         }
 }
