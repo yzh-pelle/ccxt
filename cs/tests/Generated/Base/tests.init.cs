@@ -36,6 +36,7 @@ public partial class BaseTest
             testRemoveRepeatedElementsFromArray();
             testParsePrecision();
             testPrecisionFromString();
+            testStrip();
             testExtractParams();
             testArraysConcat();
             testUuid();
