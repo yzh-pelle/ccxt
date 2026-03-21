@@ -41,6 +41,16 @@ export default class kucoin extends kucoinRest {
                 'unWatchTrades': true,
                 'unWatchhTradesForSymbols': true,
             },
+            'urls': {
+                // only for pro (uta) accounts
+                'api': {
+                    'ws': {
+                        'spot': 'wss://x-push-spot.kucoin.com',
+                        'contract': 'wss://x-push-futures.kucoin.com',
+                        'private': 'wss://wsapi-push.kucoin.com',
+                    },
+                },
+            },
             'options': {
                 'tradesLimit': 1000,
                 'watchTicker': {
@@ -167,6 +177,23 @@ export default class kucoin extends kucoinRest {
         return await this.watch (url, messageHash, message, subscriptionHash, subscription);
     }
 
+    async subscribePublicUta (messageHash, channel, symbol, params = {}, subscription = undefined) {
+        const requestId = this.requestId ().toString ();
+        const market = this.market (symbol);
+        const tradeType = market['contract'] ? 'FUTURES' : 'SPOT';
+        const urlType = market['contract'] ? 'contract' : 'spot';
+        const request: Dict = {
+            'id': requestId,
+            'action': 'subscribe',
+            'channel': channel,
+            'tradeType': tradeType,
+            'symbol': market['id'],
+        };
+        const message = this.extend (request, params);
+        const url = this.safeString (this.urls['api']['ws'], urlType);
+        return await this.watch (url, messageHash, message, messageHash, subscription);
+    }
+
     async unSubscribe (url, messageHash, topic, subscriptionHash, params = {}, subscription: Dict = undefined) {
         return await this.unSubscribeMultiple (url, [ messageHash ], topic, [ subscriptionHash ], params, subscription);
     }
@@ -218,14 +245,24 @@ export default class kucoin extends kucoinRest {
      * @description watches a price ticker, a statistical calculation with the information calculated over the past 24 hours for a specific market
      * @see https://www.kucoin.com/docs-new/3470063w0
      * @see https://www.kucoin.com/docs-new/3470081w0
+     * @see https://www.kucoin.com/docs-new/3470222w0
      * @param {string} symbol unified symbol of the market to fetch the ticker for
      * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {boolean} [params.uta] set to true for the unified trading account (uta), defaults to false
      * @returns {object} a [ticker structure]{@link https://docs.ccxt.com/?id=ticker-structure}
      */
     async watchTicker (symbol: string, params = {}): Promise<Ticker> {
         await this.loadMarkets ();
         const market = this.market (symbol);
         symbol = market['symbol'];
+        let messageHash = 'ticker:' + symbol;
+        let uta = false;
+        [ uta, params ] = this.handleOptionAndParams (params, 'watchTicker', 'uta', uta);
+        if (uta) {
+            messageHash = 'uta:' + messageHash;
+            const channel = 'ticker';
+            return await this.subscribePublicUta (messageHash, channel, symbol, params);
+        }
         const isFuturesMethod = market['contract'];
         const url = await this.negotiate (false, isFuturesMethod);
         let method = '/market/snapshot';
@@ -235,7 +272,6 @@ export default class kucoin extends kucoinRest {
             [ method, params ] = this.handleOptionAndParams (params, 'watchTicker', 'spotMethod', method);
         }
         const topic = method + ':' + market['id'];
-        const messageHash = 'ticker:' + symbol;
         return await this.subscribe (url, messageHash, topic, params);
     }
 
@@ -470,6 +506,63 @@ export default class kucoin extends kucoinRest {
         this.tickers[market['symbol']] = ticker;
         const messageHash = 'ticker:' + market['symbol'];
         client.resolve (ticker, messageHash);
+    }
+
+    handleUtaTicker (client: Client, message) {
+        //
+        //     {
+        //         "T": "ticker.SPOT",
+        //         "P": "1774100940787520626",
+        //         "d": {
+        //             "A": "0.5972689",
+        //             "B": "23.3114947",
+        //             "E": 20310552932,
+        //             "M": "1774100940780000000",
+        //             "S": "SELL",
+        //             "a": "2155.55",
+        //             "b": "2155.54",
+        //             "l": "2155.54",
+        //             "q": "0.0001529",
+        //             "s": "ETH-USDT"
+        //         }
+        //     }
+        //
+        const data = this.safeDict (message, 'd', {});
+        const marketId = this.safeString (data, 's');
+        const market = this.safeMarket (marketId);
+        const ticker = this.parseWsUtaTicker (data, market);
+        this.tickers[market['symbol']] = ticker;
+        const messageHash = 'uta:ticker:' + market['symbol'];
+        client.resolve (ticker, messageHash);
+    }
+
+    parseWsUtaTicker (ticker, market = undefined) {
+        const symbol = this.safeString (market, 'symbol');
+        market = this.safeMarket (symbol, market);
+        const timestamp = this.safeIntegerProduct (ticker, 'M', 0.000001);
+        return this.safeTicker ({
+            'symbol': symbol,
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'high': undefined,
+            'low': undefined,
+            'bid': this.safeString (ticker, 'a'),
+            'bidVolume': this.safeString (ticker, 'A'),
+            'ask': this.safeString (ticker, 'b'),
+            'askVolume': this.safeString (ticker, 'B'),
+            'vwap': undefined,
+            'open': undefined,
+            'close': undefined,
+            'last': this.safeString (ticker, 'l'),
+            'previousClose': undefined,
+            'change': undefined,
+            'percentage': undefined,
+            'average': undefined,
+            'baseVolume': undefined,
+            'quoteVolume': undefined,
+            'markPrice': undefined,
+            'info': ticker,
+        }, market);
     }
 
     /**
@@ -2078,7 +2171,7 @@ export default class kucoin extends kucoinRest {
             this.handleTicker (client, message);
             return;
         }
-        const subject = this.safeString (message, 'subject');
+        const subject = this.safeString2 (message, 'subject', 'T');
         const methods: Dict = {
             'level1': this.handleBidAsk,
             'level2': this.handleOrderBook,
@@ -2103,6 +2196,9 @@ export default class kucoin extends kucoinRest {
             'position.change': this.handlePosition,
             'position.settlement': this.handlePosition,
             'position.adjustRiskLimit': this.handlePosition,
+            // uta messages
+            'ticker.SPOT': this.handleUtaTicker,
+            'ticker.FUTURES': this.handleUtaTicker,
         };
         const method = this.safeValue (methods, subject);
         if (method !== undefined) {
@@ -2160,6 +2256,8 @@ export default class kucoin extends kucoinRest {
         const method = this.safeValue (methods, type);
         if (method !== undefined) {
             method.call (this, client, message);
+        } else if ('T' in message) { // uta messages
+            this.handleSubject (client, message);
         }
     }
 
