@@ -39,6 +39,7 @@ include_once __DIR__ . '/test_after_constructor.php';
 include_once __DIR__ . '/test_handle_methods.php';
 include_once __DIR__ . '/test_remove_repeated_elements_from_array.php';
 include_once __DIR__ . '/test_parse_precision.php';
+include_once __DIR__ . '/test_strip.php';
 include_once __DIR__ . '/test_arrays_concat.php';
 include_once __DIR__ . '/test_set_markets_from_exchange.php';
 include_once __DIR__ . '/test_sleep.php';
@@ -78,6 +79,7 @@ function base_tests_init() {
         test_remove_repeated_elements_from_array();
         test_parse_precision();
         test_precision_from_string();
+        test_strip();
         test_extract_params();
         test_arrays_concat();
         test_uuid();
