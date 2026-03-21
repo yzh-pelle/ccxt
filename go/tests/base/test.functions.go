@@ -38,6 +38,7 @@ var FunctionsMap = map[string]interface{}{
 	"sleep":                           TestSleep,
 	"sort":                            TestSort,
 	"sortBy":                          TestSortBy,
+	"strip":                           TestStrip,
 	"sum":                             TestSum,
 	"unique":                          TestUnique,
 	"urlencodeBase64":                 TestUrlencodeBase64,
