@@ -3904,8 +3904,8 @@ class Exchange {
         return $res === 0;
     }
 
-    public function non_empty_string($value) {
-        return $this->value_is_defined($value) && $value !== '';
+    public function is_empty_string($value) {
+        return !$this->value_is_defined($value) || $value === '';
     }
 
     public function safe_number_omit_zero(array $obj, int|string $key, ?float $defaultValue = null) {
