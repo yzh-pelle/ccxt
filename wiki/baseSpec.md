@@ -61,6 +61,7 @@ create a loan to borrow margin
 * [bitget](/exchanges/bitget.md#borrowcrossmargin)
 * [bybit](/exchanges/bybit.md#borrowcrossmargin)
 * [coinmetro](/exchanges/coinmetro.md#borrowcrossmargin)
+* [gate](/exchanges/gate.md#borrowcrossmargin)
 * [htx](/exchanges/htx.md#borrowcrossmargin)
 * [kucoin](/exchanges/kucoin.md#borrowcrossmargin)
 * [okx](/exchanges/okx.md#borrowcrossmargin)
@@ -91,28 +92,6 @@ create a loan to borrow margin
 * [gate](/exchanges/gate.md#borrowisolatedmargin)
 * [htx](/exchanges/htx.md#borrowisolatedmargin)
 * [kucoin](/exchanges/kucoin.md#borrowisolatedmargin)
-
----
-
-<a name="borrowMargin" id="borrowmargin"></a>
-
-## borrowMargin
-create a loan to borrow margin
-
-**Kind**: instance   
-**Returns**: <code>object</code> - a [margin loan structure](https://docs.ccxt.com/?id=margin-loan-structure)
-
-
-| Param | Type | Required | Description |
-| --- | --- | --- | --- |
-| code | <code>string</code> | Yes | unified currency code of the currency to borrow |
-| amount | <code>float</code> | Yes | the amount to borrow |
-| params | <code>object</code> | No | extra parameters specific to the exchange API endpoint |
-| params.rate | <code>string</code> | No | '0.0002' or '0.002' extra parameter required for isolated margin |
-| params.unifiedAccount | <code>boolean</code> | No | set to true for borrowing in the unified account |
-
-##### Supported exchanges
-* [gate](/exchanges/gate.md#borrowmargin)
 
 ---
 
@@ -6861,6 +6840,7 @@ repay borrowed margin and interest
 * [bitget](/exchanges/bitget.md#repayisolatedmargin)
 * [bitmart](/exchanges/bitmart.md#repayisolatedmargin)
 * [coinex](/exchanges/coinex.md#repayisolatedmargin)
+* [gate](/exchanges/gate.md#repayisolatedmargin)
 * [htx](/exchanges/htx.md#repayisolatedmargin)
 * [kucoin](/exchanges/kucoin.md#repayisolatedmargin)
 
@@ -6877,15 +6857,12 @@ repay borrowed margin and interest
 
 | Param | Type | Required | Description |
 | --- | --- | --- | --- |
-| symbol | <code>string</code> | Yes | unified market symbol |
 | code | <code>string</code> | Yes | unified currency code of the currency to repay |
 | amount | <code>float</code> | Yes | the amount to repay |
+| symbol | <code>string</code> | Yes | not used by woo.repayMargin () |
 | params | <code>object</code> | No | extra parameters specific to the exchange API endpoint |
-| params.mode | <code>string</code> | No | 'all' or 'partial' payment mode, extra parameter required for isolated margin |
-| params.id | <code>string</code> | No | '34267567' loan id, extra parameter required for isolated margin |
 
 ##### Supported exchanges
-* [gate](/exchanges/gate.md#repaymargin)
 * [woo](/exchanges/woo.md#repaymargin)
 
 ---
