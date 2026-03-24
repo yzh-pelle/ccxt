@@ -28,6 +28,7 @@ public partial class BaseTest
             testSortBy();
             testSum();
             testUrlencodeBase64();
+            testUrlencode();
             testOmit();
             testGroupBy();
             testIndexBy();
