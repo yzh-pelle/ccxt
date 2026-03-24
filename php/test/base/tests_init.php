@@ -16,6 +16,7 @@ include_once __DIR__ . '/test_number_to_string.php';
 include_once __DIR__ . '/test_precise.php';
 include_once __DIR__ . '/test_datetime.php';
 include_once __DIR__ . '/test_cryptography.php';
+include_once __DIR__ . '/test_to_array.php';
 include_once __DIR__ . '/test_extend.php';
 include_once __DIR__ . '/test_deep_extend.php';
 include_once __DIR__ . '/language_specific/test_language_specific.php';
@@ -70,6 +71,7 @@ function base_tests_init() {
         test_precise();
         test_safe_methods();
         test_safe_ticker();
+        test_to_array();
         test_json();
         test_sort_by();
         test_sum();
