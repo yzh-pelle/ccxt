@@ -48,6 +48,7 @@ include_once __DIR__ . '/test_arrays_concat.php';
 include_once __DIR__ . '/test_set_markets_from_exchange.php';
 include_once __DIR__ . '/test_sleep.php';
 include_once __DIR__ . '/test_eth_methods.php';
+include_once __DIR__ . '/test_timeframes.php';
 include_once __DIR__ . '/test_keysort.php';
 include_once __DIR__ . '/test_implode_params.php';
 include_once __DIR__ . '/test_urlencode_nested.php';
@@ -87,6 +88,7 @@ function base_tests_init() {
         test_urlencode_with_array_repeat();
         test_parse_precision();
         test_precision_from_string();
+        test_timeframes();
         test_strip();
         test_extract_params();
         test_array_concat();
