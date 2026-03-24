@@ -53,6 +53,7 @@ from ccxt.test.base.test_arrays_concat import test_arrays_concat  # noqa E402
 from ccxt.test.base.test_set_markets_from_exchange import test_set_markets_from_exchange  # noqa E402
 from ccxt.test.base.test_sleep import test_sleep  # noqa E402
 from ccxt.test.base.test_eth_methods import test_eth_methods  # noqa E402
+from ccxt.test.base.test_timeframes import test_timeframes  # noqa E402
 from ccxt.test.base.test_keysort import test_keysort  # noqa E402
 from ccxt.test.base.test_implode_params import test_implode_params  # noqa E402
 from ccxt.test.base.test_urlencode_nested import test_urlencode_nested  # noqa E402
@@ -91,6 +92,7 @@ async def base_tests_init():
     test_urlencode_with_array_repeat()
     test_parse_precision()
     test_precision_from_string()
+    test_timeframes()
     test_strip()
     test_extract_params()
     test_array_concat()
