@@ -41,6 +41,7 @@ public partial class BaseTest
             testPrecisionFromString();
             testTimeframes();
             testStrip();
+            testRawencode();
             testExtractParams();
             testArrayConcat();
             testArraysConcat();
