@@ -23,6 +23,7 @@ import testGroupBy from './test.groupBy.js';
 import testIndexBy from './test.indexBy.js';
 import testFilterBy from './test.filterBy.js';
 import testUuid from './test.uuid.js';
+import testIsEmpty from './test.isEmpty.js';
 import testInArray from './test.inArray.js';
 import testPrecisionFromString from './test.precisionFromString.js';
 import testUrlencodeBase64 from './test.urlencodeBase64.js';
@@ -70,6 +71,7 @@ async function baseTestsInit () {
     testFilterBy ();
     testHandleMethods ();
     testRemoveRepeatedElementsFromArray ();
+    testIsEmpty ();
     testUrlencodeWithArrayRepeat ();
     testParsePrecision ();
     testPrecisionFromString ();
