@@ -21,6 +21,7 @@ from ccxt.test.base.test_number_to_string import test_number_to_string  # noqa E
 from ccxt.test.base.test_precise import test_precise  # noqa E402
 from ccxt.test.base.test_datetime import test_datetime  # noqa E402
 from ccxt.test.base.test_cryptography import test_cryptography  # noqa E402
+from ccxt.test.base.test_to_array import test_to_array  # noqa E402
 from ccxt.test.base.test_extend import test_extend  # noqa E402
 from ccxt.test.base.test_deep_extend import test_deep_extend  # noqa E402
 from ccxt.test.base.language_specific.test_language_specific import test_language_specific  # noqa E402
@@ -37,6 +38,7 @@ from ccxt.test.base.test_group_by import test_group_by  # noqa E402
 from ccxt.test.base.test_index_by import test_index_by  # noqa E402
 from ccxt.test.base.test_filter_by import test_filter_by  # noqa E402
 from ccxt.test.base.test_uuid import test_uuid  # noqa E402
+from ccxt.test.base.test_is_empty import test_is_empty  # noqa E402
 from ccxt.test.base.test_in_array import test_in_array  # noqa E402
 from ccxt.test.base.test_precision_from_string import test_precision_from_string  # noqa E402
 from ccxt.test.base.test_urlencode_base64 import test_urlencode_base64  # noqa E402
@@ -73,6 +75,7 @@ async def base_tests_init():
     test_precise()
     test_safe_methods()
     test_safe_ticker()
+    test_to_array()
     test_json()
     test_sort_by()
     test_sum()
@@ -84,6 +87,7 @@ async def base_tests_init():
     test_filter_by()
     test_handle_methods()
     test_remove_repeated_elements_from_array()
+    test_is_empty()
     test_urlencode_with_array_repeat()
     test_parse_precision()
     test_precision_from_string()
