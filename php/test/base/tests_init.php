@@ -38,6 +38,7 @@ include_once __DIR__ . '/test_is_empty.php';
 include_once __DIR__ . '/test_in_array.php';
 include_once __DIR__ . '/test_precision_from_string.php';
 include_once __DIR__ . '/test_urlencode_base64.php';
+include_once __DIR__ . '/test_string_to_base64.php';
 include_once __DIR__ . '/test_urlencode.php';
 include_once __DIR__ . '/test_after_constructor.php';
 include_once __DIR__ . '/test_rawencode.php';
@@ -83,6 +84,7 @@ function base_tests_init() {
         test_sort_by();
         test_sum();
         test_urlencode_base64();
+        test_string_to_base64();
         test_urlencode();
         test_omit();
         test_group_by();
