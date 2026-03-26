@@ -43,6 +43,7 @@ public partial class BaseTest
             testTimeframes();
             testStrip();
             testRawencode();
+            testStringToBase16();
             testExtractParams();
             testArrayConcat();
             testArraysConcat();
