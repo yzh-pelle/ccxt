@@ -43,6 +43,7 @@ from ccxt.test.base.test_is_empty import test_is_empty  # noqa E402
 from ccxt.test.base.test_in_array import test_in_array  # noqa E402
 from ccxt.test.base.test_precision_from_string import test_precision_from_string  # noqa E402
 from ccxt.test.base.test_urlencode_base64 import test_urlencode_base64  # noqa E402
+from ccxt.test.base.test_string_to_base64 import test_string_to_base64  # noqa E402
 from ccxt.test.base.test_urlencode import test_urlencode  # noqa E402
 from ccxt.test.base.test_after_constructor import test_after_constructor  # noqa E402
 from ccxt.test.base.test_rawencode import test_rawencode  # noqa E402
@@ -87,6 +88,7 @@ async def base_tests_init():
     test_sort_by()
     test_sum()
     test_urlencode_base64()
+    test_string_to_base64()
     test_urlencode()
     test_omit()
     test_group_by()
