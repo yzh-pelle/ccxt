@@ -58,5 +58,6 @@ public partial class BaseTest
             await testSleep();
             testIo();
             testIsJsonEncodedObject();
+            testEncodeDecode();
         }
 }
