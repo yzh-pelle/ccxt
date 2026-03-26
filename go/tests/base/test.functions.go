@@ -44,6 +44,7 @@ var FunctionsMap = map[string]interface{}{
 	"sort":                            TestSort,
 	"sortBy":                          TestSortBy,
 	"stringToBase16":                  TestStringToBase16,
+	"stringToBase64":                  TestStringToBase64,
 	"strip":                           TestStrip,
 	"sum":                             TestSum,
 	"timeframes":                      TestTimeframes,
