@@ -54,6 +54,7 @@ include_once __DIR__ . '/test_timeframes.php';
 include_once __DIR__ . '/test_keysort.php';
 include_once __DIR__ . '/test_implode_params.php';
 include_once __DIR__ . '/test_urlencode_nested.php';
+include_once __DIR__ . '/test_string_to_base16.php';
 include_once __DIR__ . '/test_capitalize.php';
 include_once __DIR__ . '/test_constants.php';
 include_once __DIR__ . '/test_is_json_encoded_object.php';
@@ -94,6 +95,7 @@ function base_tests_init() {
         test_timeframes();
         test_strip();
         test_rawencode();
+        test_string_to_base16();
         test_extract_params();
         test_array_concat();
         test_arrays_concat();
