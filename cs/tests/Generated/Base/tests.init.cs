@@ -16,6 +16,7 @@ public partial class BaseTest
             testDeepExtend();
             testCryptography();
             testBinaryToBase64();
+            testBase64ToBinary();
             testDatetime();
             testDecimalToPrecision();
             testCapitalize();
