@@ -170,6 +170,7 @@ public partial class kucoin : Exchange
                 { "private", new Dictionary<string, object>() {
                     { "get", new Dictionary<string, object>() {
                         { "user-info", 20 },
+                        { "user/api-key", 20 },
                         { "accounts", 5 },
                         { "accounts/{accountId}", 5 },
                         { "accounts/ledgers", 2 },
