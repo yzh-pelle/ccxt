@@ -209,6 +209,7 @@ class kucoin(Exchange, ImplicitAPI):
                     'get': {
                         # account
                         'user-info': 20,
+                        'user/api-key': 20,
                         'accounts': 5,
                         'accounts/{accountId}': 5,
                         'accounts/ledgers': 2,
