@@ -59,6 +59,7 @@ export default class kucoin extends kucoinRest {
                 'watchOrderBook': {
                     'snapshotDelay': 5,
                     'snapshotMaxRetries': 3,
+                    'utaDepth': '50', // '1', '5', '50' or 'increment'
                     'spotMethod': '/market/level2', // '/spotMarket/level2Depth5' or '/spotMarket/level2Depth50'
                     'contractMethod': '/contractMarket/level2', // '/contractMarket/level2Depth5' or '/contractMarket/level2Depth20'
                 },
@@ -290,8 +291,10 @@ export default class kucoin extends kucoinRest {
      * @description unWatches a price ticker, a statistical calculation with the information calculated over the past 24 hours for a specific market
      * @see https://www.kucoin.com/docs-new/3470063w0
      * @see https://www.kucoin.com/docs-new/3470081w0
+     * @see https://www.kucoin.com/docs-new/3470222w0
      * @param {string} symbol unified symbol of the market to fetch the ticker for
      * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {boolean} [params.uta] set to true for the unified trading account (uta), defaults to false
      * @returns {object} a [ticker structure]{@link https://docs.ccxt.com/?id=ticker-structure}
      */
     async unWatchTicker (symbol: string, params = {}): Promise<Ticker> {
@@ -482,7 +485,7 @@ export default class kucoin extends kucoinRest {
             }
             const data = this.safeDict (message, 'data', {});
             const rawTicker = this.safeDict (data, 'data', data);
-            const ticker = this.parseTicker (rawTicker, market);
+            const ticker = this.parseSpotOrUtaTicker (rawTicker, market);
             const symbol = ticker['symbol'];
             this.tickers[symbol] = ticker;
             const messageHash = 'ticker:' + symbol;
@@ -722,27 +725,42 @@ export default class kucoin extends kucoinRest {
      * @description watches historical candlestick data containing the open, high, low, and close price, and the volume of a market
      * @see https://www.kucoin.com/docs-new/3470071w0
      * @see https://www.kucoin.com/docs-new/3470086w0
+     * @see https://www.kucoin.com/docs-new/3470223w0
      * @param {string} symbol unified symbol of the market to fetch OHLCV data for
      * @param {string} timeframe the length of time each candle represents
      * @param {int} [since] timestamp in ms of the earliest candle to fetch
      * @param {int} [limit] the maximum amount of candles to fetch
      * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {boolean} [params.uta] set to true for the unified trading account (uta), defaults to false
      * @returns {int[][]} A list of candles ordered as timestamp, open, high, low, close, volume
      */
     async watchOHLCV (symbol: string, timeframe: string = '1m', since: Int = undefined, limit: Int = undefined, params = {}): Promise<OHLCV[]> {
         await this.loadMarkets ();
         const market = this.market (symbol);
         symbol = market['symbol'];
-        const isFuturesMethod = market['contract'];
-        const url = await this.negotiate (false, isFuturesMethod);
         const period = this.safeString (this.timeframes, timeframe, timeframe);
-        let channelName = '/market/candles:';
-        if (isFuturesMethod) {
-            channelName = '/contractMarket/limitCandle:';
+        let messageHash = 'candles:' + symbol + ':' + timeframe;
+        let uta = false;
+        [ uta, params ] = this.handleOptionAndParams (params, 'watchOHLCV', 'uta', uta);
+        let ohlcv = undefined;
+        if (uta) {
+            const channel = 'kline';
+            messageHash = 'uta:' + messageHash;
+            const extendedParams: Dict = {
+                'interval': period,
+            };
+            params = this.extend (extendedParams, params);
+            ohlcv = await this.subscribePublicUta (messageHash, channel, symbol, this.extend (extendedParams, params));
+        } else {
+            const isFuturesMethod = market['contract'];
+            const url = await this.negotiate (false, isFuturesMethod);
+            let channelName = '/market/candles:';
+            if (isFuturesMethod) {
+                channelName = '/contractMarket/limitCandle:';
+            }
+            const topic = channelName + market['id'] + '_' + period;
+            ohlcv = await this.subscribe (url, messageHash, topic, params);
         }
-        const topic = channelName + market['id'] + '_' + period;
-        const messageHash = 'candles:' + symbol + ':' + timeframe;
-        const ohlcv = await this.subscribe (url, messageHash, topic, params);
         if (this.newUpdates) {
             limit = ohlcv.getLimit (symbol, limit);
         }
@@ -755,38 +773,53 @@ export default class kucoin extends kucoinRest {
      * @description unWatches historical candlestick data containing the open, high, low, and close price, and the volume of a market
      * @see https://www.kucoin.com/docs-new/3470071w0
      * @see https://www.kucoin.com/docs-new/3470086w0
+     * @see https://www.kucoin.com/docs-new/3470223w0
      * @param {string} symbol unified symbol of the market to fetch OHLCV data for
      * @param {string} timeframe the length of time each candle represents
      * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {boolean} [params.uta] set to true for the unified trading account (uta), defaults to false
      * @returns {int[][]} A list of candles ordered as timestamp, open, high, low, close, volume
      */
     async unWatchOHLCV (symbol: string, timeframe: string = '1m', params = {}): Promise<OHLCV[]> {
         await this.loadMarkets ();
         const market = this.market (symbol);
         symbol = market['symbol'];
-        const isFuturesMethod = market['contract'];
-        const url = await this.negotiate (false, isFuturesMethod);
-        let channelName = '/market/candles:';
-        if (isFuturesMethod) {
-            channelName = '/contractMarket/limitCandle:';
-        }
+        let uta = false;
+        [ uta, params ] = this.handleOptionAndParams (params, 'unWatchOHLCV', 'uta', uta);
         const period = this.safeString (this.timeframes, timeframe, timeframe);
-        const topic = channelName + market['id'] + '_' + period;
-        const messageHash = 'unsubscribe:candles:' + symbol + ':' + timeframe;
-        const subMessageHash = 'candles:' + symbol + ':' + timeframe;
         const symbolAndTimeframe = [ symbol, timeframe ];
-        const subscription = {
+        const subscription: Dict = {
+            'symbols': [ symbol ],
+            'symbolsAndTimeframes': [ symbolAndTimeframe ],
+            'topic': 'ohlcv',
+            'unsubscribe': true,
+        };
+        let subMessageHash = 'candles:' + symbol + ':' + timeframe;
+        if (uta) {
+            subMessageHash = 'uta:' + subMessageHash;
+            subscription['subMessageHashes'] = [ subMessageHash ];
+            const utaMessageHash = 'unsubscribe:' + subMessageHash;
+            subscription['messageHashes'] = [ utaMessageHash ];
+            const extendedParams: Dict = {
+                'interval': period,
+            };
+            return await this.subscribePublicUta (utaMessageHash, 'kline', symbol, this.extend (extendedParams, params), subscription);
+        } else {
+            const isFuturesMethod = market['contract'];
+            const url = await this.negotiate (false, isFuturesMethod);
+            let channelName = '/market/candles:';
+            if (isFuturesMethod) {
+                channelName = '/contractMarket/limitCandle:';
+            }
+            const messageHash = 'unsubscribe:' + subMessageHash;
+            const topic = channelName + market['id'] + '_' + period;
             // we have to add the topic to the messageHashes and subMessageHashes
             // because handleSubscriptionStatus needs them to remove the subscription from the client
             // without them subscription would never be removed and re-subscribe would fail because of duplicate subscriptionHash
-            'messageHashes': [ messageHash, topic ],
-            'subMessageHashes': [ subMessageHash, topic ],
-            'topic': 'ohlcv',
-            'unsubscribe': true,
-            'symbols': [ symbol ],
-            'symbolsAndTimeframes': [ symbolAndTimeframe ],
-        };
-        return await this.unSubscribe (url, messageHash, topic, messageHash, params, subscription);
+            subscription['messageHashes'] = [ messageHash, topic ];
+            subscription['subMessageHashes'] = [ subMessageHash, topic ];
+            return await this.unSubscribe (url, messageHash, topic, messageHash, params, subscription);
+        }
     }
 
     handleOHLCV (client: Client, message) {
@@ -862,19 +895,83 @@ export default class kucoin extends kucoinRest {
         client.resolve (stored, messageHash);
     }
 
+    handleUtaOHLCV (client: Client, message) {
+        //
+        //     {
+        //         "T": "kline.SPOT",
+        //         "P": "1774621652314890314",
+        //         "d": {
+        //             "a": "195333.419819132",
+        //             "s": "ETH-USDT",
+        //             "C": 1774621680,
+        //             "c": "1973.4",
+        //             "S": false,
+        //             "v": "98.941095",
+        //             "h": "1974.97",
+        //             "i": "1min",
+        //             "l": "1973.4",
+        //             "O": 1774621620,
+        //             "o": "1974.34"
+        //         }
+        //     }
+        //
+        const data = this.safeDict (message, 'd', {});
+        const marketId = this.safeString (data, 's');
+        const market = this.safeMarket (marketId);
+        const symbol = market['symbol'];
+        const interval = this.safeString (data, 'i');
+        const timeframe = this.findTimeframe (interval);
+        const messageHash = 'uta:candles:' + symbol + ':' + timeframe;
+        this.ohlcvs[symbol] = this.safeValue (this.ohlcvs, symbol, {});
+        let stored = this.safeValue (this.ohlcvs[symbol], timeframe);
+        if (stored === undefined) {
+            const limit = this.safeInteger (this.options, 'OHLCVLimit', 1000);
+            stored = new ArrayCacheByTimestamp (limit);
+            this.ohlcvs[symbol][timeframe] = stored;
+        }
+        const parsed = [
+            this.safeIntegerProduct (data, 'O', 1000),
+            this.safeNumber (data, 'o'),
+            this.safeNumber (data, 'h'),
+            this.safeNumber (data, 'l'),
+            this.safeNumber (data, 'c'),
+            this.safeNumber (data, 'v'),
+        ];
+        stored.append (parsed);
+        client.resolve (stored, messageHash);
+    }
+
     /**
      * @method
      * @name kucoin#watchTrades
      * @description get the list of most recent trades for a particular symbol
      * @see https://www.kucoin.com/docs-new/3470072w0
      * @see https://www.kucoin.com/docs-new/3470084w0
+     * @see https://www.kucoin.com/docs-new/3470224w0
      * @param {string} symbol unified symbol of the market to fetch trades for
      * @param {int} [since] timestamp in ms of the earliest trade to fetch
      * @param {int} [limit] the maximum amount of trades to fetch
      * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {boolean} [params.uta] set to true for the unified trading account (uta), defaults to false
      * @returns {object[]} a list of [trade structures]{@link https://docs.ccxt.com/?id=public-trades}
      */
     async watchTrades (symbol: string, since: Int = undefined, limit: Int = undefined, params = {}): Promise<Trade[]> {
+        let uta = false;
+        [ uta, params ] = this.handleOptionAndParams (params, 'watchTrades', 'uta', uta);
+        if (uta) {
+            await this.loadMarkets ();
+            const market = this.market (symbol);
+            symbol = market['symbol'];
+            const messageHash = 'uta:trades:' + symbol;
+            const channel = 'trade';
+            const trades = await this.subscribePublicUta (messageHash, channel, symbol, params);
+            if (this.newUpdates) {
+                const first = this.safeValue (trades, 0);
+                const tradeSymbol = this.safeString (first, 'symbol');
+                limit = trades.getLimit (tradeSymbol, limit);
+            }
+            return this.filterBySinceLimit (trades, since, limit, 'timestamp', true);
+        }
         return await this.watchTradesForSymbols ([ symbol ], since, limit, params);
     }
 
@@ -973,11 +1070,30 @@ export default class kucoin extends kucoinRest {
      * @description unWatches trades stream
      * @see https://www.kucoin.com/docs-new/3470072w0
      * @see https://www.kucoin.com/docs-new/3470084w0
+     * @see https://www.kucoin.com/docs-new/3470224w0
      * @param {string} symbol unified symbol of the market to fetch trades for
      * @param {object} [params] extra parameters specific to the exchange API endpoint
      * @returns {object[]} a list of [trade structures]{@link https://docs.ccxt.com/?id=public-trades}
      */
     async unWatchTrades (symbol: string, params = {}): Promise<any> {
+        let uta = false;
+        [ uta, params ] = this.handleOptionAndParams (params, 'watchTrades', 'uta', uta);
+        if (uta) {
+            await this.loadMarkets ();
+            const market = this.market (symbol);
+            symbol = market['symbol'];
+            const subMessageHash = 'uta:trades:' + symbol;
+            const messageHash = 'unsubscribe:' + subMessageHash;
+            const channel = 'trade';
+            const subscription = {
+                'messageHashes': [ messageHash ],
+                'subMessageHashes': [ subMessageHash ],
+                'topic': 'trades',
+                'unsubscribe': true,
+                'symbols': [ symbol ],
+            };
+            return await this.subscribePublicUta (messageHash, channel, symbol, params, subscription);
+        }
         return await this.unWatchTradesForSymbols ([ symbol ], params);
     }
 
@@ -1017,6 +1133,59 @@ export default class kucoin extends kucoinRest {
         client.resolve (cache, messageHash);
     }
 
+    handleUtaTrade (client: Client, message) {
+        //
+        //     {
+        //         "T": "trade.SPOT",
+        //         "P": "1774618231151398133",
+        //         "d": {
+        //             "E": "20745928670070784",
+        //             "M": "1774618231141000000",
+        //             "S": "buy",
+        //             "p": "1995.49",
+        //             "q": "0.3142324",
+        //             "s": "ETH-USDT",
+        //             "ti": "20745928670070784"
+        //         }
+        //     }
+        //
+        const data = this.safeDict (message, 'd', {});
+        const marketId = this.safeString (data, 'symbol');
+        const market = this.safeMarket (marketId);
+        const trade = this.parseWsUtaTrade (data, market);
+        const symbol = trade['symbol'];
+        const messageHash = 'uta:trades:' + symbol;
+        if (!(symbol in this.trades)) {
+            const limit = this.safeInteger (this.options, 'tradesLimit', 1000);
+            const stored = new ArrayCache (limit);
+            this.trades[symbol] = stored;
+        }
+        const cache = this.trades[symbol];
+        cache.append (trade);
+        client.resolve (cache, messageHash);
+    }
+
+    parseWsUtaTrade (trade, market = undefined) {
+        const marketId = this.safeString (trade, 's');
+        market = this.safeMarket (marketId, market);
+        const timestamp = this.safeIntegerProduct (trade, 'M', 0.000001);
+        return this.safeTrade ({
+            'info': trade,
+            'id': this.safeString (trade, 'ti'),
+            'order': undefined,
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'symbol': market['symbol'],
+            'type': undefined,
+            'side': this.safeString (trade, 'S'),
+            'takerOrMaker': undefined,
+            'price': this.safeString (trade, 'p'),
+            'amount': this.safeString (trade, 'q'),
+            'cost': undefined,
+            'fee': undefined,
+        }, market);
+    }
+
     /**
      * @method
      * @name kucoin#watchOrderBook
@@ -1024,10 +1193,12 @@ export default class kucoin extends kucoinRest {
      * @see https://www.kucoin.com/docs/websocket/spot-trading/public-channels/level2-market-data
      * @see https://www.kucoin.com/docs/websocket/spot-trading/public-channels/level2-5-best-ask-bid-orders
      * @see https://www.kucoin.com/docs/websocket/spot-trading/public-channels/level2-50-best-ask-bid-orders
+     * @see https://www.kucoin.com/docs-new/3470221w0
      * @description watches information on open orders with bid (buy) and ask (sell) prices, volumes and other data
      * @param {string} symbol unified symbol of the market to fetch the order book for
      * @param {int} [limit] the maximum amount of order book entries to return
      * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {boolean} [params.uta] set to true for the unified trading account (uta), defaults to false
      * @param {string} [params.method] either '/market/level2' or '/spotMarket/level2Depth5' or '/spotMarket/level2Depth50' default is '/market/level2'
      * @returns {object} A dictionary of [order book structures]{@link https://docs.ccxt.com/?id=order-book-structure} indexed by market symbols
      */
@@ -1047,6 +1218,23 @@ export default class kucoin extends kucoinRest {
         // If the size=0, update the sequence and remove the price of which the
         // size is 0 out of level 2. Fr other cases, please update the price.
         //
+        let uta = false;
+        [ uta, params ] = this.handleOptionAndParams (params, 'watchOrderBook', 'uta', uta);
+        if (uta) {
+            await this.loadMarkets ();
+            const market = this.market (symbol);
+            symbol = market['symbol'];
+            const messageHash = 'uta:orderbook:' + symbol;
+            const channel = 'obu';
+            let depth = '50'; // '1', '5', '50' or 'increment'
+            [ depth, params ] = this.handleOptionAndParams (params, 'watchOrderBook', 'utaDepth', depth);
+            // todo: handle with incremental depth after merging REST update
+            const extendedParams: Dict = {
+                'depth': depth,
+            };
+            const orderbook = await this.subscribePublicUta (messageHash, channel, symbol, extendedParams);
+            return orderbook.limit (limit);
+        }
         return await this.watchOrderBookForSymbols ([ symbol ], limit, params);
     }
 
@@ -1060,10 +1248,35 @@ export default class kucoin extends kucoinRest {
      * @description unWatches information on open orders with bid (buy) and ask (sell) prices, volumes and other data
      * @param {string} symbol unified symbol of the market to fetch the order book for
      * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {boolean} [params.uta] set to true for the unified trading account (uta), defaults to false
      * @param {string} [params.method] either '/market/level2' or '/spotMarket/level2Depth5' or '/spotMarket/level2Depth50' default is '/market/level2'
      * @returns {object} A dictionary of [order book structures]{@link https://docs.ccxt.com/?id=order-book-structure} indexed by market symbols
      */
     async unWatchOrderBook (symbol: string, params = {}): Promise<any> {
+        let uta = false;
+        [ uta, params ] = this.handleOptionAndParams (params, 'unWatchOrderBook', 'uta', uta);
+        if (uta) {
+            await this.loadMarkets ();
+            const market = this.market (symbol);
+            symbol = market['symbol'];
+            const subMessageHash = 'uta:orderbook:' + symbol;
+            const messageHash = 'unsubscribe:' + subMessageHash;
+            const channel = 'obu';
+            const subscription = {
+                'messageHashes': [ messageHash ],
+                'subMessageHashes': [ subMessageHash ],
+                'topic': 'orderbook',
+                'unsubscribe': true,
+                'symbols': [ symbol ],
+            };
+            let depth = '50'; // '1', '5', '50' or 'increment'
+            [ depth, params ] = this.handleOptionAndParams (params, 'watchOrderBook', 'utaDepth', depth);
+            // todo: handle with incremental depth after merging REST update
+            const extendedParams: Dict = {
+                'depth': depth,
+            };
+            return await this.subscribePublicUta (messageHash, channel, symbol, this.extend (extendedParams, params), subscription);
+        }
         return await this.unWatchOrderBookForSymbols ([ symbol ], params);
     }
 
@@ -1352,6 +1565,44 @@ export default class kucoin extends kucoinRest {
         // but not before, because otherwise we cannot synchronize the feed
     }
 
+    handleUtaOrderBook (client: Client, message) {
+        //
+        // snapshot
+        //     {
+        //         "T": "obu.SPOT",
+        //         "dp": "50",
+        //         "t": "snapshot",
+        //         "P": "1774624848680504909",
+        //         "d": {
+        //             "C": 20452522782,
+        //             "M": "1774624848673000000",
+        //             "O": 20452522782,
+        //             "a": [ [ "66532.5", "0.46243848" ] ],
+        //             "b": [ [ "66532.4", "0.09489" ] ],
+        //             "s": "ETH-USDT"
+        //         }
+        //     }
+        //
+        const type = this.safeString (message, 't');
+        if (type === 'snapshot') {
+            const data = this.safeDict (message, 'd', {});
+            const marketId = this.safeString (data, 's');
+            const market = this.safeMarket (marketId);
+            const symbol = market['symbol'];
+            const messageHash = 'uta:orderbook:' + symbol;
+            if (!(symbol in this.orderbooks)) {
+                this.orderbooks[symbol] = this.orderBook ();
+            }
+            const orderbook = this.orderbooks[symbol];
+            const timestamp = this.safeIntegerProduct (data, 'M', 0.000001);
+            const parsed = this.parseOrderBook (data, symbol, timestamp, 'b', 'a', 0, 1);
+            parsed['nonce'] = this.safeInteger (data, 'O');
+            orderbook.reset (parsed);
+            client.resolve (orderbook, messageHash);
+        }
+        // todo: handle with incremental depth after merging REST update
+    }
+
     handleSubscriptionStatus (client: Client, message) {
         //
         //     {
@@ -1381,6 +1632,13 @@ export default class kucoin extends kucoinRest {
             }
             this.cleanCache (subscription);
         }
+    }
+
+    async test () {
+        await this.watchOrderBook ('BTC/USDT', undefined, { 'uta': true });
+        await this.sleep (3000);
+        await this.unWatchOrderBook ('BTC/USDT', { 'uta': true });
+        await this.sleep (3000);
     }
 
     handleSystemStatus (client: Client, message) {
@@ -2218,6 +2476,12 @@ export default class kucoin extends kucoinRest {
             // uta messages
             'ticker.SPOT': this.handleUtaTicker,
             'ticker.FUTURES': this.handleUtaTicker,
+            'trade.SPOT': this.handleUtaTrade,
+            'trade.FUTURES': this.handleUtaTrade,
+            'kline.SPOT': this.handleUtaOHLCV,
+            'kline.FUTURES': this.handleUtaOHLCV,
+            'obu.SPOT': this.handleUtaOrderBook,
+            'obu.FUTURES': this.handleUtaOrderBook,
         };
         const method = this.safeValue (methods, subject);
         if (method !== undefined) {
