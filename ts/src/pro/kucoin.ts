@@ -1233,7 +1233,7 @@ export default class kucoin extends kucoinRest {
                 'depth': depth,
             };
             const orderbook = await this.subscribePublicUta (messageHash, channel, symbol, extendedParams);
-            return orderbook.limit (limit);
+            return orderbook.limit ();
         }
         return await this.watchOrderBookForSymbols ([ symbol ], limit, params);
     }
@@ -1598,7 +1598,8 @@ export default class kucoin extends kucoinRest {
             const parsed = this.parseOrderBook (data, symbol, timestamp, 'b', 'a', 0, 1);
             parsed['nonce'] = this.safeInteger (data, 'O');
             orderbook.reset (parsed);
-            client.resolve (orderbook, messageHash);
+            this.orderbooks[symbol] = orderbook;
+            client.resolve (this.orderbooks[symbol], messageHash);
         }
         // todo: handle with incremental depth after merging REST update
     }
