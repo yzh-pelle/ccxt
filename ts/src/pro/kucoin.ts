@@ -46,7 +46,7 @@ export default class kucoin extends kucoinRest {
                 'api': {
                     'ws': {
                         'spot': 'wss://x-push-spot.kucoin.com',
-                        'contract': 'wss://x-push-futures.kucoin.com',
+                        'futures': 'wss://x-push-futures.kucoin.com',
                         'private': 'wss://wsapi-push.kucoin.com',
                     },
                 },
@@ -180,17 +180,26 @@ export default class kucoin extends kucoinRest {
     async subscribePublicUta (messageHash, channel, symbol, params = {}, subscription = undefined) {
         const requestId = this.requestId ().toString ();
         const market = this.market (symbol);
-        const tradeType = market['contract'] ? 'FUTURES' : 'SPOT';
-        const urlType = market['contract'] ? 'contract' : 'spot';
+        const urlType = market['contract'] ? 'futures' : 'spot';
+        const tradeType = urlType.toUpperCase ();
+        let action = 'subscribe';
+        if (subscription !== undefined) {
+            const unsubscribe = this.safeBool (subscription, 'unsubscribe', false);
+            action = unsubscribe ? 'unsubscribe' : action;
+        }
         const request: Dict = {
             'id': requestId,
-            'action': 'subscribe',
+            'action': action,
             'channel': channel,
             'tradeType': tradeType,
             'symbol': market['id'],
         };
         const message = this.extend (request, params);
         const url = this.safeString (this.urls['api']['ws'], urlType);
+        const client = this.client (url);
+        if (!(messageHash in client.subscriptions)) {
+            client.subscriptions[requestId] = messageHash;
+        }
         return await this.watch (url, messageHash, message, messageHash, subscription);
     }
 
@@ -290,27 +299,37 @@ export default class kucoin extends kucoinRest {
         const market = this.market (symbol);
         symbol = market['symbol'];
         const isFuturesMethod = market['contract'];
-        const url = await this.negotiate (false, isFuturesMethod);
-        let method = '/market/snapshot';
-        if (isFuturesMethod) {
-            method = '/contractMarket/ticker';
+        let uta = false;
+        [ uta, params ] = this.handleOptionAndParams (params, 'unWatchTicker', 'uta', uta);
+        const subscription: Dict = {
+            'symbols': [ symbol ],
+            'topic': 'ticker',
+            'unsubscribe': true,
+        };
+        let subMessageHash = 'ticker:' + symbol;
+        if (uta) {
+            subMessageHash = 'uta:' + subMessageHash;
+            subscription['subMessageHashes'] = [ subMessageHash ];
+            const utaMessageHash = 'unsubscribe:' + subMessageHash;
+            subscription['messageHashes'] = [ utaMessageHash ];
+            return await this.subscribePublicUta (utaMessageHash, 'ticker', symbol, params, subscription);
         } else {
-            [ method, params ] = this.handleOptionAndParams (params, 'watchTicker', 'spotMethod', method);
-        }
-        const topic = method + ':' + market['id'];
-        const messageHash = 'unsubscribe:ticker:' + symbol;
-        const subMessageHash = 'ticker:' + symbol;
-        const subscription = {
+            const url = await this.negotiate (false, isFuturesMethod);
+            let method = '/market/snapshot';
+            if (isFuturesMethod) {
+                method = '/contractMarket/ticker';
+            } else {
+                [ method, params ] = this.handleOptionAndParams (params, 'watchTicker', 'spotMethod', method);
+            }
+            const topic = method + ':' + market['id'];
+            const messageHash = 'unsubscribe:' + subMessageHash;
             // we have to add the topic to the messageHashes and subMessageHashes
             // because handleSubscriptionStatus needs them to remove the subscription from the client
             // without them subscription would never be removed and re-subscribe would fail because of duplicate subscriptionHash
-            'messageHashes': [ messageHash, topic ],
-            'subMessageHashes': [ subMessageHash, topic ],
-            'topic': 'ticker',
-            'unsubscribe': true,
-            'symbols': [ symbol ],
-        };
-        return await this.unSubscribe (url, messageHash, topic, subMessageHash, params, subscription);
+            subscription['messageHashes'] = [ messageHash, topic ];
+            subscription['subMessageHashes'] = [ subMessageHash, topic ];
+            return await this.unSubscribe (url, messageHash, topic, subMessageHash, params, subscription);
+        }
     }
 
     /**
@@ -2258,6 +2277,8 @@ export default class kucoin extends kucoinRest {
             method.call (this, client, message);
         } else if ('T' in message) { // uta messages
             this.handleSubject (client, message);
+        } else if ('result' in message) { // subscription uta messages
+            this.handleSubscriptionStatus (client, message);
         }
     }
 
