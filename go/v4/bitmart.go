@@ -863,7 +863,7 @@ func (this *BitmartCore) FetchStatus(optionalArgs ...interface{}) <-chan interfa
 		if IsTrue(IsEqual(typeVar, "swap")) {
 			typeVar = "contract"
 		}
-		var service interface{} = this.SafeString(servicesByType, typeVar)
+		var service interface{} = this.SafeDict(servicesByType, typeVar)
 		var status interface{} = nil
 		var eta interface{} = nil
 		if IsTrue(!IsEqual(service, nil)) {
