@@ -948,7 +948,7 @@ class bitmart extends Exchange {
             if ($type === 'swap') {
                 $type = 'contract';
             }
-            $service = $this->safe_string($servicesByType, $type);
+            $service = $this->safe_dict($servicesByType, $type);
             $status = null;
             $eta = null;
             if ($service !== null) {
