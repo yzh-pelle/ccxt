@@ -939,7 +939,7 @@ export default class bitmart extends Exchange {
         if (type === 'swap') {
             type = 'contract';
         }
-        const service = this.safeString (servicesByType, type);
+        const service = this.safeDict (servicesByType, type);
         let status = undefined;
         let eta = undefined;
         if (service !== undefined) {
