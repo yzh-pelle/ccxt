@@ -840,7 +840,7 @@ public partial class bitmart : Exchange
         {
             type = "contract";
         }
-        object service = this.safeString(servicesByType, type);
+        object service = this.safeDict(servicesByType, type);
         object status = null;
         object eta = null;
         if (isTrue(!isEqual(service, null)))
