@@ -955,7 +955,7 @@ class bitmart(Exchange, ImplicitAPI):
         servicesByType = self.index_by(services, 'service_type')
         if type == 'swap':
             type = 'contract'
-        service = self.safe_string(servicesByType, type)
+        service = self.safe_dict(servicesByType, type)
         status = None
         eta = None
         if service is not None:
