@@ -4,7 +4,7 @@
 
 # -----------------------------------------------------------------------------
 
-__version__ = '4.5.44'
+__version__ = '4.5.46'
 
 # -----------------------------------------------------------------------------
 
@@ -1169,8 +1169,21 @@ class Exchange(object):
         return needle in haystack
 
     @staticmethod
-    def is_empty(object):
-        return not object
+    def is_empty(obj):
+
+        if obj is None:
+            return True
+
+        # skip the strings
+        if hasattr(obj, "__len__") and not isinstance(obj, (str, bytes)):
+            return len(obj) == 0
+
+        if hasattr(obj, "__dict__"):
+            # filter-out private members
+            public_vars = [k for k in vars(obj).keys() if not k.startswith('_')]
+            return len(public_vars) == 0
+
+        return False
 
     @staticmethod
     def extract_params(string):
@@ -1220,7 +1233,7 @@ class Exchange(object):
         if isinstance(params, dict):
             for key in params:
                 _encode_params(params[key], key)
-        return _urlencode.urlencode(result, quote_via=_urlencode.quote)
+        return _urlencode.urlencode(result, safe='[]', quote_via=_urlencode.quote)
 
     @staticmethod
     def rawencode(params={}, sort=False):
@@ -4490,6 +4503,9 @@ class Exchange(object):
             if isinstance(value, str):
                 reversed[value] = key
         return reversed
+
+    def string_to_base16(self, str):
+        return '0x' + self.binary_to_base16(self.base64_to_binary(self.string_to_base64(str)))
 
     def reduce_fees_by_currency(self, fees):
         #
