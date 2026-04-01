@@ -1513,8 +1513,7 @@
                 "url": "https://api.kucoin.com/api/ua/v1/unified/account/balance",
                 "input": [
                     {
-                        "uta": true,
-                        "type": "uta"
+                        "uta": true
                     }
                 ],
                 "output": null
@@ -1525,7 +1524,8 @@
                 "url": "https://api.kucoin.com/api/ua/v1/account/balance?accountType=SPOT",
                 "input": [
                     {
-                        "uta": true
+                        "uta": true,
+                        "type": "spot"
                     }
                 ],
                 "output": null
