@@ -59,7 +59,7 @@ export default class kucoin extends kucoinRest {
                 'watchOrderBook': {
                     'snapshotDelay': 5,
                     'snapshotMaxRetries': 3,
-                    'utaDepth': '50', // '1', '5', '50' or 'increment'
+                    'utaDepth': 'increment', // '1', '5', '50' or 'increment'
                     'spotMethod': '/market/level2', // '/spotMarket/level2Depth5' or '/spotMarket/level2Depth50'
                     'contractMethod': '/contractMarket/level2', // '/contractMarket/level2Depth5' or '/contractMarket/level2Depth20'
                 },
@@ -1271,11 +1271,13 @@ export default class kucoin extends kucoinRest {
     /**
      * @method
      * @name kucoin#watchOrderBook
-     * @see https://www.kucoin.com/docs/websocket/spot-trading/public-channels/level1-bbo-market-data
-     * @see https://www.kucoin.com/docs/websocket/spot-trading/public-channels/level2-market-data
-     * @see https://www.kucoin.com/docs/websocket/spot-trading/public-channels/level2-5-best-ask-bid-orders
-     * @see https://www.kucoin.com/docs/websocket/spot-trading/public-channels/level2-50-best-ask-bid-orders
-     * @see https://www.kucoin.com/docs-new/3470221w0
+     * @see https://www.kucoin.com/docs-new/3470069w0 // spot level 5
+     * @see https://www.kucoin.com/docs-new/3470070w0 // spot level 50
+     * @see https://www.kucoin.com/docs-new/3470068w0 // spot incremental
+     * @see https://www.kucoin.com/docs-new/3470083w0 // futures level 5
+     * @see https://www.kucoin.com/docs-new/3470097w0 // futures level 50
+     * @see https://www.kucoin.com/docs-new/3470082w0 // futures incremental
+     * @see https://www.kucoin.com/docs-new/3470221w0 // uta
      * @description watches information on open orders with bid (buy) and ask (sell) prices, volumes and other data
      * @param {string} symbol unified symbol of the market to fetch the order book for
      * @param {int} [limit] the maximum amount of order book entries to return
@@ -1306,15 +1308,22 @@ export default class kucoin extends kucoinRest {
             await this.loadMarkets ();
             const market = this.market (symbol);
             symbol = market['symbol'];
-            const messageHash = 'uta:orderbook:' + symbol;
-            const channel = 'obu';
-            let depth = '50'; // '1', '5', '50' or 'increment'
+            let depth = 'increment'; // '1', '5', '50' or 'increment'
             [ depth, params ] = this.handleOptionAndParams (params, 'watchOrderBook', 'utaDepth', depth);
-            // todo: handle with incremental depth after merging REST update
-            const extendedParams: Dict = {
+            const messageHash = 'uta:orderbook:' + symbol + ':depth:' + depth;
+            const channel = 'obu';
+            let subscription: Dict = {};
+            if ((depth === 'increment')) { // other streams return the entire orderbook, so we don't need to fetch the snapshot through REST
+                subscription = {
+                    'method': this.handleOrderBookSubscription,
+                    'symbols': [ symbol ],
+                    'limit': limit,
+                };
+            }
+            params = this.extend (params, {
                 'depth': depth,
-            };
-            const orderbook = await this.subscribePublicUta (messageHash, channel, symbol, extendedParams);
+            });
+            const orderbook = await this.subscribePublicUta (messageHash, channel, symbol, params, subscription);
             return orderbook.limit ();
         }
         return await this.watchOrderBookForSymbols ([ symbol ], limit, params);
@@ -1341,7 +1350,12 @@ export default class kucoin extends kucoinRest {
             await this.loadMarkets ();
             const market = this.market (symbol);
             symbol = market['symbol'];
-            const subMessageHash = 'uta:orderbook:' + symbol;
+            let depth = 'increment'; // '1', '5', '50' or 'increment'
+            [ depth, params ] = this.handleOptionAndParams (params, 'watchOrderBook', 'utaDepth', depth);
+            params = this.extend (params, {
+                'depth': depth,
+            });
+            const subMessageHash = 'uta:orderbook:' + symbol + ':depth:' + depth;
             const messageHash = 'unsubscribe:' + subMessageHash;
             const channel = 'obu';
             const subscription = {
@@ -1351,13 +1365,7 @@ export default class kucoin extends kucoinRest {
                 'unsubscribe': true,
                 'symbols': [ symbol ],
             };
-            let depth = '50'; // '1', '5', '50' or 'increment'
-            [ depth, params ] = this.handleOptionAndParams (params, 'watchOrderBook', 'utaDepth', depth);
-            // todo: handle with incremental depth after merging REST update
-            const extendedParams: Dict = {
-                'depth': depth,
-            };
-            return await this.subscribePublicUta (messageHash, channel, symbol, this.extend (extendedParams, params), subscription);
+            return await this.subscribePublicUta (messageHash, channel, symbol, params, subscription);
         }
         return await this.unWatchOrderBookForSymbols ([ symbol ], params);
     }
@@ -1371,6 +1379,7 @@ export default class kucoin extends kucoinRest {
      * @see https://www.kucoin.com/docs-new/3470083w0 // futures level 5
      * @see https://www.kucoin.com/docs-new/3470097w0 // futures level 50
      * @see https://www.kucoin.com/docs-new/3470082w0 // futures incremental
+     * @see https://www.kucoin.com/docs-new/3470221w0 // uta
      * @description watches information on open orders with bid (buy) and ask (sell) prices, volumes and other data
      * @param {string[]} symbols unified array of symbols
      * @param {int} [limit] the maximum amount of order book entries to return
@@ -1413,7 +1422,7 @@ export default class kucoin extends kucoinRest {
             const marketId = marketIds[i];
             subscriptionHashes.push (method + ':' + marketId);
         }
-        let subscription = {};
+        let subscription: Dict = {};
         if ((method === '/market/level2') || (method === '/contractMarket/level2')) { // other streams return the entire orderbook, so we don't need to fetch the snapshot through REST
             subscription = {
                 'method': this.handleOrderBookSubscription,
@@ -1574,6 +1583,62 @@ export default class kucoin extends kucoinRest {
         client.resolve (this.orderbooks[symbol], messageHash);
     }
 
+    handleUtaOrderBook (client: Client, message) {
+        //
+        // snapshot
+        //     {
+        //         "T": "obu.SPOT",
+        //         "dp": "50",
+        //         "t": "snapshot",
+        //         "P": "1774624848680504909",
+        //         "d": {
+        //             "C": 20452522782,
+        //             "M": "1774624848673000000",
+        //             "O": 20452522782,
+        //             "a": [ [ "66532.5", "0.46243848" ] ],
+        //             "b": [ [ "66532.4", "0.09489" ] ],
+        //             "s": "ETH-USDT"
+        //         }
+        //     }
+        //
+        const type = this.safeString (message, 't');
+        const data = this.safeDict (message, 'd', {});
+        const marketId = this.safeString (data, 's');
+        const market = this.safeMarket (marketId);
+        const symbol = market['symbol'];
+        const timestamp = this.safeIntegerProduct (data, 'M', 0.000001);
+        if (!(symbol in this.orderbooks)) {
+            this.orderbooks[symbol] = this.orderBook ();
+        }
+        const orderbook = this.orderbooks[symbol];
+        const depth = this.safeString (message, 'dp');
+        const messageHash = 'uta:orderbook:' + symbol + ':depth:' + depth;
+        if (type === 'snapshot') {
+            const parsed = this.parseOrderBook (data, symbol, timestamp, 'b', 'a', 0, 1);
+            parsed['nonce'] = this.safeInteger (data, 'O');
+            orderbook.reset (parsed);
+            this.orderbooks[symbol] = orderbook;
+        } else {
+            const nonce = this.safeInteger (orderbook, 'nonce');
+            const deltaEnd = this.safeInteger (data, 'C');
+            if (nonce === undefined) {
+                const cacheLength = orderbook.cache.length;
+                const subscription = this.safeValue (client.subscriptions, messageHash, {});
+                const limit = this.safeInteger (subscription, 'limit');
+                const snapshotDelay = this.handleOption ('watchOrderBook', 'snapshotDelay', 5);
+                if (cacheLength === snapshotDelay) {
+                    this.spawn (this.loadOrderBook, client, messageHash, symbol, limit, { 'uta': true });
+                }
+                orderbook.cache.push (data);
+                return;
+            } else if (nonce >= deltaEnd) {
+                return;
+            }
+        }
+        this.handleDelta (this.orderbooks[symbol], data);
+        client.resolve (this.orderbooks[symbol], messageHash);
+    }
+
     getCacheIndex (orderbook, cache) {
         const firstDelta = this.safeValue (cache, 0);
         const nonce = this.safeInteger (orderbook, 'nonce');
@@ -1593,11 +1658,15 @@ export default class kucoin extends kucoinRest {
     }
 
     handleDelta (orderbook, delta) {
-        const timestamp = this.safeInteger2 (delta, 'time', 'timestamp');
-        orderbook['nonce'] = this.safeInteger2 (delta, 'sequenceEnd', 'sequence', timestamp);
+        let timestamp = this.safeIntegerProduct (delta, 'M', 0.000001);
+        if (timestamp === undefined) {
+            timestamp = this.safeInteger2 (delta, 'sequenceEnd', 'timestamp');
+        }
+        orderbook['nonce'] = this.safeIntegerN (delta, [ 'sequenceEnd', 'sequence', 'C' ], timestamp);
         orderbook['timestamp'] = timestamp;
         orderbook['datetime'] = this.iso8601 (timestamp);
         const change = this.safeString (delta, 'change');
+        const changes = this.safeDict (delta, 'changes', delta);
         const storedBids = orderbook['bids'];
         const storedAsks = orderbook['asks'];
         if (change !== undefined) {
@@ -1613,10 +1682,14 @@ export default class kucoin extends kucoinRest {
             } else {
                 storedAsks.storeArray (value);
             }
-        } else {
-            const changes = this.safeDict (delta, 'changes', delta);
+        } else if (changes !== undefined) {
             const bids = this.safeList (changes, 'bids', []);
             const asks = this.safeList (changes, 'asks', []);
+            this.handleBidAsks (storedBids, bids);
+            this.handleBidAsks (storedAsks, asks);
+        } else {
+            const bids = this.safeList2 (delta, 'bids', 'b', []);
+            const asks = this.safeList2 (delta, 'asks', 'a', []);
             this.handleBidAsks (storedBids, bids);
             this.handleBidAsks (storedAsks, asks);
         }
@@ -1647,50 +1720,18 @@ export default class kucoin extends kucoinRest {
         // but not before, because otherwise we cannot synchronize the feed
     }
 
-    handleUtaOrderBook (client: Client, message) {
-        //
-        // snapshot
-        //     {
-        //         "T": "obu.SPOT",
-        //         "dp": "50",
-        //         "t": "snapshot",
-        //         "P": "1774624848680504909",
-        //         "d": {
-        //             "C": 20452522782,
-        //             "M": "1774624848673000000",
-        //             "O": 20452522782,
-        //             "a": [ [ "66532.5", "0.46243848" ] ],
-        //             "b": [ [ "66532.4", "0.09489" ] ],
-        //             "s": "ETH-USDT"
-        //         }
-        //     }
-        //
-        const type = this.safeString (message, 't');
-        if (type === 'snapshot') {
-            const data = this.safeDict (message, 'd', {});
-            const marketId = this.safeString (data, 's');
-            const market = this.safeMarket (marketId);
-            const symbol = market['symbol'];
-            const messageHash = 'uta:orderbook:' + symbol;
-            if (!(symbol in this.orderbooks)) {
-                this.orderbooks[symbol] = this.orderBook ();
-            }
-            const orderbook = this.orderbooks[symbol];
-            const timestamp = this.safeIntegerProduct (data, 'M', 0.000001);
-            const parsed = this.parseOrderBook (data, symbol, timestamp, 'b', 'a', 0, 1);
-            parsed['nonce'] = this.safeInteger (data, 'O');
-            orderbook.reset (parsed);
-            this.orderbooks[symbol] = orderbook;
-            client.resolve (this.orderbooks[symbol], messageHash);
-        }
-        // todo: handle with incremental depth after merging REST update
-    }
-
     handleSubscriptionStatus (client: Client, message) {
         //
+        // classic
         //     {
         //         "id": "1578090438322",
         //         "type": "ack"
+        //     }
+        //
+        // uta
+        //     {
+        //         "id": "1",
+        //         "result": true
         //     }
         //
         const id = this.safeString (message, 'id');
