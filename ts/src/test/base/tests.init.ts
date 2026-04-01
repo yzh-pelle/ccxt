@@ -50,6 +50,7 @@ import testUrlencodeNested from './test.urlencodeNested.js';
 import testStringToBase16 from './test.stringToBase16.js';
 import testCapitalize from './test.capitalize.js';
 import testConstants from './test.constants.js';
+import testBase58ToBinary from './test.base58ToBinary.js';
 import testIsJsonEncodedObject from './test.isJsonEncodedObject.js';
 import testEncodeDecode from './test.encodeDecode.js';
 
@@ -70,6 +71,7 @@ async function baseTestsInit () {
     testPrecise ();
     testSafeMethods ();
     testSafeTicker ();
+    testBase58ToBinary ();
     testToArray ();
     testJson ();
     testSortBy ();
