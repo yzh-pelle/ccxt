@@ -1660,7 +1660,7 @@ export default class kucoin extends kucoinRest {
     handleDelta (orderbook, delta) {
         let timestamp = this.safeIntegerProduct (delta, 'M', 0.000001);
         if (timestamp === undefined) {
-            timestamp = this.safeInteger2 (delta, 'sequenceEnd', 'timestamp');
+            timestamp = this.safeInteger2 (delta, 'time', 'timestamp');
         }
         orderbook['nonce'] = this.safeIntegerN (delta, [ 'sequenceEnd', 'sequence', 'C' ], timestamp);
         orderbook['timestamp'] = timestamp;
