@@ -8734,7 +8734,10 @@ export default class kucoin extends Exchange {
         let hf = undefined;
         [ hf, params ] = this.handleHfAndParams (params);
         let requestedType = undefined;
-        [ requestedType, params ] = this.handleMarketTypeAndParams ('fetchLedger', undefined, params);
+        if (uta) {
+            requestedType = 'UNIFIED';
+        }
+        [ requestedType, params ] = this.handleMarketTypeAndParams ('fetchLedger', undefined, params, requestedType);
         let marginMode = undefined;
         [ marginMode, params ] = this.handleMarginModeAndParams ('fetchLedger', params);
         if (uta && (requestedType === 'margin')) {
