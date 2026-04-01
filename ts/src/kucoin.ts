@@ -3681,7 +3681,7 @@ export default class kucoin extends Exchange {
             let limitString = '20';
             if ((limit === undefined) || (limit >= 100)) {
                 limitString = 'FULL';
-            } else if (limit >= 20) {
+            } else if (limit > 20) {
                 limitString = '100';
             }
             request['limit'] = limitString;
