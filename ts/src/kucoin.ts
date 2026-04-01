@@ -3678,10 +3678,13 @@ export default class kucoin extends Exchange {
         let type = undefined;
         [ type, params ] = this.handleMarketTypeAndParams ('fetchOrderBook', market, params);
         if (uta) {
-            if (limit === undefined) {
-                throw new ArgumentsRequired (this.id + ' fetchOrderBook() requires a limit argument for uta, either 20, 50, 100 or FULL');
+            let limitString = '20';
+            if ((limit === undefined) || (limit >= 100)) {
+                limitString = 'FULL';
+            } else if (limit >= 20) {
+                limitString = '100';
             }
-            request['limit'] = limit;
+            request['limit'] = limitString;
             request['symbol'] = market['id'];
             if ((type === 'spot') || (type === 'margin')) {
                 request['tradeType'] = 'SPOT';
@@ -8064,14 +8067,14 @@ export default class kucoin extends Exchange {
      * @see https://www.kucoin.com/docs-new/rest/ua/get-account-currency-assets-uta
      * @see https://www.kucoin.com/docs-new/rest/ua/get-account-currency-assets-classic
      * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @param {string} [params.type] 'spot', 'unified', 'funding', 'cross', 'isolated' or 'swap' (default is 'spot')
+     * @param {string} [params.type] 'unified', 'spot', 'funding', 'cross', 'isolated' or 'swap' (default is 'unified')
      * @param {string} [params.marginMode] 'cross' or 'isolated', margin type for fetching margin balance, only applicable if type is margin (default is cross)
      * @returns {object} a [balance structure]{@link https://docs.ccxt.com/?id=balance-structure}
      */
     async fetchUtaBalance (params = {}): Promise<Balances> {
         await this.loadMarkets ();
-        let requestedType = undefined;
-        [ requestedType, params ] = this.handleMarketTypeAndParams ('fetchUtaBalance', undefined, params);
+        let requestedType = 'unified';
+        [ requestedType, params ] = this.handleMarketTypeAndParams ('fetchUtaBalance', undefined, params, requestedType);
         if (requestedType === 'margin') {
             // assume cross margin if margin is specified but marginMode is not specified
             let marginMode = 'cross';
@@ -8080,7 +8083,7 @@ export default class kucoin extends Exchange {
         }
         const utaAccountsByType = this.safeDict (this.options, 'utaAccountsByType', {});
         let type = undefined;
-        type = this.safeString (utaAccountsByType, requestedType, type);
+        type = this.safeString (utaAccountsByType, requestedType, requestedType);
         const isIsolated = (type === 'ISOLATED');
         const request: Dict = {};
         let response = undefined;
