@@ -1626,8 +1626,11 @@ export default class kucoin extends kucoinRest {
                 const subscription = this.safeValue (client.subscriptions, messageHash, {});
                 const limit = this.safeInteger (subscription, 'limit');
                 const snapshotDelay = this.handleOption ('watchOrderBook', 'snapshotDelay', 5);
+                const utaParams: Dict = {
+                    'uta': true,
+                };
                 if (cacheLength === snapshotDelay) {
-                    this.spawn (this.loadOrderBook, client, messageHash, symbol, limit, { 'uta': true });
+                    this.spawn (this.loadOrderBook, client, messageHash, symbol, limit, utaParams);
                 }
                 orderbook.cache.push (data);
                 return;
