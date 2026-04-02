@@ -3,6 +3,46 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchFundingRate": [
+            {
+                "description": "fetch funding rate",
+                "method": "fetchFundingRate",
+                "input": [
+                    "BTC/USDT:USDT"
+                ],
+                "httpResponse": {
+                    "currentFundRate": "0.00003236",
+                    "indexPrice": "66113.14",
+                    "tagPrice": "66073",
+                    "nextFundRate": "-0.0000591608275222"
+                },
+                "parsedResponse": {
+                    "info": {
+                        "currentFundRate": "0.00003236",
+                        "indexPrice": "66113.14",
+                        "tagPrice": "66073",
+                        "nextFundRate": "-0.0000591608275222"
+                    },
+                    "symbol": "BTC/USDT:USDT",
+                    "markPrice": 66073,
+                    "indexPrice": 66113.14,
+                    "interestRate": null,
+                    "estimatedSettlePrice": null,
+                    "timestamp": null,
+                    "datetime": null,
+                    "fundingRate": 0.00003236,
+                    "fundingTimestamp": null,
+                    "fundingDatetime": null,
+                    "nextFundingRate": -0.0000591608275222,
+                    "nextFundingTimestamp": null,
+                    "nextFundingDatetime": null,
+                    "previousFundingRate": null,
+                    "previousFundingTimestamp": null,
+                    "previousFundingDatetime": null,
+                    "interval": null
+                }
+            }
+        ],
         "fetchTicker": [
             {
                 "description": "fetch swap ticker",
