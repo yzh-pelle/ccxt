@@ -6,7 +6,7 @@ import Exchange from './abstract/bitbaby.js';
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE } from './base/functions/number.js';
 // import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { Dict, IndexType, Int, Market, OrderBook } from './base/types.js';
+import type { Dict, Int, Market, OrderBook } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -757,15 +757,19 @@ export default class bitbaby extends Exchange {
             //
             response = await this.publicGetSpotOpenSapiV1Depth (this.extend (request, params));
         }
+        const rawBids = this.safeList (response, 'bids', []);
+        const rawAsks = this.safeList (response, 'asks', []);
+        const bids = this.parseBidsAsks (rawBids, 0, 1);
+        const asks = this.parseBidsAsks (rawAsks, 0, 1);
         const timestamp = this.safeInteger (response, 'time');
-        return this.parseOrderBook (response, symbol, timestamp);
-    }
-
-    parseBidAsk (bidask, priceKey: IndexType = 0, amountKey: IndexType = 1, countOrIdKey: IndexType = 2) {
-        const price = this.safeFloat (bidask, priceKey);
-        const amount = this.safeFloat (bidask, amountKey);
-        const bidAsk = [ price, amount ];
-        return bidAsk;
+        return {
+            'symbol': symbol,
+            'bids': this.sortBy (bids, 0, true),
+            'asks': this.sortBy (asks, 0),
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'nonce': undefined,
+        } as OrderBook;
     }
 
     sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
