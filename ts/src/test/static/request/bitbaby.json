@@ -3,6 +3,19 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchTrades": [
+            {
+                "description": "fetch spot trades",
+                "method": "fetchTrades",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/trades?symbol=btcusdt&limit=1",
+                "input": [
+                    "BTC/USDT",
+                    null,
+                    1
+                ],
+                "output": null
+            }
+        ],
         "fetchFundingRate": [
             {
                 "description": "fetch funding rate",
