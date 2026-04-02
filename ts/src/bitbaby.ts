@@ -5,8 +5,8 @@ import Exchange from './abstract/bitbaby.js';
 import { NotSupported } from './base/errors.js';
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE } from './base/functions/number.js';
-// import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { Dict, FundingRate, Int, Market, OHLCV, OrderBook, Ticker, Trade } from './base/types.js';
+import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
+import type { Dict, FundingRate, Int, Market, Num, OHLCV, Order, OrderBook, OrderSide, OrderType, Str, Ticker, Trade } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -20,7 +20,7 @@ export default class bitbaby extends Exchange {
             'id': 'bitbaby',
             'name': 'BitBaby',
             'countries': [ 'AE' ], // United Arab Emirates
-            'rateLimit': 100,
+            'rateLimit': 20,
             'version': 'v1',
             'certified': false,
             'pro': true,
@@ -43,28 +43,26 @@ export default class bitbaby extends Exchange {
                 'closeAllPositions': false,
                 'closePosition': false,
                 'createDepositAddress': false,
-                'createLimitBuyOrder': false,
+                'createLimitBuyOrder': true,
                 'createLimitOrder': true,
-                'createLimitSellOrder': false,
-                'createMarketBuyOrder': false,
+                'createLimitSellOrder': true,
+                'createMarketBuyOrder': true,
                 'createMarketBuyOrderWithCost': false,
                 'createMarketOrder': true,
                 'createMarketOrderWithCost': false,
-                'createMarketSellOrder': false,
+                'createMarketSellOrder': true,
                 'createMarketSellOrderWithCost': false,
                 'createOrder': true,
-                'createOrders': false,
+                'createOrders': true, // spot non-margin only
                 'createOrderWithTakeProfitAndStopLoss': false,
-                'createPostOnlyOrder': false,
-                'createReduceOnlyOrder': false,
+                'createPostOnlyOrder': true, // contract only
+                'createReduceOnlyOrder': true,
                 'createStopLimitOrder': false,
-                'createStopLossOrder': false,
-                'createStopMarketOrder': false,
-                'createStopOrder': false,
-                'createTakeProfitOrder': false,
+                'createStopLossOrder': true,
+                'createTakeProfitOrder': true,
                 'createTrailingAmountOrder': false,
                 'createTrailingPercentOrder': false,
-                'createTriggerOrder': false,
+                'createTriggerOrder': true,
                 'deposit': false,
                 'editOrder': false,
                 'editOrders': false,
@@ -234,9 +232,9 @@ export default class bitbaby extends Exchange {
                         'futures/open/fapi/v1/account': 1,
                     },
                     'post': {
-                        'spot/open/sapi/v1/margin/order': 1,
+                        'spot/open/sapi/v1/margin/order': 5, // done
                         'spot/open/sapi/v1/margin/cancel': 1,
-                        'spot/open/sapi/v1/order': 1,
+                        'spot/open/sapi/v1/order': 1, // done
                         'spot/open/sapi/v1/order/test': 1,
                         'spot/open/sapi/v1/batchOrders': 1,
                         'spot/open/sapi/v1/cancel': 1,
@@ -267,6 +265,8 @@ export default class bitbaby extends Exchange {
                     // {"code":"-1121","msg":"Invalid contract","data":null}
                     // {"code":"-1121","msg":"无效的合约","data":null}
                     // {"code":"-1102","msg":"Forced parameter {0} not sent, empty or incorrect format","data":null}
+                    // {"code":"110047","msg":"价格或金额小于最小值","data":null}
+                    // {"code":"-1000","msg":"处理请求时发生未知错误","data":null}
                 },
                 'broad': {
                 },
@@ -333,30 +333,29 @@ export default class bitbaby extends Exchange {
                 'spot': {
                     'sandbox': false,
                     'createOrder': {
-                        'marginMode': true,
-                        'triggerPrice': true,
+                        'marginMode': false,
+                        'margin': true,
+                        'triggerPrice': false,
                         'triggerPriceType': undefined,
-                        'triggerDirection': false, // true for uta
-                        'stopLossPrice': true,
-                        'takeProfitPrice': true,
-                        'attachedStopLossTakeProfit': undefined, // not supported
+                        'triggerDirection': undefined,
+                        'stopLossPrice': false,
+                        'takeProfitPrice': false,
+                        'attachedStopLossTakeProfit': undefined,
                         'timeInForce': {
-                            'IOC': true,
-                            'FOK': true,
-                            'PO': true,
-                            'GTD': true,
+                            'IOC': false,
+                            'FOK': false,
+                            'PO': false,
+                            'GTD': false,
                         },
                         'hedged': false,
                         'trailing': false,
                         'leverage': false,
-                        'marketBuyByCost': true,
+                        'marketBuyByCost': false,
                         'marketBuyRequiresPrice': false,
-                        'selfTradePrevention': true, // todo implement
-                        'iceberg': true, // todo implement
+                        'selfTradePrevention': false,
+                        'iceberg': false,
                     },
-                    'createOrders': {
-                        'max': 5,
-                    },
+                    'createOrders': undefined,
                     'fetchMyTrades': {
                         'marginMode': true,
                         'limit': undefined,
@@ -1013,7 +1012,7 @@ export default class bitbaby extends Exchange {
 
     /**
      * @method
-     * @name kucoin#fetchTrades
+     * @name bitbaby#fetchTrades
      * @description get the list of most recent trades for a particular symbol
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#zui-jin-cheng-jiao
      * @param {string} symbol unified symbol of the market to fetch trades for
@@ -1076,15 +1075,321 @@ export default class bitbaby extends Exchange {
         }, market);
     }
 
-    sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
-        const endpoint = this.implodeParams (path, params);
-        const query = this.omit (params, this.extractParams (path));
-        let url = this.urls['api'][api] + '/' + endpoint;
-        if (method === 'GET') {
-            if (Object.keys (query).length) {
-                url += '?' + this.urlencode (query);
+    /**
+     * @method
+     * @name bitbaby#createOrder
+     * @description Create an order on the exchange
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#chuang-jian-xin-ding-dan // spot
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#chuang-jian-ce-shi-ding-dan // spot test
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/gang-gan-jiao-yi#chuang-jian-gang-gan-ding-dan // margin
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#chuang-jian-ding-dan // contract
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#chuang-jian-tiao-jian-dan // contract trigger
+     * @param {string} symbol Unified CCXT market symbol
+     * @param {string} type 'limit' or 'market'
+     * @param {string} side 'buy' or 'sell'
+     * @param {float} amount the amount of currency to trade
+     * @param {float} [price] the price at which the order is to be fulfilled, in units of the quote currency, ignored in market orders
+     * @param {object} [params]  extra parameters specific to the exchange API endpoint
+     * Check createSpotOrder() and createContractOrder() for more details on the extra parameters that can be used in params
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const test = this.safeBool (params, 'test', false);
+        if (market['contract']) {
+            if (test) {
+                throw new NotSupported (this.id + ' createOrder() does not support test orders for contract markets');
+            }
+            return await this.createContractOrder (symbol, type, side, amount, price, params);
+        } else {
+            return await this.createSpotOrder (symbol, type, side, amount, price, params);
+        }
+    }
+
+    /**
+     * @method
+     * @name bitbaby#createSpotOrder
+     * @description helper method for creating spot orders
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#chuang-jian-xin-ding-dan // spot
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#chuang-jian-ce-shi-ding-dan // spot test
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/gang-gan-jiao-yi#chuang-jian-gang-gan-ding-dan // margin
+     * @param {string} symbol Unified CCXT market symbol
+     * @param {string} type 'limit' or 'market'
+     * @param {string} side 'buy' or 'sell'
+     * @param {float} amount the amount of currency to trade
+     * @param {float} [price] the price at which the order is to be fulfilled, in units of the quote currency, ignored in market orders
+     * @param {object} [params]  extra parameters specific to the exchange API endpoint
+     * @param {string} [params.clientOrderId] client order id
+     * @param {bool} [params.margin] whether to create a margin order, default is false (spot order)
+     * @param {int} [params.recvWindow] request valid time window value
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createSpotOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request = this.createSpotOrderRequest (symbol, type, side, amount, price, params);
+        const test = this.safeBool (params, 'test', false);
+        let margin = false;
+        [ margin, params ] = this.handleOptionAndParams (params, 'createOrder', 'margin', margin);
+        let response = undefined;
+        if (margin && test) {
+            throw new NotSupported (this.id + ' createOrder() does not support test orders with margin');
+        }
+        if (test) {
+            //
+            // {} - empty response if no error
+            //
+            params = this.omit (params, 'test');
+            response = await this.privatePostSpotOpenSapiV1OrderTest (this.extend (request, params));
+        } else if (margin) {
+            // todo check margin order
+            //
+            response = await this.privatePostSpotOpenSapiV1MarginOrder (this.extend (request, params));
+        } else {
+            //
+            //     {
+            //         "symbol": "dogeusdt",
+            //         "newClientOrderId": null,
+            //         "side": "BUY",
+            //         "executedQty": 0,
+            //         "orderId": [
+            //             "3176901856236716480"
+            //         ],
+            //         "price": 0,
+            //         "origQty": 20,
+            //         "clientOrderId": null,
+            //         "transactTime": 1775144786145,
+            //         "type": "MARKET",
+            //         "status": "NEW"
+            //     }
+            //
+            response = await this.privatePostSpotOpenSapiV1Order (this.extend (request, params));
+        }
+        return this.parseOrder (response, market);
+    }
+
+    createSpotOrderRequest (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
+        let callerMethodName = 'createOrder';
+        [ callerMethodName, params ] = this.handleParamString (params, 'callerMethodName', callerMethodName);
+        const test = this.safeBool (params, 'test', false);
+        const margin = this.safeBool (params, 'margin', false);
+        // do not omit test and margin from params here
+        if (callerMethodName === 'createOrders') {
+            if (test) {
+                throw new NotSupported (this.id + ' createOrders() does not support test orders');
+            }
+            if (margin) {
+                throw new NotSupported (this.id + ' createOrders() does not support margin orders');
             }
         }
+        const market = this.market (symbol);
+        const request: Dict = {
+            'symbol': market['id'],
+            'side': side.toUpperCase (),
+            'type': type.toUpperCase (),
+            'volume': this.amountToPrecision (symbol, amount),
+        };
+        if (type === 'limit') {
+            request['price'] = this.priceToPrecision (symbol, price);
+        }
+        const clientOrderId = this.safeString (params, 'clientOrderId');
+        if (clientOrderId !== undefined) {
+            request['newClientOrderId'] = clientOrderId;
+            params = this.omit (params, 'clientOrderId');
+        }
+        let recwWindow = undefined;
+        [ recwWindow, params ] = this.handleOptionAndParams (params, callerMethodName, 'recvWindow'); // checking both options and params for recvWindow value
+        if (recwWindow !== undefined) {
+            request['recvWindow'] = recwWindow;
+        }
+        return this.extend (request, params);
+    }
+
+    /**
+     * @method
+     * @name bitbaby#createContractOrder
+     * @description helper method for creating contract orders
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#chuang-jian-ding-dan // contract
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#chuang-jian-tiao-jian-dan // contract trigger
+     * @param {string} symbol Unified CCXT market symbol
+     * @param {string} type 'limit' or 'market'
+     * @param {string} side 'buy' or 'sell'
+     * @param {float} amount the amount of currency to trade
+     * @param {float} [price] the price at which the order is to be fulfilled, in units of the quote currency, ignored in market orders
+     * @param {object} [params]  extra parameters specific to the exchange API endpoint
+     * @param {float} [params.triggerPrice] trigger price for conditional orders
+     * @param {float} [params.stopLossPrice] stop loss price for the order
+     * @param {float} [params.takeProfitPrice] take profit price for the order
+     * @param {string} [params.clientOrderId] client order id
+     * @param {bool} [params.reduceOnly] whether the order is reduce only, default is false
+     * @param {string} [params.marginMode] 'cross' or 'isolated', default is 'cross'
+     * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async createContractOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request = this.createContractOrderRequest (symbol, type, side, amount, price, params);
+        const triggerPrice = this.safeString (params, 'triggerPrice');
+        let response = undefined;
+        if (triggerPrice === undefined) {
+            // regular order
+            response = await this.privatePostFuturesOpenFapiV1Order (this.extend (request, params));
+        } else {
+            // conditional order
+            response = await this.privatePostFuturesOpenFapiV1ConditionOrder (this.extend (request, params));
+        }
+        return this.parseOrder (response, market);
+    }
+
+    createContractOrderRequest (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
+        const market = this.market (symbol);
+        const request: Dict = {
+            'contractName': market['id'],
+            'side': side.toUpperCase (),
+            'type': type.toUpperCase (),
+            'volume': this.amountToPrecision (symbol, amount),
+        };
+        if (type === 'limit') {
+            request['price'] = this.priceToPrecision (symbol, price);
+        }
+        let marginMode = 'cross';
+        [ marginMode, params ] = this.handleMarginModeAndParams ('createOrder', params, marginMode);
+        if (marginMode !== undefined) {
+            request['positionType'] = this.encodeMarginMode (marginMode);
+        }
+        let openOrClose = 'OPEN';
+        const reduceOnly = this.safeBool (params, 'reduceOnly', false);
+        if (reduceOnly) {
+            params = this.omit (params, 'reduceOnly');
+            openOrClose = 'CLOSE';
+        }
+        request['open'] = openOrClose;
+        const [ triggerPrice, stopLossPrice, takeProfitPrice, query ] = this.handleTriggerPricesAndParams (symbol, params);
+        if (triggerPrice !== undefined) {
+            if ((stopLossPrice !== undefined) || (takeProfitPrice !== undefined)) {
+                throw new NotSupported (this.id + ' createContractOrder() supports only one parameter among triggerPrice, stopLossPrice and takeProfitPrice');
+            }
+            request['triggerPrice'] = triggerPrice;
+            const triggerType = (side === 'buy') ? 3 : 4;
+            request['triggerType'] = triggerType;
+        }
+        if (stopLossPrice !== undefined) {
+            if ((triggerPrice !== undefined) || (takeProfitPrice !== undefined)) {
+                throw new NotSupported (this.id + ' createContractOrder() supports only one parameter among triggerPrice, stopLossPrice and takeProfitPrice');
+            }
+            request['triggerPrice'] = stopLossPrice;
+            request['triggerType'] = 1;
+        } else if (takeProfitPrice !== undefined) {
+            request['triggerPrice'] = takeProfitPrice;
+            request['triggerType'] = 2;
+        }
+        return this.extend (request, query);
+    }
+
+    encodeMarginMode (marginMode) {
+        const modes = {
+            'cross': 1,
+            'isolated': 2,
+        };
+        return this.safeInteger (modes, marginMode, marginMode);
+    }
+
+    parseOrder (order: Dict, market: Market = undefined): Order {
+        //
+        //     {
+        //         "symbol": "dogeusdt",
+        //         "newClientOrderId": null,
+        //         "side": "BUY",
+        //         "executedQty": 0,
+        //         "orderId": [
+        //             "3176901856236716480"
+        //         ],
+        //         "price": 0,
+        //         "origQty": 20,
+        //         "clientOrderId": null,
+        //         "transactTime": 1775144786145,
+        //         "type": "MARKET",
+        //         "status": "NEW"
+        //     }
+        //
+        const marketId = this.safeString (order, 'symbol');
+        market = this.safeMarket (marketId, market);
+        const symbol = market['symbol'];
+        const timestamp = this.safeInteger (order, 'transactTime');
+        const orderIds = this.safeList (order, 'orderId', []);
+        const id = this.safeString (orderIds, 0);
+        const rawStatus = this.safeStringUpper (order, 'status');
+        return this.safeOrder ({
+            'id': id,
+            'clientOrderId': this.safeString2 (order, 'clientOrderId', 'newClientOrderId'),
+            'symbol': symbol,
+            'type': this.safeStringLower (order, 'type'),
+            'timeInForce': undefined,
+            'postOnly': undefined,
+            'reduceOnly': undefined,
+            'side': this.safeStringLower (order, 'side'),
+            'amount': this.safeString (order, 'origQty'),
+            'price': this.omitZero (this.safeString (order, 'price')),
+            'triggerPrice': undefined,
+            'cost': undefined,
+            'filled': this.safeString (order, 'executedQty'),
+            'remaining': undefined,
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'fee': undefined,
+            'status': this.parseOrderStatus (rawStatus),
+            'lastTradeTimestamp': undefined,
+            'lastUpdateTimestamp': undefined,
+            'average': undefined,
+            'trades': undefined,
+            'stopLossPrice': undefined,
+            'takeProfitPrice': undefined,
+            'info': order,
+        }, market);
+    }
+
+    parseOrderStatus (status: Str): Str {
+        const statuses = {
+            'NEW': 'open',
+            'PARTIALLY_FILLED': 'open',
+            'FILLED': 'closed',
+            'CANCELED': 'canceled',
+            'PENDING_CANCEL': 'canceling',
+            'REJECTED': 'rejected',
+        };
+        return this.safeString (statuses, status, status);
+    }
+
+    sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
+        let endpoint = this.implodeParams (path, params);
+        const query = this.omit (params, this.extractParams (path));
+        if (method === 'GET') {
+            if (Object.keys (query).length) {
+                endpoint += '?' + this.urlencode (query);
+            }
+        }
+        if (api === 'private') {
+            this.checkRequiredCredentials ();
+            const timestamp = this.nonce ().toString ();
+            let signaturePath = endpoint.replace ('spot/open', '');
+            signaturePath = signaturePath.replace ('futures/open', '');
+            let payload = timestamp + method + signaturePath;
+            if (method === 'POST') {
+                body = this.json (query);
+                payload += body;
+            }
+            const signature = this.hmac (this.encode (payload), this.encode (this.secret), sha256);
+            headers = {
+                'X-CH-APIKEY': this.apiKey,
+                'X-CH-SIGN': signature,
+                'X-CH-TS': timestamp,
+            };
+            if (method === 'POST') {
+                headers['Content-Type'] = 'application/json';
+            }
+        }
+        const url = this.urls['api'][api] + '/' + endpoint;
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 }
