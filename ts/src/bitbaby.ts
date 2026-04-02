@@ -6,7 +6,7 @@ import Exchange from './abstract/bitbaby.js';
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE } from './base/functions/number.js';
 // import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { Dict, Int, Market, OrderBook } from './base/types.js';
+import type { Dict, Int, Market, OrderBook, Ticker } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -207,14 +207,14 @@ export default class bitbaby extends Exchange {
                         'spot/open/sapi/v1/time': 1, // done check rate limit
                         'spot/open/sapi/v1/symbols': 1, // done check rate limit
                         'spot/open/sapi/v1/depth': 1, // done check rate limit
-                        'spot/open/sapi/v1/ticker': 1,
+                        'spot/open/sapi/v1/ticker': 1, // done check rate limit
                         'spot/open/sapi/v1/trades': 1,
                         'spot/open/sapi/v1/klines': 1,
                         'futures/open/fapi/v1/ping': 1, // done check rate limit
                         'futures/open/fapi/v1/time': 1, // done check rate limit
                         'futures/open/fapi/v1/contracts': 1, // done check rate limit
                         'futures/open/fapi/v1/depth': 1, // done check rate limit
-                        'futures/open/fapi/v1/ticker': 1,
+                        'futures/open/fapi/v1/ticker': 1, // done check rate limit
                         'futures/open/fapi/v1/index': 1,
                         'futures/open/fapi/v1/klines': 1,
                     },
@@ -264,6 +264,8 @@ export default class bitbaby extends Exchange {
             'exceptions': {
                 'exact': {
                     // {"code":"1","msg":"fail","data":null,"message":null,"succ":false}
+                    // {"code":"-1121","msg":"Invalid contract","data":null}
+                    // {"code":"-1121","msg":"无效的合约","data":null}
                 },
                 'broad': {
                 },
@@ -759,8 +761,26 @@ export default class bitbaby extends Exchange {
         }
         const rawBids = this.safeList (response, 'bids', []);
         const rawAsks = this.safeList (response, 'asks', []);
-        const bids = this.parseBidsAsks (rawBids, 0, 1);
-        const asks = this.parseBidsAsks (rawAsks, 0, 1);
+        const bids = [];
+        const asks = [];
+        for (let i = 0; i < rawBids.length; i++) {
+            const bid = this.safeList (rawBids, i, []);
+            const parsedBid = [];
+            const price = this.safeNumber (bid, 0);
+            const amount = this.safeNumber (bid, 1);
+            parsedBid.push (price);
+            parsedBid.push (amount);
+            bids.push (parsedBid);
+        }
+        for (let i = 0; i < rawAsks.length; i++) {
+            const ask = this.safeList (rawAsks, i, []);
+            const parsedAsk = [];
+            const price = this.safeNumber (ask, 0);
+            const amount = this.safeNumber (ask, 1);
+            parsedAsk.push (price);
+            parsedAsk.push (amount);
+            asks.push (parsedAsk);
+        }
         const timestamp = this.safeInteger (response, 'time');
         return {
             'symbol': symbol,
@@ -770,6 +790,110 @@ export default class bitbaby extends Exchange {
             'datetime': this.iso8601 (timestamp),
             'nonce': undefined,
         } as OrderBook;
+    }
+
+    /**
+     * @method
+     * @name kucoin#fetchTicker
+     * @description fetches a price ticker, a statistical calculation with the information calculated over the past 24 hours for a specific market
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#hang-qing-ticker
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#hang-qing-ticker
+     * @param {string} symbol unified symbol of the market to fetch the ticker for
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} a [ticker structure]{@link https://docs.ccxt.com/?id=ticker-structure}
+     */
+    async fetchTicker (symbol: string, params = {}): Promise<Ticker> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {};
+        let response = undefined;
+        if (market['contract']) {
+            request['contractName'] = market['id'];
+            //
+            //     {
+            //         "high": "69146",
+            //         "vol": "72503850",
+            //         "last": "66299.5",
+            //         "low": "66121.8",
+            //         "buy": "66300.0",
+            //         "sell": "66300.1",
+            //         "rose": "-3.3354620104",
+            //         "time": 1775130047000
+            //     }
+            //
+            response = await this.publicGetFuturesOpenFapiV1Ticker (this.extend (request, params));
+        } else {
+            request['symbol'] = market['id'];
+            //
+            //     {
+            //         "amount": "31908898.5497543",
+            //         "high": "69159.98",
+            //         "vol": "472.36167",
+            //         "last": 66345.1300000000000000,
+            //         "low": "66168",
+            //         "buy": "66350.15",
+            //         "sell": "66350.16",
+            //         "rose": "-3.311281538",
+            //         "time": 1775130100000
+            //     }
+            //
+            response = await this.publicGetSpotOpenSapiV1Ticker (this.extend (request, params));
+        }
+        return this.parseTicker (response, market);
+    }
+
+    parseTicker (ticker: Dict, market: Market = undefined): Ticker {
+        //
+        // spot
+        //     {
+        //         "amount": "31908898.5497543",
+        //         "high": "69159.98",
+        //         "vol": "472.36167",
+        //         "last": 66345.1300000000000000,
+        //         "low": "66168",
+        //         "buy": "66350.15",
+        //         "sell": "66350.16",
+        //         "rose": "-3.311281538",
+        //         "time": 1775130100000
+        //     }
+        //
+        // swap
+        //     {
+        //         "high": "69146",
+        //         "vol": "72503850",
+        //         "last": "66299.5",
+        //         "low": "66121.8",
+        //         "buy": "66300.0",
+        //         "sell": "66300.1",
+        //         "rose": "-3.3354620104",
+        //         "time": 1775130047000
+        //     }
+        //
+        const timestamp = this.safeInteger (ticker, 'time');
+        return this.safeTicker ({
+            'symbol': market['symbol'],
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'high': this.safeString (ticker, 'high'),
+            'low': this.safeString (ticker, 'low'),
+            'bid': this.safeString (ticker, 'buy'),
+            'bidVolume': undefined,
+            'ask': this.safeString (ticker, 'sell'),
+            'askVolume': undefined,
+            'vwap': undefined,
+            'open': undefined,
+            'close': undefined,
+            'last': this.safeString (ticker, 'last'),
+            'previousClose': undefined,
+            'change': undefined,
+            'percentage': this.safeString (ticker, 'rose'),
+            'average': undefined,
+            'baseVolume': this.safeString (ticker, 'vol'),
+            'quoteVolume': this.safeString (ticker, 'amount'),
+            'markPrice': undefined,
+            'indexPrice': undefined,
+            'info': ticker,
+        }, market);
     }
 
     sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
