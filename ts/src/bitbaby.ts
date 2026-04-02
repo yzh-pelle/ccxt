@@ -3,10 +3,10 @@
 
 import Exchange from './abstract/bitbaby.js';
 // import { AccountSuspended, ArgumentsRequired, AuthenticationError, BadRequest, BadSymbol, ExchangeError, ExchangeNotAvailable, InsufficientFunds, InvalidAddress, InvalidNonce, InvalidOrder, NotSupported, OrderNotFound, PermissionDenied, RateLimitExceeded, RestrictedLocation } from './base/errors.js';
-// import { Precise } from './base/Precise.js';
+import { Precise } from './base/Precise.js';
 import { TICK_SIZE } from './base/functions/number.js';
 // import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-// import type { ADL, Account, Balances, Bool, BorrowInterest, Currency, Currencies, DepositAddress, Dict, FundingHistory, FundingRate, Int, int, LedgerEntry, Leverage, LeverageTier, LeverageTiers, MarginMode, MarginModification, Market, Num, OHLCV, Order, OrderBook, OrderRequest, OrderSide, OrderType, OpenInterest, OpenInterests, Position, Str, Strings, Ticker, Tickers, Trade, TradingFeeInterface, Transaction, TransferEntry } from './base/types.js';
+import type { Dict, Int, Market } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -39,68 +39,42 @@ export default class bitbaby extends Exchange {
                 'borrowIsolatedMargin': false,
                 'borrowMargin': false,
                 'cancelAllOrders': false,
-                'cancelAllOrdersWs': false,
                 'cancelOrder': true,
                 'cancelOrderWithClientOrderId': false,
-                'cancelOrderWs': false,
                 'cancelOrders': false,
                 'cancelOrdersWithClientOrderId': false,
-                'cancelOrdersWs': false,
                 'closeAllPositions': false,
                 'closePosition': false,
                 'createDepositAddress': false,
                 'createLimitBuyOrder': false,
-                'createLimitBuyOrderWs': false,
                 'createLimitOrder': true,
-                'createLimitOrderWs': false,
                 'createLimitSellOrder': false,
-                'createLimitSellOrderWs': false,
                 'createMarketBuyOrder': false,
-                'createMarketBuyOrderWs': false,
                 'createMarketBuyOrderWithCost': false,
-                'createMarketBuyOrderWithCostWs': false,
                 'createMarketOrder': true,
-                'createMarketOrderWs': true,
                 'createMarketOrderWithCost': false,
-                'createMarketOrderWithCostWs': false,
                 'createMarketSellOrder': false,
-                'createMarketSellOrderWs': false,
                 'createMarketSellOrderWithCost': false,
-                'createMarketSellOrderWithCostWs': false,
                 'createOrder': true,
-                'createOrderWs': false,
                 'createOrders': false,
                 'createOrderWithTakeProfitAndStopLoss': false,
-                'createOrderWithTakeProfitAndStopLossWs': false,
                 'createPostOnlyOrder': false,
-                'createPostOnlyOrderWs': false,
                 'createReduceOnlyOrder': false,
-                'createReduceOnlyOrderWs': false,
                 'createStopLimitOrder': false,
-                'createStopLimitOrderWs': false,
                 'createStopLossOrder': false,
-                'createStopLossOrderWs': false,
                 'createStopMarketOrder': false,
-                'createStopMarketOrderWs': false,
                 'createStopOrder': false,
-                'createStopOrderWs': false,
                 'createTakeProfitOrder': false,
-                'createTakeProfitOrderWs': false,
                 'createTrailingAmountOrder': false,
-                'createTrailingAmountOrderWs': false,
                 'createTrailingPercentOrder': false,
-                'createTrailingPercentOrderWs': false,
                 'createTriggerOrder': false,
-                'createTriggerOrderWs': false,
                 'deposit': false,
-                'editOrder': 'emulated',
+                'editOrder': false,
                 'editOrderWithClientOrderId': false,
                 'editOrders': false,
-                'editOrderWs': false,
                 'fetchAccounts': false,
                 'fetchADLRank': false,
                 'fetchBalance': true,
-                'fetchBalanceWs': false,
                 'fetchBidsAsks': false,
                 'fetchBorrowInterest': false,
                 'fetchBorrowRate': false,
@@ -112,22 +86,19 @@ export default class bitbaby extends Exchange {
                 'fetchCanceledOrders': false,
                 'fetchClosedOrder': false,
                 'fetchClosedOrders': false,
-                'fetchClosedOrdersWs': false,
                 'fetchConvertCurrencies': false,
                 'fetchConvertQuote': false,
                 'fetchConvertTrade': false,
                 'fetchConvertTradeHistory': false,
                 'fetchCrossBorrowRate': false,
                 'fetchCrossBorrowRates': false,
-                'fetchCurrencies': 'emulated',
-                'fetchCurrenciesWs': 'emulated',
+                'fetchCurrencies': false,
                 'fetchDeposit': false,
                 'fetchDepositAddress': false,
                 'fetchDepositAddresses': false,
                 'fetchDepositAddressesByNetwork': false,
                 'fetchDeposits': false,
                 'fetchDepositsWithdrawals': false,
-                'fetchDepositsWs': false,
                 'fetchDepositWithdrawFee': false,
                 'fetchDepositWithdrawFees': false,
                 'fetchFundingHistory': false,
@@ -157,58 +128,45 @@ export default class bitbaby extends Exchange {
                 'fetchMarginModes': false,
                 'fetchMarketLeverageTiers': false,
                 'fetchMarkets': true,
-                'fetchMarketsWs': false,
+                '': false,
                 'fetchMarkOHLCV': false,
                 'fetchMyLiquidations': false,
                 'fetchMySettlementHistory': false,
                 'fetchMyTrades': false,
-                'fetchMyTradesWs': false,
                 'fetchOHLCV': false,
-                'fetchOHLCVWs': false,
                 'fetchOpenInterest': false,
                 'fetchOpenInterests': false,
                 'fetchOpenInterestHistory': false,
                 'fetchOpenOrder': false,
                 'fetchOpenOrders': false,
-                'fetchOpenOrdersWs': false,
                 'fetchOption': false,
                 'fetchOptionChain': false,
                 'fetchOrder': false,
                 'fetchOrderWithClientOrderId': false,
                 'fetchOrderBook': true,
                 'fetchOrderBooks': false,
-                'fetchOrderBookWs': false,
                 'fetchOrders': false,
                 'fetchOrdersByStatus': false,
-                'fetchOrdersWs': false,
                 'fetchOrderTrades': false,
-                'fetchOrderWs': false,
                 'fetchPosition': false,
                 'fetchPositionADLRank': false,
                 'fetchPositionsADLRank': false,
                 'fetchPositionHistory': false,
                 'fetchPositionsHistory': false,
-                'fetchPositionWs': false,
                 'fetchPositionMode': false,
                 'fetchPositions': false,
-                'fetchPositionsWs': false,
                 'fetchPositionsForSymbol': false,
-                'fetchPositionsForSymbolWs': false,
                 'fetchPositionsRisk': false,
                 'fetchPremiumIndexOHLCV': false,
                 'fetchSettlementHistory': false,
-                'fetchStatus': false,
+                'fetchStatus': true,
                 'fetchTicker': true,
-                'fetchTickerWs': false,
                 'fetchTickers': false,
                 'fetchMarkPrices': false,
-                'fetchTickersWs': false,
-                'fetchTime': false,
+                'fetchTime': true,
                 'fetchTrades': true,
-                'fetchTradesWs': false,
                 'fetchTradingFee': false,
                 'fetchTradingFees': false,
-                'fetchTradingFeesWs': false,
                 'fetchTradingLimits': false,
                 'fetchTransactionFee': false,
                 'fetchTransactionFees': false,
@@ -220,7 +178,6 @@ export default class bitbaby extends Exchange {
                 'fetchWithdrawAddresses': false,
                 'fetchWithdrawal': false,
                 'fetchWithdrawals': false,
-                'fetchWithdrawalsWs': false,
                 'fetchWithdrawalWhitelist': false,
                 'reduceMargin': false,
                 'repayCrossMargin': false,
@@ -236,10 +193,10 @@ export default class bitbaby extends Exchange {
             'urls': {
                 'logo': '', // todo
                 'api': {
-                    'public': 'https://www.bitbaby.com/',
-                    'private': 'https://www.bitbaby.com/',
+                    'public': 'https://openapi.bitbaby.com',
+                    'private': 'https://openapi.bitbaby.com',
                 },
-                'www': 'https://www.bitbaby.com/',
+                'www': 'https://www.bitbaby.com',
                 'doc': [
                     'https://bitbaby-1.gitbook.io/bitbaby-api',
                 ],
@@ -247,15 +204,15 @@ export default class bitbaby extends Exchange {
             'api': {
                 'public': {
                     'get': {
-                        'spot/open/sapi/v1/ping': 1,
-                        'spot/open/sapi/v1/time': 1,
+                        'spot/open/sapi/v1/ping': 1, // done check limit rate
+                        'spot/open/sapi/v1/time': 1, // done check limit rate
                         'spot/open/sapi/v1/symbols': 1,
                         'spot/open/sapi/v1/depth': 1,
                         'spot/open/sapi/v1/ticker': 1,
                         'spot/open/sapi/v1/trades': 1,
                         'spot/open/sapi/v1/klines': 1,
-                        'futures/open/fapi/v1/ping': 1,
-                        'futures/open/fapi/v1/time': 1,
+                        'futures/open/fapi/v1/ping': 1, // done check limit rate
+                        'futures/open/fapi/v1/time': 1, // done check limit rate
                         'futures/open/fapi/v1/contracts': 1,
                         'futures/open/fapi/v1/depth': 1,
                         'futures/open/fapi/v1/ticker': 1,
@@ -519,5 +476,231 @@ export default class bitbaby extends Exchange {
 
     nonce () {
         return this.milliseconds () - this.options['timeDifference'];
+    }
+
+    /**
+     * @method
+     * @name bitbaby#fetchStatus
+     * @description the latest known information on the availability of the exchange API
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#ce-shi-lian-jie
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#ce-shi-lian-jie
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {string} [params.type] spot or swap
+     * @returns {object} a [status structure]{@link https://docs.ccxt.com/?id=exchange-status-structure}
+     */
+    async fetchStatus (params = {}) {
+        let type = undefined;
+        [ type, params ] = this.handleMarketTypeAndParams ('fetchStatus', undefined, params);
+        let response = undefined;
+        if ((type !== 'spot') && (type !== 'margin')) {
+            response = await this.publicGetFuturesOpenFapiV1Ping (params);
+        } else {
+            response = await this.publicGetSpotOpenSapiV1Ping (params);
+        }
+        // reutns an empty response if the exchange is alive, otherwise will trigger an error
+        return {
+            'status': 'ok',
+            'updated': undefined,
+            'eta': undefined,
+            'url': undefined,
+            'info': response,
+        };
+    }
+
+    /**
+     * @method
+     * @name bitbaby#fetchTime
+     * @description fetches the current integer timestamp in milliseconds from the exchange server
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#fu-wu-qi-shi-jian
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#huo-qu-fu-wu-qi-shi-jian
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {int} the current integer timestamp in milliseconds from the exchange server
+     */
+    async fetchTime (params = {}): Promise<Int> {
+        let type = undefined;
+        [ type, params ] = this.handleMarketTypeAndParams ('fetchTime', undefined, params);
+        let response = undefined;
+        if ((type !== 'spot') && (type !== 'margin')) {
+            response = await this.publicGetFuturesOpenFapiV1Time (params);
+        } else {
+            response = await this.publicGetSpotOpenSapiV1Time (params);
+        }
+        //
+        //     {
+        //         "timezone": "格林尼治标准时间",
+        //         "serverTime": 1775118113716
+        //     }
+        //
+        return this.safeInteger (response, 'serverTime');
+    }
+
+    /**
+     * @method
+     * @name bitbaby#fetchMarkets
+     * @description retrieves data on all markets for exchagne
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#bi-dui-lie-biao
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#he-yue-lie-biao
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object[]} an array of objects representing market data
+     */
+    async fetchMarkets (params = {}): Promise<Market[]> {
+        const promises = [
+            this.publicGetSpotOpenSapiV1Symbols (params),
+            this.publicGetFuturesOpenFapiV1Contracts (params),
+        ];
+        const [ spotResponse, contractResponse ] = await Promise.all (promises);
+        const spotArray = this.safeList (spotResponse, 'symbols', []);
+        let contractArray = [];
+        if (Array.isArray (contractResponse)) {
+            contractArray = contractResponse;
+        }
+        const result = this.arrayConcat (spotArray, contractArray);
+        return this.parseMarkets (result);
+    }
+
+    parseMarket (market: Dict): Market {
+        //
+        // spot
+        //     {
+        //         "quantityPrecision": 5,
+        //         "limitVolumeMin": 0.0000100000000000,
+        //         "symbol": "btcusdt",
+        //         "pricePrecision": 2,
+        //         "marketBuyMin": 5.0000000000000000,
+        //         "marketSellMin": 0.0000100000000000,
+        //         "baseAsset": "BTC",
+        //         "limitPriceMin": 0.0000100000000000,
+        //         "quoteAsset": "USDT"
+        //     }
+        //
+        // contract
+        //     {
+        //         "symbol": "E-ETH-USDT",
+        //         "pricePrecision": 2,
+        //         "side": 1,
+        //         "maxMarketVolume": 20000,
+        //         "multiplier": 0.0100000000000000,
+        //         "minOrderVolume": 1,
+        //         "maxMarketMoney": 10000000.0000000000000000,
+        //         "type": "E",
+        //         "maxLimitVolume": 20000,
+        //         "maxValidOrder": 50,
+        //         "multiplierCoin": "ETH",
+        //         "minOrderMoney": 1.0000000000000000,
+        //         "maxLimitMoney": 10000000.0000000000000000,
+        //         "contractId": 2,
+        //         "status": 1
+        //     }
+        //
+        const id = this.safeString (market, 'symbol');
+        let baseId = this.safeString (market, 'baseAsset');
+        let quoteId = this.safeString (market, 'quoteAsset');
+        let settleId = undefined;
+        let isLinear = undefined;
+        let isInverse = undefined;
+        let isSpot = true;
+        let isActive = true; // check for spot
+        let fees = this.safeDict (this.fees, 'spot', {});
+        if (baseId === undefined || quoteId === undefined) { // swap markets
+            fees = this.safeDict (this.fees, 'contract', {});
+            isSpot = false;
+            const status = this.safeInteger (market, 'status');
+            isActive = (status === 1);
+            const symbolParts = id.split ('-');
+            baseId = this.safeString (symbolParts, 1);
+            quoteId = this.safeString (symbolParts, 2);
+            const side = this.safeInteger (market, 'side');
+            if (side === 0) {
+                isInverse = true;
+                isLinear = false;
+                settleId = baseId;
+            } else {
+                isInverse = false;
+                isLinear = true;
+                settleId = quoteId;
+            }
+        }
+        const base = this.safeCurrencyCode (baseId);
+        const quote = this.safeCurrencyCode (quoteId);
+        const settle = this.safeCurrencyCode (settleId);
+        let symbol = base + '/' + quote;
+        let maxAmount = undefined;
+        let maxCost = undefined;
+        if (!isSpot) {
+            symbol += ':' + settle;
+            const maxMarketVolume = this.safeString (market, 'maxMarketVolume');
+            const maxLimitVolume = this.safeString (market, 'maxLimitVolume');
+            maxAmount = this.parseNumber (Precise.stringMax (maxMarketVolume, maxLimitVolume));
+            const maxMarketMoney = this.safeString (market, 'maxMarketMoney');
+            const maxLimitMoney = this.safeString (market, 'maxLimitMoney');
+            maxCost = this.parseNumber (Precise.stringMax (maxMarketMoney, maxLimitMoney));
+        }
+        const pricePrecision = this.parsePrecision (this.safeString (market, 'pricePrecision'));
+        const amountPrecision = this.parsePrecision (this.safeString (market, 'quantityPrecision', '0')); // contracts are integers todo:check
+        return this.safeMarketStructure ({
+            'id': id,
+            'numericId': this.safeInteger (market, 'contractId'),
+            'symbol': symbol,
+            'base': base,
+            'quote': quote,
+            'settle': settle,
+            'baseId': baseId,
+            'quoteId': quoteId,
+            'settleId': settleId,
+            'type': isSpot ? 'spot' : 'swap', // todo check for other types
+            'spot': isSpot,
+            'margin': isSpot, // todo check if margin is available for all markets
+            'swap': !isSpot,
+            'future': false,
+            'option': false,
+            'active': isActive,
+            'contract': !isSpot,
+            'linear': isLinear,
+            'inverse': isInverse,
+            'taker': this.safeNumber (fees, 'taker'),
+            'maker': this.safeNumber (fees, 'maker'),
+            'feeSide': this.safeString (fees, 'feeSide'),
+            'contractSize': this.safeNumber (market, 'multiplier'),
+            'expiry': undefined,
+            'expiryDatetime': undefined,
+            'strike': undefined,
+            'optionType': undefined,
+            'precision': {
+                'amount': amountPrecision,
+                'price': pricePrecision,
+            },
+            'limits': {
+                'leverage': {
+                    'min': undefined,
+                    'max': undefined,
+                },
+                'amount': {
+                    'min': this.safeNumber2 (market, 'limitVolumeMin', 'minOrderVolume'),
+                    'max': maxAmount,
+                },
+                'price': {
+                    'min': this.safeNumber (market, 'limitPriceMin'),
+                    'max': undefined,
+                },
+                'cost': {
+                    'min': this.safeNumber2 (market, 'marketBuyMin', 'minOrderMoney'),
+                    'max': maxCost,
+                },
+            },
+            'created': undefined,
+            'info': market,
+        });
+    }
+
+    sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
+        const endpoint = this.implodeParams (path, params);
+        const query = this.omit (params, this.extractParams (path));
+        let url = this.urls['api'][api] + '/' + endpoint;
+        if (method === 'GET') {
+            if (Object.keys (query).length) {
+                url += '?' + this.urlencode (query);
+            }
+        }
+        return { 'url': url, 'method': method, 'body': body, 'headers': headers };
     }
 }
