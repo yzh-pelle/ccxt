@@ -128,7 +128,6 @@ export default class bitbaby extends Exchange {
                 'fetchMarginModes': false,
                 'fetchMarketLeverageTiers': false,
                 'fetchMarkets': true,
-                '': false,
                 'fetchMarkOHLCV': false,
                 'fetchMyLiquidations': false,
                 'fetchMySettlementHistory': false,
@@ -204,15 +203,15 @@ export default class bitbaby extends Exchange {
             'api': {
                 'public': {
                     'get': {
-                        'spot/open/sapi/v1/ping': 1, // done check limit rate
-                        'spot/open/sapi/v1/time': 1, // done check limit rate
-                        'spot/open/sapi/v1/symbols': 1,
+                        'spot/open/sapi/v1/ping': 1, // done check rate limit
+                        'spot/open/sapi/v1/time': 1, // done check rate limit
+                        'spot/open/sapi/v1/symbols': 1, // done check rate limit
                         'spot/open/sapi/v1/depth': 1,
                         'spot/open/sapi/v1/ticker': 1,
                         'spot/open/sapi/v1/trades': 1,
-                        'spot/open/sapi/v1/klines': 1,
-                        'futures/open/fapi/v1/ping': 1, // done check limit rate
-                        'futures/open/fapi/v1/time': 1, // done check limit rate
+                        'spot/open/sapi/v1/klines': 1, // done check rate limit
+                        'futures/open/fapi/v1/ping': 1, // done check rate limit
+                        'futures/open/fapi/v1/time': 1, // done check rate limit
                         'futures/open/fapi/v1/contracts': 1,
                         'futures/open/fapi/v1/depth': 1,
                         'futures/open/fapi/v1/ticker': 1,
