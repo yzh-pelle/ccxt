@@ -3,6 +3,110 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchTicker": [
+            {
+                "description": "fetch swap ticker",
+                "method": "fetchTicker",
+                "input": [
+                    "ETH/USDT:USDT"
+                ],
+                "httpResponse": {
+                    "high": "2167.2",
+                    "vol": "23245690",
+                    "last": "2032.89",
+                    "low": "2023.27",
+                    "buy": "2032.97",
+                    "sell": "2032.98",
+                    "rose": "-4.7509944759",
+                    "time": "1775130767000"
+                },
+                "parsedResponse": {
+                    "symbol": "ETH/USDT:USDT",
+                    "timestamp": 1775130767000,
+                    "datetime": "2026-04-02T11:52:47.000Z",
+                    "high": 2167.2,
+                    "low": 2023.27,
+                    "bid": 2032.97,
+                    "bidVolume": null,
+                    "ask": 2032.98,
+                    "askVolume": null,
+                    "vwap": null,
+                    "open": 2134.2899999996703,
+                    "close": 2032.89,
+                    "last": 2032.89,
+                    "previousClose": null,
+                    "change": -101.39999999967046,
+                    "percentage": -4.7509944759,
+                    "average": 2083.58,
+                    "baseVolume": 23245690,
+                    "quoteVolume": null,
+                    "markPrice": null,
+                    "indexPrice": null,
+                    "info": {
+                        "high": "2167.2",
+                        "vol": "23245690",
+                        "last": "2032.89",
+                        "low": "2023.27",
+                        "buy": "2032.97",
+                        "sell": "2032.98",
+                        "rose": "-4.7509944759",
+                        "time": "1775130767000"
+                    }
+                }
+            },
+            {
+                "description": "fetch spot ticker",
+                "method": "fetchTicker",
+                "input": [
+                    "ETH/USDT"
+                ],
+                "httpResponse": {
+                    "amount": "22855507.29112",
+                    "high": "2167.27",
+                    "vol": "10828.07",
+                    "last": "2034.1700000000000000",
+                    "low": "2026.22",
+                    "buy": "2034.16",
+                    "sell": "2034.17",
+                    "rose": "-4.7057555912",
+                    "time": "1775130751000"
+                },
+                "parsedResponse": {
+                    "symbol": "ETH/USDT",
+                    "timestamp": 1775130751000,
+                    "datetime": "2026-04-02T11:52:31.000Z",
+                    "high": 2167.27,
+                    "low": 2026.22,
+                    "bid": 2034.16,
+                    "bidVolume": null,
+                    "ask": 2034.17,
+                    "askVolume": null,
+                    "vwap": 2110.764641447645,
+                    "open": 2134.6200000009167,
+                    "close": 2034.17,
+                    "last": 2034.17,
+                    "previousClose": null,
+                    "change": -100.45000000091657,
+                    "percentage": -4.7057555912,
+                    "average": 2084.39,
+                    "baseVolume": 10828.07,
+                    "quoteVolume": 22855507.29112,
+                    "markPrice": null,
+                    "indexPrice": null,
+                    "info": {
+                        "amount": "22855507.29112",
+                        "high": "2167.27",
+                        "vol": "10828.07",
+                        "last": "2034.1700000000000000",
+                        "low": "2026.22",
+                        "buy": "2034.16",
+                        "sell": "2034.17",
+                        "rose": "-4.7057555912",
+                        "time": "1775130751000"
+                    }
+                }
+            }
+        ],
         "fetchOrderBook": [
             {
                 "description": "fetch swap order book with limit",
