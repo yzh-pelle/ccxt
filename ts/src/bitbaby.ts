@@ -2,11 +2,11 @@
 //  ---------------------------------------------------------------------------
 
 import Exchange from './abstract/bitbaby.js';
-// import { AccountSuspended, ArgumentsRequired, AuthenticationError, BadRequest, BadSymbol, ExchangeError, ExchangeNotAvailable, InsufficientFunds, InvalidAddress, InvalidNonce, InvalidOrder, NotSupported, OrderNotFound, PermissionDenied, RateLimitExceeded, RestrictedLocation } from './base/errors.js';
+import { NotSupported } from './base/errors.js';
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE } from './base/functions/number.js';
 // import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { Dict, Int, Market, OrderBook, Ticker } from './base/types.js';
+import type { Dict, FundingRate, Int, Market, OrderBook, Ticker } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -101,7 +101,7 @@ export default class bitbaby extends Exchange {
                 'fetchFundingHistory': false,
                 'fetchFundingInterval': false,
                 'fetchFundingIntervals': false,
-                'fetchFundingRate': false,
+                'fetchFundingRate': true,
                 'fetchFundingRateHistory': false,
                 'fetchFundingRates': false,
                 'fetchGreeks': false,
@@ -215,7 +215,7 @@ export default class bitbaby extends Exchange {
                         'futures/open/fapi/v1/contracts': 1, // done check rate limit
                         'futures/open/fapi/v1/depth': 1, // done check rate limit
                         'futures/open/fapi/v1/ticker': 1, // done check rate limit
-                        'futures/open/fapi/v1/index': 1,
+                        'futures/open/fapi/v1/index': 1, // done check rate limit
                         'futures/open/fapi/v1/klines': 1,
                     },
                 },
@@ -759,6 +759,7 @@ export default class bitbaby extends Exchange {
             //
             response = await this.publicGetSpotOpenSapiV1Depth (this.extend (request, params));
         }
+        // do not use standard parseOrderBook helper to avoid additional values in the arrays
         const rawBids = this.safeList (response, 'bids', []);
         const rawAsks = this.safeList (response, 'asks', []);
         const bids = [];
@@ -794,7 +795,7 @@ export default class bitbaby extends Exchange {
 
     /**
      * @method
-     * @name kucoin#fetchTicker
+     * @name bitbaby#fetchTicker
      * @description fetches a price ticker, a statistical calculation with the information calculated over the past 24 hours for a specific market
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#hang-qing-ticker
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#hang-qing-ticker
@@ -869,6 +870,8 @@ export default class bitbaby extends Exchange {
         //         "time": 1775130047000
         //     }
         //
+        const marketId = this.safeString (ticker, 'contractName');
+        market = this.safeMarket (marketId, market);
         const timestamp = this.safeInteger (ticker, 'time');
         return this.safeTicker ({
             'symbol': market['symbol'],
@@ -890,10 +893,63 @@ export default class bitbaby extends Exchange {
             'average': undefined,
             'baseVolume': this.safeString (ticker, 'vol'),
             'quoteVolume': this.safeString (ticker, 'amount'),
-            'markPrice': undefined,
-            'indexPrice': undefined,
+            'markPrice': this.safeString (ticker, 'markPrice'),
+            'indexPrice': this.safeString (ticker, 'indexPrice'),
             'info': ticker,
         }, market);
+    }
+
+    /**
+     * @method
+     * @name bitbaby#fetchFundingRate
+     * @description fetch the current funding rate
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#huo-qu-zhi-shu-biao-ji-jia-ge
+     * @param {string} symbol unified market symbol
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} a [funding rate structure]{@link https://docs.ccxt.com/#/?id=funding-rate-structure}
+     */
+    async fetchFundingRate (symbol: string, params = {}): Promise<FundingRate> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'contractName': market['id'],
+        };
+        if (market['spot']) {
+            throw new NotSupported (this.id + ' fetchFundingRate() is not supported for spot markets');
+        }
+        const response = await this.publicGetFuturesOpenFapiV1Index (this.extend (request, params));
+        return this.parseFundingRate (response, market);
+    }
+
+    parseFundingRate (contract, market: Market = undefined): FundingRate {
+        //
+        //     {
+        //         "currentFundRate": 0.00003,
+        //         "indexPrice": 66178.765,
+        //         "tagPrice": 66142.4,
+        //         "nextFundRate": -0.0000703671478945
+        //     }
+        //
+        return {
+            'info': contract,
+            'symbol': market['symbol'],
+            'markPrice': this.safeNumber (contract, 'tagPrice'), // todo check if this is correct
+            'indexPrice': this.safeNumber (contract, 'indexPrice'),
+            'interestRate': undefined,
+            'estimatedSettlePrice': undefined,
+            'timestamp': undefined,
+            'datetime': undefined,
+            'fundingRate': this.safeNumber (contract, 'currentFundRate'),
+            'fundingTimestamp': undefined,
+            'fundingDatetime': undefined,
+            'nextFundingRate': this.safeNumber (contract, 'nextFundRate'),
+            'nextFundingTimestamp': undefined,
+            'nextFundingDatetime': undefined,
+            'previousFundingRate': undefined,
+            'previousFundingTimestamp': undefined,
+            'previousFundingDatetime': undefined,
+            'interval': undefined,
+        } as FundingRate;
     }
 
     sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
