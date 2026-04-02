@@ -6,7 +6,7 @@ import { NotSupported } from './base/errors.js';
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE } from './base/functions/number.js';
 // import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { Dict, FundingRate, Int, Market, OrderBook, Ticker } from './base/types.js';
+import type { Dict, FundingRate, Int, Market, OHLCV, OrderBook, Ticker, Trade } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -208,15 +208,15 @@ export default class bitbaby extends Exchange {
                         'spot/open/sapi/v1/symbols': 1, // done check rate limit
                         'spot/open/sapi/v1/depth': 1, // done check rate limit
                         'spot/open/sapi/v1/ticker': 1, // done check rate limit
-                        'spot/open/sapi/v1/trades': 1,
-                        'spot/open/sapi/v1/klines': 1,
+                        'spot/open/sapi/v1/trades': 1, // done check rate limit
+                        'spot/open/sapi/v1/klines': 1, // todo - empty response
                         'futures/open/fapi/v1/ping': 1, // done check rate limit
                         'futures/open/fapi/v1/time': 1, // done check rate limit
                         'futures/open/fapi/v1/contracts': 1, // done check rate limit
                         'futures/open/fapi/v1/depth': 1, // done check rate limit
                         'futures/open/fapi/v1/ticker': 1, // done check rate limit
                         'futures/open/fapi/v1/index': 1, // done check rate limit
-                        'futures/open/fapi/v1/klines': 1,
+                        'futures/open/fapi/v1/klines': 1, // todo - empty response
                     },
                 },
                 'private': {
@@ -266,6 +266,7 @@ export default class bitbaby extends Exchange {
                     // {"code":"1","msg":"fail","data":null,"message":null,"succ":false}
                     // {"code":"-1121","msg":"Invalid contract","data":null}
                     // {"code":"-1121","msg":"无效的合约","data":null}
+                    // {"code":"-1102","msg":"Forced parameter {0} not sent, empty or incorrect format","data":null}
                 },
                 'broad': {
                 },
@@ -950,6 +951,129 @@ export default class bitbaby extends Exchange {
             'previousFundingDatetime': undefined,
             'interval': undefined,
         } as FundingRate;
+    }
+
+    /**
+     * @method
+     * @name bitbaby#fetchOHLCV
+     * @description fetches historical candlestick data containing the open, high, low, and close price, and the volume of a market
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#k-xian-la-zhu-tu-shu-ju
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#k-xian-la-zhu-tu-shu-ju
+     * @param {string} symbol unified symbol of the market to fetch OHLCV data for
+     * @param {string} timeframe the length of time each candle represents
+     * @param {int} [since] timestamp in ms of the earliest candle to fetch
+     * @param {int} [limit] the maximum amount of candles to fetch (default 100, max 300)
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {int[][]} A list of candles ordered as timestamp, open, high, low, close, volume
+     */
+    async fetchOHLCV (symbol: string, timeframe: string = '1m', since: Int = undefined, limit: Int = undefined, params = {}): Promise<OHLCV[]> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const interval = this.safeString (this.timeframes, timeframe, timeframe);
+        const request: Dict = {
+            'interval': interval,
+        };
+        if (limit !== undefined) {
+            request['limit'] = limit;
+        }
+        let response = undefined;
+        if (market['contract']) {
+            request['contractName'] = market['id'];
+            response = await this.publicGetFuturesOpenFapiV1Klines (this.extend (request, params));
+        } else {
+            request['symbol'] = market['id'];
+            response = await this.publicGetSpotOpenSapiV1Klines (this.extend (request, params));
+        }
+        // returns an empty array
+        // todo check in private api
+        return this.parseOHLCVs (response, market, timeframe, since, limit);
+    }
+
+    parseOHLCV (ohlcv, market: Market = undefined): OHLCV {
+        // example from docs
+        //
+        //     {
+        //         "high": "6228.77",
+        //         "vol": "111",
+        //         "low": "6228.77",
+        //         "idx": 1594640340,
+        //         "close": "6228.77",
+        //         "open": "6228.77"
+        //     }
+        //
+        return [
+            this.safeInteger (ohlcv, 'idx'),
+            this.safeNumber (ohlcv, 'open'),
+            this.safeNumber (ohlcv, 'high'),
+            this.safeNumber (ohlcv, 'low'),
+            this.safeNumber (ohlcv, 'close'),
+            this.safeNumber (ohlcv, 'vol'),
+        ];
+    }
+
+    /**
+     * @method
+     * @name kucoin#fetchTrades
+     * @description get the list of most recent trades for a particular symbol
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#zui-jin-cheng-jiao
+     * @param {string} symbol unified symbol of the market to fetch trades for
+     * @param {int} [since] timestamp in ms of the earliest trade to fetch
+     * @param {int} [limit] the maximum amount of trades to fetch (default 200)
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {Trade[]} a list of [trade structures]{@link https://docs.ccxt.com/?id=public-trades}
+     */
+    async fetchTrades (symbol: string, since: Int = undefined, limit: Int = undefined, params = {}): Promise<Trade[]> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        if (market['contract']) {
+            throw new NotSupported (this.id + ' fetchTrades() is not supported for contract markets');
+        }
+        const request: Dict = {
+            'symbol': market['id'],
+        };
+        if (limit !== undefined) {
+            request['limit'] = limit;
+        }
+        const response = await this.publicGetSpotOpenSapiV1Trades (this.extend (request, params));
+        //
+        //     [
+        //         {
+        //             "side": "sell",
+        //             "price": 66316.5900000000000000,
+        //             "qty": 0.0000700000000000,
+        //             "time": 1775140259281
+        //         }
+        //     ]
+        //
+        return this.parseTrades (response, market, since, limit);
+    }
+
+    parseTrade (trade: Dict, market: Market = undefined): Trade {
+        //
+        // fetchTrades
+        //     {
+        //         "side": "sell",
+        //         "price": 66316.5900000000000000,
+        //         "qty": 0.0000700000000000,
+        //         "time": 1775140259281
+        //     }
+        //
+        const timestamp = this.safeInteger (trade, 'time');
+        return this.safeTrade ({
+            'info': trade,
+            'id': undefined,
+            'order': undefined,
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'symbol': market['symbol'],
+            'type': undefined,
+            'takerOrMaker': undefined,
+            'side': this.safeStringLower (trade, 'side'),
+            'price': this.safeString (trade, 'price'),
+            'amount': this.safeString (trade, 'qty'),
+            'cost': undefined,
+            'fee': undefined,
+        }, market);
     }
 
     sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
