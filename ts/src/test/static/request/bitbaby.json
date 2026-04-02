@@ -3,6 +3,26 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchTicker": [
+            {
+                "description": "fetch swap ticker",
+                "method": "fetchTicker",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/ticker?contractName=E-ETH-USDT",
+                "input": [
+                    "ETH/USDT:USDT"
+                ],
+                "output": null
+            },
+            {
+                "description": "fetch spot ticker",
+                "method": "fetchTicker",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/ticker?symbol=ethusdt",
+                "input": [
+                    "ETH/USDT"
+                ],
+                "output": null
+            }
+        ],
         "fetchStatus": [
             {
                 "description": "fetch spot status",
