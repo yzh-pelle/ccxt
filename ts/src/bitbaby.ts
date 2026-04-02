@@ -6,7 +6,7 @@ import Exchange from './abstract/bitbaby.js';
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE } from './base/functions/number.js';
 // import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { Dict, Int, Market, OrderBook } from './base/types.js';
+import type { Dict, IndexType, Int, Market, OrderBook } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -206,14 +206,14 @@ export default class bitbaby extends Exchange {
                         'spot/open/sapi/v1/ping': 1, // done check rate limit
                         'spot/open/sapi/v1/time': 1, // done check rate limit
                         'spot/open/sapi/v1/symbols': 1, // done check rate limit
-                        'spot/open/sapi/v1/depth': 1,
+                        'spot/open/sapi/v1/depth': 1, // done check rate limit
                         'spot/open/sapi/v1/ticker': 1,
                         'spot/open/sapi/v1/trades': 1,
-                        'spot/open/sapi/v1/klines': 1, // done check rate limit
+                        'spot/open/sapi/v1/klines': 1,
                         'futures/open/fapi/v1/ping': 1, // done check rate limit
                         'futures/open/fapi/v1/time': 1, // done check rate limit
-                        'futures/open/fapi/v1/contracts': 1,
-                        'futures/open/fapi/v1/depth': 1,
+                        'futures/open/fapi/v1/contracts': 1, // done check rate limit
+                        'futures/open/fapi/v1/depth': 1, // done check rate limit
                         'futures/open/fapi/v1/ticker': 1,
                         'futures/open/fapi/v1/index': 1,
                         'futures/open/fapi/v1/klines': 1,
@@ -711,9 +711,7 @@ export default class bitbaby extends Exchange {
             request['limit'] = limit;
         }
         let response = undefined;
-        let cumulativeIndex = 2;
         if (market['contract']) {
-            cumulativeIndex = 3; // cumulative cost
             request['contractName'] = market['id'];
             //
             //     {
@@ -754,13 +752,20 @@ export default class bitbaby extends Exchange {
             //                 "5.698" // cumulative amount
             //             ]
             //         ],
-            //         "time": 1775124840450 - NULL for contracts
+            //         "time": 1775124840450
             //     }
             //
             response = await this.publicGetSpotOpenSapiV1Depth (this.extend (request, params));
         }
         const timestamp = this.safeInteger (response, 'time');
-        return this.parseOrderBook (response, symbol, timestamp, 'bids', 'asks', 0, 1, cumulativeIndex);
+        return this.parseOrderBook (response, symbol, timestamp);
+    }
+
+    parseBidAsk (bidask, priceKey: IndexType = 0, amountKey: IndexType = 1, countOrIdKey: IndexType = 2) {
+        const price = this.safeFloat (bidask, priceKey);
+        const amount = this.safeFloat (bidask, amountKey);
+        const bidAsk = [ price, amount ];
+        return bidAsk;
     }
 
     sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
