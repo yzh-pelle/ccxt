@@ -1,0 +1,143 @@
+{
+    "exchange": "bitbaby",
+    "skipKeys": [],
+    "options": {},
+    "methods": {
+        "fetchOrderBook": [
+            {
+                "description": "fetch swap order book with limit",
+                "method": "fetchOrderBook",
+                "input": [
+                    "ETH/USDT:USDT",
+                    2
+                ],
+                "httpResponse": {
+                    "asks": [
+                        [
+                            "2037.28",
+                            "2264",
+                            "2264",
+                            "4612401.92"
+                        ],
+                        [
+                            "2037.29",
+                            "1537",
+                            "3801",
+                            "7743716.65"
+                        ]
+                    ],
+                    "bids": [
+                        [
+                            "2037.27",
+                            "3122",
+                            "3122",
+                            "6360356.94"
+                        ],
+                        [
+                            "2037.25",
+                            "1705",
+                            "4827",
+                            "9833868.19"
+                        ]
+                    ],
+                    "time": null
+                },
+                "parsedResponse": {
+                    "symbol": "ETH/USDT:USDT",
+                    "bids": [
+                        [
+                            2037.27,
+                            3122,
+                            6360356
+                        ],
+                        [
+                            2037.25,
+                            1705,
+                            9833868
+                        ]
+                    ],
+                    "asks": [
+                        [
+                            2037.28,
+                            2264,
+                            4612401
+                        ],
+                        [
+                            2037.29,
+                            1537,
+                            7743716
+                        ]
+                    ],
+                    "timestamp": null,
+                    "datetime": null,
+                    "nonce": null
+                }
+            },
+            {
+                "description": "fetch spot order book with limit",
+                "method": "fetchOrderBook",
+                "input": [
+                    "ETH/USDT",
+                    2
+                ],
+                "httpResponse": {
+                    "asks": [
+                        [
+                            "2038.70",
+                            "7.916",
+                            "7.916"
+                        ],
+                        [
+                            "2038.72",
+                            "5.041",
+                            "12.957"
+                        ]
+                    ],
+                    "bids": [
+                        [
+                            "2038.69",
+                            "8.764",
+                            "8.764"
+                        ],
+                        [
+                            "2038.67",
+                            "4.727",
+                            "13.491"
+                        ]
+                    ],
+                    "time": "1775126951250"
+                },
+                "parsedResponse": {
+                    "symbol": "ETH/USDT",
+                    "bids": [
+                        [
+                            2038.69,
+                            8.764,
+                            8
+                        ],
+                        [
+                            2038.67,
+                            4.727,
+                            13
+                        ]
+                    ],
+                    "asks": [
+                        [
+                            2038.7,
+                            7.916,
+                            7
+                        ],
+                        [
+                            2038.72,
+                            5.041,
+                            12
+                        ]
+                    ],
+                    "timestamp": 1775126951250,
+                    "datetime": "2026-04-02T10:49:11.250Z",
+                    "nonce": null
+                }
+            }
+        ]
+    }
+}
