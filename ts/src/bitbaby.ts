@@ -6,7 +6,7 @@ import Exchange from './abstract/bitbaby.js';
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE } from './base/functions/number.js';
 // import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { Dict, Int, Market } from './base/types.js';
+import type { Dict, Int, Market, OrderBook } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -25,10 +25,7 @@ export default class bitbaby extends Exchange {
             'certified': false,
             'pro': true,
             'has': {
-                'publicAPI': true,
-                'privateAPI': true,
                 'CORS': undefined,
-                'sandbox': false,
                 'spot': true,
                 'margin': true,
                 'swap': true,
@@ -40,9 +37,9 @@ export default class bitbaby extends Exchange {
                 'borrowMargin': false,
                 'cancelAllOrders': false,
                 'cancelOrder': true,
-                'cancelOrderWithClientOrderId': false,
                 'cancelOrders': false,
                 'cancelOrdersWithClientOrderId': false,
+                'cancelOrderWithClientOrderId': false,
                 'closeAllPositions': false,
                 'closePosition': false,
                 'createDepositAddress': false,
@@ -70,8 +67,8 @@ export default class bitbaby extends Exchange {
                 'createTriggerOrder': false,
                 'deposit': false,
                 'editOrder': false,
-                'editOrderWithClientOrderId': false,
                 'editOrders': false,
+                'editOrderWithClientOrderId': false,
                 'fetchAccounts': false,
                 'fetchADLRank': false,
                 'fetchBalance': true,
@@ -102,16 +99,15 @@ export default class bitbaby extends Exchange {
                 'fetchDepositWithdrawFee': false,
                 'fetchDepositWithdrawFees': false,
                 'fetchFundingHistory': false,
-                'fetchFundingRate': false,
-                'fetchFundingRateHistory': false,
                 'fetchFundingInterval': false,
                 'fetchFundingIntervals': false,
+                'fetchFundingRate': false,
+                'fetchFundingRateHistory': false,
                 'fetchFundingRates': false,
                 'fetchGreeks': false,
                 'fetchIndexOHLCV': false,
                 'fetchIsolatedBorrowRate': false,
                 'fetchIsolatedBorrowRates': false,
-                'fetchMarginAdjustmentHistory': false,
                 'fetchIsolatedPositions': false,
                 'fetchL2OrderBook': true,
                 'fetchL3OrderBook': false,
@@ -124,44 +120,45 @@ export default class bitbaby extends Exchange {
                 'fetchLiquidations': false,
                 'fetchLongShortRatio': false,
                 'fetchLongShortRatioHistory': false,
+                'fetchMarginAdjustmentHistory': false,
                 'fetchMarginMode': false,
                 'fetchMarginModes': false,
                 'fetchMarketLeverageTiers': false,
                 'fetchMarkets': true,
                 'fetchMarkOHLCV': false,
+                'fetchMarkPrices': false,
                 'fetchMyLiquidations': false,
                 'fetchMySettlementHistory': false,
                 'fetchMyTrades': false,
                 'fetchOHLCV': false,
                 'fetchOpenInterest': false,
-                'fetchOpenInterests': false,
                 'fetchOpenInterestHistory': false,
+                'fetchOpenInterests': false,
                 'fetchOpenOrder': false,
                 'fetchOpenOrders': false,
                 'fetchOption': false,
                 'fetchOptionChain': false,
                 'fetchOrder': false,
-                'fetchOrderWithClientOrderId': false,
                 'fetchOrderBook': true,
                 'fetchOrderBooks': false,
                 'fetchOrders': false,
                 'fetchOrdersByStatus': false,
                 'fetchOrderTrades': false,
+                'fetchOrderWithClientOrderId': false,
                 'fetchPosition': false,
                 'fetchPositionADLRank': false,
-                'fetchPositionsADLRank': false,
                 'fetchPositionHistory': false,
-                'fetchPositionsHistory': false,
                 'fetchPositionMode': false,
                 'fetchPositions': false,
+                'fetchPositionsADLRank': false,
                 'fetchPositionsForSymbol': false,
+                'fetchPositionsHistory': false,
                 'fetchPositionsRisk': false,
                 'fetchPremiumIndexOHLCV': false,
                 'fetchSettlementHistory': false,
                 'fetchStatus': true,
                 'fetchTicker': true,
                 'fetchTickers': false,
-                'fetchMarkPrices': false,
                 'fetchTime': true,
                 'fetchTrades': true,
                 'fetchTradingFee': false,
@@ -178,9 +175,12 @@ export default class bitbaby extends Exchange {
                 'fetchWithdrawal': false,
                 'fetchWithdrawals': false,
                 'fetchWithdrawalWhitelist': false,
+                'privateAPI': true,
+                'publicAPI': true,
                 'reduceMargin': false,
                 'repayCrossMargin': false,
                 'repayIsolatedMargin': false,
+                'sandbox': false,
                 'setLeverage': false,
                 'setMargin': false,
                 'setMarginMode': false,
@@ -263,6 +263,7 @@ export default class bitbaby extends Exchange {
             'precisionMode': TICK_SIZE,
             'exceptions': {
                 'exact': {
+                    // {"code":"1","msg":"fail","data":null,"message":null,"succ":false}
                 },
                 'broad': {
                 },
@@ -689,6 +690,77 @@ export default class bitbaby extends Exchange {
             'created': undefined,
             'info': market,
         });
+    }
+
+    /**
+     * @method
+     * @name bitbaby#fetchOrderBook
+     * @description fetches information on open orders with bid (buy) and ask (sell) prices, volumes and other data
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#ding-dan-bo
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#ding-dan-bo
+     * @param {string} symbol unified symbol of the market to fetch the order book for
+     * @param {int} [limit] the maximum amount of order book entries to return (default 30, max 100)
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} A dictionary of [order book structures]{@link https://docs.ccxt.com/?id=order-book-structure} indexed by market symbols
+     */
+    async fetchOrderBook (symbol: string, limit: Int = undefined, params = {}): Promise<OrderBook> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {};
+        if (limit !== undefined) {
+            request['limit'] = limit;
+        }
+        let response = undefined;
+        let cumulativeIndex = 2;
+        if (market['contract']) {
+            cumulativeIndex = 3; // cumulative cost
+            request['contractName'] = market['id'];
+            //
+            //     {
+            //         "asks": [
+            //             [
+            //                 "2034.59",
+            //                 "46",
+            //                 "46",
+            //                 "93591.14"
+            //             ]
+            //         ],
+            //         "bids": [
+            //             [
+            //                 "2034.55",
+            //                 "294",
+            //                 "294",
+            //                 "598157.70" // cumulative cost
+            //             ]
+            //         ],
+            //         "time": null
+            //     }
+            response = await this.publicGetFuturesOpenFapiV1Depth (this.extend (request, params));
+        } else {
+            request['symbol'] = market['id'];
+            //
+            //     {
+            //         "asks": [
+            //             [
+            //                 "2036.17",
+            //                 "9.058",
+            //                 "9.058"
+            //             ]
+            //         ],
+            //         "bids": [
+            //             [
+            //                 "2036.16",
+            //                 "5.698",
+            //                 "5.698" // cumulative amount
+            //             ]
+            //         ],
+            //         "time": 1775124840450 - NULL for contracts
+            //     }
+            //
+            response = await this.publicGetSpotOpenSapiV1Depth (this.extend (request, params));
+        }
+        const timestamp = this.safeInteger (response, 'time');
+        return this.parseOrderBook (response, symbol, timestamp, 'bids', 'asks', 0, 1, cumulativeIndex);
     }
 
     sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
