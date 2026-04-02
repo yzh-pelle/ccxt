@@ -1413,7 +1413,7 @@ export default class bitbaby extends Exchange {
             });
             result.push (parsed);
         }
-        return result;
+        return result as Order[];
     }
 
     /**
@@ -1639,7 +1639,7 @@ export default class bitbaby extends Exchange {
             const id = failIds[i];
             allOrders.push (this.safeOrder ({ 'id': id, 'status': 'failed' }, market));
         }
-        return allOrders;
+        return allOrders as Order[];
     }
 
     parseOrder (order: Dict, market: Market = undefined): Order {
