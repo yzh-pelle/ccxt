@@ -3,6 +3,91 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchBalance": [
+            {
+                "description": "fetch spot balance",
+                "method": "fetchBalance",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/account",
+                "input": [],
+                "output": null
+            }
+        ],
+        "fetchMyTrades": [
+            {
+                "description": "fetch my spot trades",
+                "method": "fetchMyTrades",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/myTrades?limit=1&symbol=dogeusdt",
+                "input": [
+                    "DOGE/USDT",
+                    null,
+                    1
+                ],
+                "output": null
+            }
+        ],
+        "cancelOrders": [
+            {
+                "description": "cancel spot orders",
+                "method": "cancelOrders",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/batchCancel",
+                "input": [
+                    [
+                        "3176910360272106173",
+                        "3176908865623394614"
+                    ],
+                    "DOGE/USDT"
+                ],
+                "output": "{\"symbol\":\"dogeusdt\",\"orderIds\":[\"3176910360272106173\",\"3176908865623394614\"]}"
+            }
+        ],
+        "cancelOrder": [
+            {
+                "description": "cancel spot order",
+                "method": "cancelOrder",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/cancel",
+                "input": [
+                    "3176908865623394614",
+                    "DOGE/USDT"
+                ],
+                "output": "{\"orderId\":\"3176908865623394614\",\"symbol\":\"dogeusdt\"}"
+            }
+        ],
+        "fetchOpenOrders": [
+            {
+                "description": "fetch open swap orders",
+                "method": "fetchOpenOrders",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/openOrders?contractName=E-DOGE-USDT",
+                "input": [
+                    "DOGE/USDT:USDT",
+                    null,
+                    1
+                ],
+                "output": null
+            },
+            {
+                "description": "fetch open spot orders",
+                "method": "fetchOpenOrders",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/openOrders?symbol=dogeusdt&limit=1",
+                "input": [
+                    "DOGE/USDT",
+                    null,
+                    1
+                ],
+                "output": null
+            }
+        ],
+        "fetchOrder": [
+            {
+                "description": "fetch spot order",
+                "method": "fetchOrder",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/order?orderId=3176908865623394614&symbol=dogeusdt",
+                "input": [
+                    "3176908865623394614",
+                    "DOGE/USDT"
+                ],
+                "output": null
+            }
+        ],
         "fetchTrades": [
             {
                 "description": "fetch spot trades",
