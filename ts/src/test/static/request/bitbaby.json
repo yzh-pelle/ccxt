@@ -1,0 +1,79 @@
+{
+    "exchange": "bitbaby",
+    "skipKeys": [],
+    "options": {},
+    "methods": {
+        "fetchStatus": [
+            {
+                "description": "fetch spot status",
+                "method": "fetchStatus",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/ping",
+                "input": [],
+                "output": null
+            },
+            {
+                "description": "fetch swap status",
+                "method": "fetchStatus",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/ping",
+                "input": [
+                    {
+                        "type": "swap"
+                    }
+                ],
+                "output": null
+            }
+        ],
+        "fetchTime": [
+            {
+                "description": "fetch swap time",
+                "method": "fetchTime",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/time",
+                "input": [
+                    {
+                        "type": "swap"
+                    }
+                ],
+                "output": null
+            },
+            {
+                "description": "fetch spot time",
+                "method": "fetchTime",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/time",
+                "input": [],
+                "output": null
+            }
+        ],
+        "fetchOrderBook": [
+            {
+                "description": "fetch swap order book with limit",
+                "method": "fetchOrderBook",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/depth?limit=2&contractName=E-ETH-USDT",
+                "input": [
+                    "ETH/USDT:USDT",
+                    2
+                ],
+                "output": null
+            },
+            {
+                "description": "fetch spot order book with limit",
+                "method": "fetchOrderBook",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/depth?limit=2&symbol=ethusdt",
+                "input": [
+                    "ETH/USDT",
+                    2
+                ],
+                "output": null
+            },
+            {
+                "description": "fetch spot order book",
+                "method": "fetchOrderBook",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/depth?symbol=ethusdt",
+                "input": [
+                    "ETH/USDT"
+                ],
+                "output": null
+            }
+        ]
+  },
+    "outputType": "both"
+}
