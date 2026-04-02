@@ -3,6 +3,17 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchFundingRate": [
+            {
+                "description": "fetch funding rate",
+                "method": "fetchFundingRate",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/index?contractName=E-BTC-USDT",
+                "input": [
+                    "BTC/USDT:USDT"
+                ],
+                "output": null
+            }
+        ],
         "fetchTicker": [
             {
                 "description": "fetch swap ticker",
