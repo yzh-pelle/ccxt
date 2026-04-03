@@ -414,6 +414,7 @@ export default class bitbaby extends Exchange {
                             'IOC': true,
                             'FOK': true,
                             'PO': true,
+                            'GTD': false,
                         },
                         'hedged': false,
                         'trailing': false,
