@@ -111,7 +111,7 @@
                 "url": "https://kline.bitbaby.com/v1/spot/market/kline?scaleType=1min&limit=2&symbol=dogeusdt",
                 "input": [
                     "DOGE/USDT",
-                    null,
+                    "1m",
                     null,
                     2
                 ],
