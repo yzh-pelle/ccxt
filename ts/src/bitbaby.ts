@@ -267,6 +267,7 @@ export default class bitbaby extends Exchange {
             'exceptions': {
                 'exact': {
                     // error messages:
+                    // {"code":"-1203","msg":"委托价值须大于最小值 21 USDT","data":null}
                     // order not found - {"code":"-1196","msg":"该订单不存在","data":null}
                     // {"code":"1","msg":"fail","data":null,"message":null,"succ":false}
                     // {"code":"-1121","msg":"Invalid contract","data":null}
@@ -1453,10 +1454,10 @@ export default class bitbaby extends Exchange {
 
     encodeMarginMode (marginMode) {
         const modes = {
-            'cross': 1,
-            'isolated': 2,
+            'cross': '1',
+            'isolated': '2',
         };
-        return this.safeInteger (modes, marginMode, marginMode);
+        return this.safeString (modes, marginMode, marginMode);
     }
 
     async createMarketSellOrderWithCost (symbol: string, cost: number, params = {}): Promise<Order> {
