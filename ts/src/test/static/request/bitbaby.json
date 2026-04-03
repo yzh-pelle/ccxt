@@ -3,7 +3,133 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchPositionHistory": [
+            {
+                "description": "fetch position history",
+                "method": "fetchPositionHistory",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/profitHistorical",
+                "input": [
+                    "DOGE/USDT:USDT",
+                    null,
+                    1
+                ],
+                "output": "{\"contractName\":\"E-DOGE-USDT\",\"limit\":1}"
+            }
+        ],
+        "fetchPositions": [
+            {
+                "description": "fetchPositions",
+                "method": "fetchPositions",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/account",
+                "input": [],
+                "output": null
+            }
+        ],
+        "fetchCanceledAndClosedOrders": [
+            {
+                "description": "fetch closed orders",
+                "method": "fetchCanceledAndClosedOrders",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/orderHistorical",
+                "input": [
+                    "DOGE/USDT:USDT",
+                    null,
+                    1
+                ],
+                "output": "{\"contractName\":\"E-DOGE-USDT\",\"limit\":1}"
+            }
+        ],
+        "createOrder": [
+            {
+                "description": "create take profit market swap order",
+                "method": "createOrder",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/conditionOrder",
+                "input": [
+                    "DOGE/USDT:USDT",
+                    "market",
+                    "sell",
+                    30,
+                    null,
+                    {
+                        "takeProfitPrice": 1
+                    }
+                ],
+                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"SELL\",\"type\":\"MARKET\",\"open\":\"CLOSE\",\"volume\":\"30\",\"positionType\":1,\"triggerPrice\":\"1\",\"triggerType\":2,\"takeProfitPrice\":1}"
+            },
+            {
+                "description": "create stop loss limit swap order",
+                "method": "createOrder",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/conditionOrder",
+                "input": [
+                    "DOGE/USDT:USDT",
+                    "limit",
+                    "sell",
+                    30,
+                    0.02,
+                    {
+                        "stopLossPrice": 0.01
+                    }
+                ],
+                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"SELL\",\"type\":\"LIMIT\",\"open\":\"CLOSE\",\"volume\":\"30\",\"price\":\"0.02\",\"positionType\":1,\"triggerPrice\":\"0.01\",\"triggerType\":1,\"stopLossPrice\":0.01}"
+            },
+            {
+                "description": "create swap order with cost",
+                "method": "createOrder",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/order",
+                "input": [
+                    "DOGE/USDT:USDT",
+                    "market",
+                    "buy",
+                    1,
+                    1,
+                    {
+                        "cost": 20
+                    }
+                ],
+                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"BUY\",\"type\":\"MARKET\",\"open\":\"OPEN\",\"volume\":\"20\",\"positionType\":1,\"cost\":20}"
+            },
+            {
+                "description": "create reduceOnly swap order",
+                "method": "createOrder",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/order",
+                "input": [
+                    "DOGE/USDT:USDT",
+                    "market",
+                    "buy",
+                    100,
+                    null,
+                    {
+                        "reduceOnly": true
+                    }
+                ],
+                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"BUY\",\"type\":\"MARKET\",\"open\":\"CLOSE\",\"volume\":\"100\",\"positionType\":1,\"reduceOnly\":true}"
+            }
+        ],
+        "fetchOHLCV": [
+            {
+                "description": "fetch spot ohlcv",
+                "method": "fetchOHLCV",
+                "url": "https://kline.bitbaby.com/v1/spot/market/kline?scaleType=1min&limit=2&symbol=dogeusdt",
+                "input": [
+                    "DOGE/USDT",
+                    null,
+                    null,
+                    2
+                ],
+                "output": null
+            }
+        ],
         "fetchBalance": [
+            {
+                "description": "fetch swap balance",
+                "method": "fetchBalance",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/account",
+                "input": [
+                    {
+                        "type": "swap"
+                    }
+                ],
+                "output": null
+            },
             {
                 "description": "fetch spot balance",
                 "method": "fetchBalance",
@@ -13,6 +139,15 @@
             }
         ],
         "fetchMyTrades": [
+            {
+                "description": "fetch my swap trades",
+                "method": "fetchMyTrades",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/myTrades?contractName=E-DOGE-USDT",
+                "input": [
+                    "DOGE/USDT:USDT"
+                ],
+                "output": null
+            },
             {
                 "description": "fetch my spot trades",
                 "method": "fetchMyTrades",
@@ -41,6 +176,16 @@
             }
         ],
         "cancelOrder": [
+            {
+                "description": "cancel swap order",
+                "method": "cancelOrder",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/cancel",
+                "input": [
+                    "3221398421765442068",
+                    "DOGE/USDT:USDT"
+                ],
+                "output": "{\"orderId\":\"3221398421765442068\",\"contractName\":\"E-DOGE-USDT\"}"
+            },
             {
                 "description": "cancel spot order",
                 "method": "cancelOrder",
@@ -77,6 +222,16 @@
             }
         ],
         "fetchOrder": [
+            {
+                "description": "fetch swap order",
+                "method": "fetchOrder",
+                "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/order?orderId=3221406049627539350&contractName=E-DOGE-USDT",
+                "input": [
+                    "3221406049627539350",
+                    "DOGE/USDT:USDT"
+                ],
+                "output": null
+            },
             {
                 "description": "fetch spot order",
                 "method": "fetchOrder",
