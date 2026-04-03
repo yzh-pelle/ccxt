@@ -6,7 +6,7 @@ import { ArgumentsRequired, BadRequest, InvalidOrder, NotSupported } from './bas
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE } from './base/functions/number.js';
 import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { Balances, Dict, FundingRate, Int, Market, Num, OHLCV, Order, OrderBook, OrderRequest, OrderSide, OrderType, Str, Ticker, Trade } from './base/types.js';
+import type { Balances, Dict, FundingRate, Int, Market, Num, OHLCV, Order, OrderBook, OrderRequest, OrderSide, OrderType, Position, Str, Strings, Ticker, Trade } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -49,9 +49,9 @@ export default class bitbaby extends Exchange {
                 'createMarketBuyOrder': true,
                 'createMarketBuyOrderWithCost': true,
                 'createMarketOrder': true,
-                'createMarketOrderWithCost': false,
+                'createMarketOrderWithCost': true, // contract only if position is opening
                 'createMarketSellOrder': true,
-                'createMarketSellOrderWithCost': false,
+                'createMarketSellOrderWithCost': true, // contract only if position is opening
                 'createOrder': true,
                 'createOrders': true, // spot non-margin only
                 'createOrderWithTakeProfitAndStopLoss': false,
@@ -77,7 +77,7 @@ export default class bitbaby extends Exchange {
                 'fetchBorrowRateHistory': false,
                 'fetchBorrowRates': false,
                 'fetchBorrowRatesPerSymbol': false,
-                'fetchCanceledAndClosedOrders': false,
+                'fetchCanceledAndClosedOrders': true, // contract only
                 'fetchCanceledOrders': false,
                 'fetchClosedOrder': false,
                 'fetchClosedOrders': false,
@@ -145,9 +145,9 @@ export default class bitbaby extends Exchange {
                 'fetchOrderWithClientOrderId': false,
                 'fetchPosition': false,
                 'fetchPositionADLRank': false,
-                'fetchPositionHistory': false,
+                'fetchPositionHistory': true,
                 'fetchPositionMode': false,
-                'fetchPositions': false,
+                'fetchPositions': true,
                 'fetchPositionsADLRank': false,
                 'fetchPositionsForSymbol': false,
                 'fetchPositionsHistory': false,
@@ -192,6 +192,7 @@ export default class bitbaby extends Exchange {
                 'api': {
                     'public': 'https://openapi.bitbaby.com',
                     'private': 'https://openapi.bitbaby.com',
+                    'kline': 'https://kline.bitbaby.com',
                 },
                 'www': 'https://www.bitbaby.com',
                 'doc': [
@@ -207,14 +208,13 @@ export default class bitbaby extends Exchange {
                         'spot/open/sapi/v1/depth': 1, // done check rate limit
                         'spot/open/sapi/v1/ticker': 1, // done check rate limit
                         'spot/open/sapi/v1/trades': 1, // done check rate limit
-                        'spot/open/sapi/v1/klines': 1, // todo - empty response
                         'futures/open/fapi/v1/ping': 1, // done check rate limit
                         'futures/open/fapi/v1/time': 1, // done check rate limit
                         'futures/open/fapi/v1/contracts': 1, // done check rate limit
                         'futures/open/fapi/v1/depth': 1, // done check rate limit
                         'futures/open/fapi/v1/ticker': 1, // done check rate limit
                         'futures/open/fapi/v1/index': 1, // done check rate limit
-                        'futures/open/fapi/v1/klines': 1, // todo - empty response
+                        'futures/open/fapi/v1/kline': 1, // returns an empty response
                     },
                 },
                 'private': {
@@ -226,24 +226,29 @@ export default class bitbaby extends Exchange {
                         'spot/open/sapi/v1/margin/order': 5, // todo check rate limit and response
                         'spot/open/sapi/v1/margin/openOrders': 5, // todo check rate limit and response
                         'spot/open/sapi/v1/margin/myTrades': 1, // todo check rate limit and response
-                        'futures/open/fapi/v1/order': 5, // todo check rate limit and response
-                        'futures/open/fapi/v1/openOrders': 5, // todo check rate limit and response
-                        'futures/open/fapi/v1/myTrades': 1, // todo check rate limit and response
-                        'futures/open/fapi/v1/account': 1, // todo check rate limit and response
+                        'futures/open/fapi/v1/order': 5, // done
+                        'futures/open/fapi/v1/openOrders': 5, // done
+                        'futures/open/fapi/v1/myTrades': 1, // done
+                        'futures/open/fapi/v1/account': 5, // done
                     },
                     'post': {
-                        'spot/open/sapi/v1/order': 1, // done
+                        'spot/open/sapi/v1/order': 1, // done todo - add static tests
                         'spot/open/sapi/v1/order/test': 1, // done
                         'spot/open/sapi/v1/batchOrders': 2, // done
                         'spot/open/sapi/v1/cancel': 1, // done
                         'spot/open/sapi/v1/batchCancel': 2, // done
-                        'spot/open/sapi/v1/margin/order': 5, // done
+                        'spot/open/sapi/v1/margin/order': 5, // todo - check rate limit and response
                         'spot/open/sapi/v1/margin/cancel': 1, // todo check rate limit and response
-                        'futures/open/fapi/v1/order': 1, // todo - check
-                        'futures/open/fapi/v1/conditionOrder': 1, // todo - check
-                        'futures/open/fapi/v1/cancel': 1, // todo check rate limit and response
-                        'futures/open/fapi/v1/orderHistorical': 1,
-                        'futures/open/fapi/v1/profitHistorical': 1,
+                        'futures/open/fapi/v1/order': 1, // done
+                        'futures/open/fapi/v1/conditionOrder': 1, // done
+                        'futures/open/fapi/v1/cancel': 1, // done
+                        'futures/open/fapi/v1/orderHistorical': 1, // done
+                        'futures/open/fapi/v1/profitHistorical': 1, // done
+                    },
+                },
+                'kline': {
+                    'get': {
+                        'v1/spot/market/kline': 1, // done
                     },
                 },
             },
@@ -261,6 +266,8 @@ export default class bitbaby extends Exchange {
             'precisionMode': TICK_SIZE,
             'exceptions': {
                 'exact': {
+                    // error messages:
+                    // order not found - {"code":"-1196","msg":"该订单不存在","data":null}
                     // {"code":"1","msg":"fail","data":null,"message":null,"succ":false}
                     // {"code":"-1121","msg":"Invalid contract","data":null}
                     // {"code":"-1121","msg":"无效的合约","data":null}
@@ -268,6 +275,9 @@ export default class bitbaby extends Exchange {
                     // {"code":"110047","msg":"价格或金额小于最小值","data":null}
                     // {"code":"-1000","msg":"处理请求时发生未知错误","data":null}
                     // { code: '-2100', msg: '参数问题', data: null }
+                    // {"code":"10081","msg":"Take profit order volume must be greater than minimum value 30 contracts","data":{"custom_error_tips":["30"]},"msgData":null,"succ":false}
+                    // non-error messages:
+                    // {"code":"0","msg":"成功","data":null}
                 },
                 'broad': {
                 },
@@ -326,6 +336,7 @@ export default class bitbaby extends Exchange {
                 'timeDifference': 0, // the difference between system clock and Binance clock
                 'adjustForTimeDifference': false, // controls the adjustment logic upon instantiation
                 'createMarketBuyOrderRequiresPrice': true,
+                'createMarketOrderRequiresPrice': true, // conract only if position is opening
                 'accountsByType': {
                 },
                 'networks': {
@@ -352,8 +363,8 @@ export default class bitbaby extends Exchange {
                         'hedged': false,
                         'trailing': false,
                         'leverage': false,
-                        'marketBuyByCost': false,
-                        'marketBuyRequiresPrice': false,
+                        'marketBuyByCost': true,
+                        'marketBuyRequiresPrice': true,
                         'selfTradePrevention': false,
                         'iceberg': false,
                     },
@@ -361,7 +372,8 @@ export default class bitbaby extends Exchange {
                         'max': 10,
                     },
                     'fetchMyTrades': {
-                        'marginMode': true,
+                        'margin': true,
+                        'marginMode': false,
                         'limit': undefined,
                         'daysBack': undefined,
                         'untilDays': 7, // per  implementation comments
@@ -393,81 +405,56 @@ export default class bitbaby extends Exchange {
                     'createOrder': {
                         'marginMode': true,
                         'triggerPrice': true,
-                        'triggerPriceType': {
-                            'last': true,
-                            'mark': true,
-                            'index': true,
-                        },
-                        'triggerDirection': true,
+                        'triggerPriceType': undefined,
+                        'triggerDirection': false,
                         'stopLossPrice': true,
                         'takeProfitPrice': true,
-                        'attachedStopLossTakeProfit': {
-                            'triggerPriceType': {
-                                'last': true,
-                                'mark': true,
-                                'index': true,
-                            },
-                            'price': true,
-                        },
+                        'attachedStopLossTakeProfit': undefined,
                         'timeInForce': {
                             'IOC': true,
-                            'FOK': false,
+                            'FOK': true,
                             'PO': true,
-                            'GTD': false,
                         },
-                        'hedged': false, // true for uta
+                        'hedged': false,
                         'trailing': false,
-                        'leverage': true, // todo implement
+                        'leverage': false,
                         'marketBuyByCost': true,
-                        'marketBuyRequiresPrice': false,
-                        'selfTradePrevention': true, // todo implement
-                        'iceberg': true,
+                        'marketBuyRequiresPrice': true,
+                        'selfTradePrevention': false,
+                        'iceberg': false,
                     },
-                    'createOrders': {
-                        'max': 20,
-                    },
+                    'createOrders': undefined,
                     'fetchMyTrades': {
-                        'marginMode': true,
+                        'marginMode': false,
                         'limit': 1000,
                         'daysBack': undefined,
-                        'untilDays': 7,
-                        'symbolRequired': false,
+                        'untilDays': undefined,
+                        'symbolRequired': true,
                     },
                     'fetchOrder': {
                         'marginMode': false,
-                        'trigger': false,
+                        'trigger': true,
                         'trailing': false,
-                        'symbolRequired': false,
+                        'symbolRequired': true,
                     },
                     'fetchOpenOrders': {
                         'marginMode': false,
                         'limit': 1000,
                         'trigger': true,
                         'trailing': false,
-                        'symbolRequired': false,
+                        'symbolRequired': true,
                     },
                     'fetchOrders': undefined,
-                    'fetchClosedOrders': {
-                        'marginMode': false,
-                        'limit': 1000,
-                        'daysBack': undefined,
-                        'daysBackCanceled': undefined,
-                        'untilDays': undefined,
-                        'trigger': true,
-                        'trailing': false,
-                        'symbolRequired': false,
-                    },
+                    'fetchClosedOrders': undefined,
                     'fetchOHLCV': {
-                        'limit': 500,
+                        'limit': 1000,
                     },
                 },
                 'swap': {
                     'linear': {
                         'extends': 'forDerivs',
                     },
-                    'inverse': {
-                        'extends': 'forDerivs',
-                    },
+                    'inverse': undefined,
                 },
             },
         });
@@ -638,7 +625,7 @@ export default class bitbaby extends Exchange {
             maxCost = this.parseNumber (Precise.stringMax (maxMarketMoney, maxLimitMoney));
         }
         const pricePrecision = this.parsePrecision (this.safeString (market, 'pricePrecision'));
-        const amountPrecision = this.parsePrecision (this.safeString (market, 'quantityPrecision', '0')); // contracts are integers todo:check
+        const amountPrecision = this.parsePrecision (this.safeString (market, 'quantityPrecision', '0'));
         return this.safeMarketStructure ({
             'id': id,
             'numericId': this.safeInteger (market, 'contractId'),
@@ -649,7 +636,7 @@ export default class bitbaby extends Exchange {
             'baseId': baseId,
             'quoteId': quoteId,
             'settleId': settleId,
-            'type': isSpot ? 'spot' : 'swap', // todo check for other types
+            'type': isSpot ? 'spot' : 'swap',
             'spot': isSpot,
             'margin': isSpot, // todo check if margin is available for all markets
             'swap': !isSpot,
@@ -956,8 +943,8 @@ export default class bitbaby extends Exchange {
      * @method
      * @name bitbaby#fetchOHLCV
      * @description fetches historical candlestick data containing the open, high, low, and close price, and the volume of a market
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#k-xian-la-zhu-tu-shu-ju
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#k-xian-la-zhu-tu-shu-ju
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#k-xian-la-zhu-tu-shu-ju // wrong description in docs
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#k-xian-la-zhu-tu-shu-ju // wrong description in docs
      * @param {string} symbol unified symbol of the market to fetch OHLCV data for
      * @param {string} timeframe the length of time each candle represents
      * @param {int} [since] timestamp in ms of the earliest candle to fetch
@@ -970,43 +957,66 @@ export default class bitbaby extends Exchange {
         const market = this.market (symbol);
         const interval = this.safeString (this.timeframes, timeframe, timeframe);
         const request: Dict = {
-            'interval': interval,
+            'scaleType': interval,
         };
         if (limit !== undefined) {
             request['limit'] = limit;
         }
         let response = undefined;
         if (market['contract']) {
-            request['contractName'] = market['id'];
-            response = await this.publicGetFuturesOpenFapiV1Klines (this.extend (request, params));
+            // request['contractName'] = market['id'];
+            // response = await this.publicGetFuturesOpenFapiV1Kline (this.extend (request, params));
+            throw new NotSupported (this.id + ' fetchOHLCV() is not supported for contract markets'); // todo add support in case the endpoint starts working
         } else {
             request['symbol'] = market['id'];
-            response = await this.publicGetSpotOpenSapiV1Klines (this.extend (request, params));
+            //
+            //    {
+            //         "code": "0",
+            //         "msg": "Success",
+            //         "data": {
+            //             "channel": "market_dogeusdt_1min",
+            //             "data": [
+            //                 {
+            //                     "id": 1775217900,
+            //                     "open": 0.09143,
+            //                     "close": 0.09143,
+            //                     "high": 0.09144,
+            //                     "low": 0.09143,
+            //                     "volume": 1190.3
+            //                 }
+            //             ],
+            //             "event_rep": "rep",
+            //             "status": "ok",
+            //             "ts": 1775217924809
+            //         }
+            //     }
+            //
+            response = await this.klineGetV1SpotMarketKline (this.extend (request, params));
         }
-        // returns an empty array
-        // todo check in private api
-        return this.parseOHLCVs (response, market, timeframe, since, limit);
+        const data = this.safeDict (response, 'data', {});
+        const innerData = this.safeList (data, 'data', []);
+        return this.parseOHLCVs (innerData, market, timeframe, since, limit);
     }
 
     parseOHLCV (ohlcv, market: Market = undefined): OHLCV {
-        // example from docs
+        // spot
         //
         //     {
-        //         "high": "6228.77",
-        //         "vol": "111",
-        //         "low": "6228.77",
-        //         "idx": 1594640340,
-        //         "close": "6228.77",
-        //         "open": "6228.77"
+        //         "id": 1775217900,
+        //         "open": 0.09143,
+        //         "close": 0.09143,
+        //         "high": 0.09144,
+        //         "low": 0.09143,
+        //         "volume": 1190.3
         //     }
         //
         return [
-            this.safeInteger (ohlcv, 'idx'),
+            this.safeTimestamp (ohlcv, 'id'),
             this.safeNumber (ohlcv, 'open'),
             this.safeNumber (ohlcv, 'high'),
             this.safeNumber (ohlcv, 'low'),
             this.safeNumber (ohlcv, 'close'),
-            this.safeNumber (ohlcv, 'vol'),
+            this.safeNumber (ohlcv, 'volume'),
         ];
     }
 
@@ -1076,13 +1086,42 @@ export default class bitbaby extends Exchange {
         //         "askUserId": 1000048
         //     }
         //
-        const marketId = this.safeString (trade, 'symbol');
+        // fetchMyTrades contract
+        //     {
+        //         "symbol": "DOGE-USDT",
+        //         "amount": 9.93753000000000000000000000000000,
+        //         "side": "BUY",
+        //         "fee": "0.005962518",
+        //         "isMaker": false,
+        //         "isBuyer": true,
+        //         "bidId": 3221406049627539350,
+        //         "bidUserId": 20290,
+        //         "price": 0.0911700000000000,
+        //         "qty": 109,
+        //         "askId": 3221403661625561316,
+        //         "contractName": "E-DOGE-USDT",
+        //         "time": 1775221360000,
+        //         "tradeId": 42501154,
+        //         "askUserId": 10016
+        //     }
+        //
+        // fetchOrder
+        //     {
+        //         "tradeId": 42501154,
+        //         "price": 0.0911700000000000,
+        //         "qty": 109,
+        //         "commission": 0.0059625180000000,
+        //         "commissionCoin": "USDT"
+        //     }
+        const marketId = this.safeString2 (trade, 'contractName', 'symbol');
         market = this.safeMarket (marketId, market);
         const timestamp = this.safeInteger (trade, 'time');
         let side = this.safeStringLower (trade, 'side');
         if (side === undefined) {
-            const isBuyer = this.safeBool (trade, 'isBuyer', false);
-            side = isBuyer ? 'buy' : 'sell';
+            const isBuyer = this.safeBool (trade, 'isBuyer');
+            if (isBuyer !== undefined) {
+                side = isBuyer ? 'buy' : 'sell';
+            }
         }
         let orderIdKey = 'bidId';
         if (side === 'sell') {
@@ -1093,9 +1132,22 @@ export default class bitbaby extends Exchange {
         if (isMaker !== undefined) {
             takerOrMaker = isMaker ? 'maker' : 'taker';
         }
+        let fee = undefined;
+        const feeCost = this.safeString2 (trade, 'commission', 'fee');
+        if (feeCost !== undefined) {
+            let feeCurrencyId = this.safeString2 (trade, 'commissionCoin', 'feeCoin');
+            if ((feeCurrencyId === undefined) && market['contract']) {
+                feeCurrencyId = market['settleId'];
+            }
+            const feeCurrency = this.safeCurrencyCode (feeCurrencyId);
+            fee = {
+                'cost': feeCost,
+                'currency': feeCurrency,
+            };
+        }
         return this.safeTrade ({
             'info': trade,
-            'id': this.safeString (trade, 'id'),
+            'id': this.safeString2 (trade, 'id', 'tradeId'),
             'order': this.safeString (trade, orderIdKey),
             'timestamp': timestamp,
             'datetime': this.iso8601 (timestamp),
@@ -1106,7 +1158,7 @@ export default class bitbaby extends Exchange {
             'price': this.safeString (trade, 'price'),
             'amount': this.safeString (trade, 'qty'),
             'cost': undefined,
-            'fee': undefined,
+            'fee': fee,
         }, market);
     }
 
@@ -1270,22 +1322,46 @@ export default class bitbaby extends Exchange {
      * @param {string} [params.clientOrderId] client order id
      * @param {bool} [params.reduceOnly] whether the order is reduce only, default is false
      * @param {string} [params.marginMode] 'cross' or 'isolated', default is 'cross'
+     * @param {string} [params.timeInForce] *non-trigger orders only* 'IOC', 'FOK', or 'PO'
+     * @param {bool} [params.postOnly] *non-trigger orders only* whether the order is post only
      * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
      */
     async createContractOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
         await this.loadMarkets ();
         const market = this.market (symbol);
         const request = this.createContractOrderRequest (symbol, type, side, amount, price, params);
-        const triggerPrice = this.safeString (params, 'triggerPrice');
+        const triggerPrice = this.safeString (request, 'triggerPrice');
         let response = undefined;
         if (triggerPrice === undefined) {
             // regular order
             response = await this.privatePostFuturesOpenFapiV1Order (this.extend (request, params));
+            return this.parseOrder (response, market);
         } else {
             // conditional order
+            //     {
+            //         "code": "0",
+            //         "msg": "Success",
+            //         "data":
+            //         {
+            //             "newClientOrderId": [],
+            //             "triggerIds": [
+            //                 "1475"
+            //             ],
+            //             "ids": [],
+            //             "cancelIds": []
+            //         },
+            //         "msgData": null,
+            //         "succ": true
+            //     }
+            //
             response = await this.privatePostFuturesOpenFapiV1ConditionOrder (this.extend (request, params));
+            const data = this.safeDict (response, 'data', {});
+            const triggerIds = this.safeList (data, 'triggerIds', []);
+            const id = this.safeString (triggerIds, 0);
+            const parsed = this.parseOrder ({ 'id': id }, market);
+            parsed['info'] = response;
+            return parsed;
         }
-        return this.parseOrder (response, market);
     }
 
     createContractOrderRequest (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
@@ -1294,9 +1370,45 @@ export default class bitbaby extends Exchange {
             'contractName': market['id'],
             'side': side.toUpperCase (),
             'type': type.toUpperCase (),
-            'volume': this.amountToPrecision (symbol, amount),
         };
-        if (type === 'limit') {
+        let openOrClose = 'OPEN';
+        const reduceOnly = this.safeBool (params, 'reduceOnly', false);
+        if (reduceOnly) {
+            params = this.omit (params, 'reduceOnly');
+            openOrClose = 'CLOSE';
+        }
+        const isMarketOrder = (type === 'market');
+        const [ triggerPrice, stopLossPrice, takeProfitPrice, query ] = this.handleTriggerPricesAndParams (symbol, params);
+        const isStopLossOrTakeProfit = (stopLossPrice !== undefined) || (takeProfitPrice !== undefined);
+        if (isStopLossOrTakeProfit && openOrClose === 'OPEN') {
+            // in case if user not provided reduceOnly param but provided stop loss or take profit price
+            openOrClose = 'CLOSE';
+        }
+        request['open'] = openOrClose;
+        if (isMarketOrder) {
+            if (openOrClose === 'OPEN') {
+                let createMarketOrderRequiresPrice = true;
+                [ createMarketOrderRequiresPrice, params ] = this.handleOptionAndParams (params, 'createOrder', 'createMarketOrderRequiresPrice', true);
+                const cost = this.safeString (params, 'cost');
+                params = this.omit (params, 'cost');
+                if (createMarketOrderRequiresPrice) {
+                    if ((price === undefined) && (cost === undefined)) {
+                        throw new InvalidOrder (this.id + ' createOrder() requires the price argument for market orders to calculate the total cost to spend (amount * price), alternatively set the createMarketOrderRequiresPrice option or param to false and pass the cost to spend in the amount argument');
+                    } else {
+                        const amountString = this.numberToString (amount);
+                        const priceString = this.numberToString (price);
+                        const quoteAmount = this.parseToNumeric (Precise.stringMul (amountString, priceString));
+                        const costRequest = (cost !== undefined) ? cost : quoteAmount;
+                        request['volume'] = this.costToPrecision (symbol, costRequest);
+                    }
+                } else {
+                    request['volume'] = this.costToPrecision (symbol, amount);
+                }
+            } else {
+                request['volume'] = this.amountToPrecision (symbol, amount);
+            }
+        } else {
+            request['volume'] = this.amountToPrecision (symbol, amount);
             request['price'] = this.priceToPrecision (symbol, price);
         }
         let marginMode = 'cross';
@@ -1304,14 +1416,19 @@ export default class bitbaby extends Exchange {
         if (marginMode !== undefined) {
             request['positionType'] = this.encodeMarginMode (marginMode);
         }
-        let openOrClose = 'OPEN';
-        const reduceOnly = this.safeBool (params, 'reduceOnly', false);
-        if (reduceOnly) {
-            params = this.omit (params, 'reduceOnly');
-            openOrClose = 'CLOSE';
+        let timeInForce = this.safeStringUpper (params, 'timeInForce');
+        let postOnly = false;
+        [ postOnly, params ] = this.handlePostOnly (type === 'market', timeInForce === 'POST_ONLY', params);
+        if (postOnly) {
+            timeInForce = 'POST_ONLY';
         }
-        request['open'] = openOrClose;
-        const [ triggerPrice, stopLossPrice, takeProfitPrice, query ] = this.handleTriggerPricesAndParams (symbol, params);
+        if (timeInForce !== undefined) {
+            if (timeInForce === 'IOC' || timeInForce === 'FOK' || timeInForce === 'POST_ONLY') {
+                request['timeInForce'] = timeInForce;
+            } else if (timeInForce !== 'GTC') {
+                throw new NotSupported (this.id + ' createContractOrder() does not support timeInForce ' + timeInForce);
+            }
+        }
         if (triggerPrice !== undefined) {
             if ((stopLossPrice !== undefined) || (takeProfitPrice !== undefined)) {
                 throw new NotSupported (this.id + ' createContractOrder() supports only one parameter among triggerPrice, stopLossPrice and takeProfitPrice');
@@ -1341,6 +1458,32 @@ export default class bitbaby extends Exchange {
         return this.safeInteger (modes, marginMode, marginMode);
     }
 
+    async createMarketSellOrderWithCost (symbol: string, cost: number, params = {}): Promise<Order> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        if (!market['contract']) {
+            throw new NotSupported (this.id + ' createMarketSellOrderWithCost() is supported for contract markets only');
+        }
+        const reduceOnly = this.safeBool (params, 'reduceOnly', false);
+        if (reduceOnly) {
+            throw new NotSupported (this.id + ' createMarketSellOrderWithCost() does not support reduceOnly orders');
+        }
+        return await super.createMarketSellOrderWithCost (symbol, cost, params);
+    }
+
+    async createMarketOrderWithCost (symbol: string, side: OrderSide, cost: number, params = {}) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        if (!market['contract']) {
+            throw new NotSupported (this.id + ' createMarketOrderWithCost() is supported for contract markets only');
+        }
+        const reduceOnly = this.safeBool (params, 'reduceOnly', false);
+        if (reduceOnly) {
+            throw new NotSupported (this.id + ' createMarketOrderWithCost() does not support reduceOnly orders');
+        }
+        return await super.createMarketOrderWithCost (symbol, side, cost, params);
+    }
+
     /**
      * @method
      * @name bitbaby#createOrders
@@ -1366,10 +1509,10 @@ export default class bitbaby extends Exchange {
             const orderSymbol = this.safeString (order, 'symbol');
             const market = this.market (orderSymbol);
             if (!market['spot']) {
-                throw new NotSupported (this.id + ' createOrders() only supports spot orders');
+                throw new NotSupported (this.id + ' createOrders() supports spot orders only');
             }
             if (market['symbol'] !== symbol) {
-                throw new BadRequest (this.id + ' createOrders() only supports orders with the same symbol');
+                throw new BadRequest (this.id + ' createOrders() supports orders with the same symbol only');
             }
             const type = this.safeStringUpper (order, 'type');
             const side = this.safeStringUpper (order, 'side');
@@ -1457,6 +1600,31 @@ export default class bitbaby extends Exchange {
         let response = undefined;
         if (isContract) {
             request['contractName'] = marketId;
+            //
+            //     {
+            //         "side": "BUY",
+            //         "executedQty": 109,
+            //         "orderId": 3221406049627539350,
+            //         "origQty": 10.0000000000000000,
+            //         "avgPrice": 0.09117000,
+            //         "type": "MARKET",
+            //         "price": 0E-16,
+            //         "transactTime": 1775221360000,
+            //         "action": "OPEN",
+            //         "contractName": "E-DOGE-USDT",
+            //         "timeInForce": "",
+            //         "fills": [
+            //             {
+            //                 "tradeId": 42501154,
+            //                 "price": 0.0911700000000000,
+            //                 "qty": 109,
+            //                 "commission": 0.0059625180000000,
+            //                 "commissionCoin": "USDT"
+            //             }
+            //         ],
+            //         "status": "FILLED"
+            //     }
+            //
             response = await this.privateGetFuturesOpenFapiV1Order (this.extend (request, params));
         } else {
             request['symbol'] = marketId;
@@ -1532,7 +1700,11 @@ export default class bitbaby extends Exchange {
             //         }
             //     ]
             //
+            //
             response = await this.privateGetFuturesOpenFapiV1OpenOrders (this.extend (request, params));
+            if (!Array.isArray (response)) {
+                response = [];
+            }
         } else {
             request['symbol'] = marketId;
             if (limit !== undefined) {
@@ -1561,6 +1733,69 @@ export default class bitbaby extends Exchange {
                 response = await this.privateGetSpotOpenSapiV1OpenOrders (this.extend (request, params));
             }
         }
+        return this.parseOrders (response, market, since, limit);
+    }
+
+    /**
+     * @method
+     * @name bitbaby#fetchCanceledAndClosedOrders
+     * @description fetches information on multiple closed and canceled orders made by the user on contract markets
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#li-shi-wei-tuo
+     * @param {string} symbol unified market symbol of the closed orders
+     * @param {int} [since] timestamp in ms of the earliest order
+     * @param {int} [limit] the max number of closed orders to return
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object[]} a list of [order structures]{@link https://docs.ccxt.com/?id=order-structure}
+     */
+    async fetchCanceledAndClosedOrders (symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}): Promise<Order[]> {
+        await this.loadMarkets ();
+        const request: Dict = {};
+        let market = undefined;
+        if (symbol !== undefined) {
+            market = this.market (symbol);
+            request['contractName'] = market['id'];
+        }
+        let marketType = undefined;
+        [ marketType, params ] = this.handleMarketTypeAndParams ('fetchCanceledAndClosedOrders', market, params);
+        if ((marketType === 'spot') || (marketType === 'margin')) {
+            throw new NotSupported (this.id + ' fetchCanceledAndClosedOrders() is supported for contract markets only');
+        }
+        if (limit !== undefined) {
+            request['limit'] = limit;
+        }
+        const response = await this.privatePostFuturesOpenFapiV1OrderHistorical (this.extend (request, params));
+        //
+        //     [
+        //         {
+        //             "ctimeMs": 1775226235000,
+        //             "positionType": 1,
+        //             "orderId": 3221406427584532474,
+        //             "avgPrice": 0E-8,
+        //             "realizedAmount": 0E-16,
+        //             "fee": 0E-16,
+        //             "mergeSplitMode": 1,
+        //             "source": 3,
+        //             "type": 1,
+        //             "closeTakerFeeRate": 0.00060000,
+        //             "openMakerFeeRate": 0.00020000,
+        //             "dealVolume": 0,
+        //             "price": 0.0100000000000000,
+        //             "ctime": "2026-04-03T14:23:55",
+        //             "contractName": "E-DOGE-USDT",
+        //             "openTakerFeeRate": 0.00060000,
+        //             "side": "BUY",
+        //             "clientId": "0",
+        //             "openOrClose": "OPEN",
+        //             "leverageLevel": 20,
+        //             "volume": 30.0000000000000000,
+        //             "positionId": 0,
+        //             "closeMakerFeeRate": 0.00020000,
+        //             "contractId": 30,
+        //             "dealMoney": 0E-16,
+        //             "status": 4
+        //         }
+        //     ]
+        //
         return this.parseOrders (response, market, since, limit);
     }
 
@@ -1689,6 +1924,31 @@ export default class bitbaby extends Exchange {
         //         "status": "Partially Filled/Cancelled"
         //     }
         //
+        // fetchOrder contract
+        //     {
+        //         "side": "BUY",
+        //         "executedQty": 109,
+        //         "orderId": 3221406049627539350,
+        //         "origQty": 10.0000000000000000,
+        //         "avgPrice": 0.09117000,
+        //         "type": "MARKET",
+        //         "price": 0E-16,
+        //         "transactTime": 1775221360000,
+        //         "action": "OPEN",
+        //         "contractName": "E-DOGE-USDT",
+        //         "timeInForce": "",
+        //         "fills": [
+        //             {
+        //                 "tradeId": 42501154,
+        //                 "price": 0.0911700000000000,
+        //                 "qty": 109,
+        //                 "commission": 0.0059625180000000,
+        //                 "commissionCoin": "USDT"
+        //             }
+        //         ],
+        //         "status": "FILLED"
+        //     }
+        //
         // fetchOpenOrders spot
         //     {
         //         "symbol": "DOGEUSDT",
@@ -1723,21 +1983,60 @@ export default class bitbaby extends Exchange {
         //         "status": "PART_FILLED"
         //     }
         //
-        const marketId = this.safeString (order, 'symbol');
+        // fetchCanceledAndClosedOrders contract
+        //     {
+        //         "ctimeMs": 1775226235000,
+        //         "positionType": 1,
+        //         "orderId": 3221406427584532474,
+        //         "avgPrice": 0E-8,
+        //         "realizedAmount": 0E-16,
+        //         "fee": 0E-16,
+        //         "mergeSplitMode": 1,
+        //         "source": 3,
+        //         "type": 1,
+        //         "closeTakerFeeRate": 0.00060000,
+        //         "openMakerFeeRate": 0.00020000,
+        //         "dealVolume": 0,
+        //         "price": 0.0100000000000000,
+        //         "ctime": "2026-04-03T14:23:55",
+        //         "contractName": "E-DOGE-USDT",
+        //         "openTakerFeeRate": 0.00060000,
+        //         "side": "BUY",
+        //         "clientId": "0",
+        //         "openOrClose": "OPEN",
+        //         "leverageLevel": 20,
+        //         "volume": 30.0000000000000000,
+        //         "positionId": 0,
+        //         "closeMakerFeeRate": 0.00020000,
+        //         "contractId": 30,
+        //         "dealMoney": 0E-16,
+        //         "status": 4
+        //     }
+        //
+        const marketId = this.safeString2 (order, 'contractName', 'symbol');
         market = this.safeMarket (marketId, market);
         const symbol = market['symbol'];
-        const timestamp = this.safeInteger2 (order, 'transactTime', 'time');
-        let id = this.safeString (order, 'orderId');
+        const timestamp = this.safeIntegerN (order, [ 'transactTime', 'time', 'ctimeMs' ]);
+        let id = this.safeString2 (order, 'orderId', 'id');
         const orderIds = this.safeList (order, 'orderId');
         if ((id === undefined) && (orderIds !== undefined)) {
             id = this.safeString (orderIds, 0);
         }
         const rawStatus = this.safeStringUpper (order, 'status');
         const side = this.safeStringLower (order, 'side');
-        const type = this.safeStringLower (order, 'type');
-        let amount = this.safeString (order, 'origQty');
-        if ((type === 'market') && (side === 'buy')) {
-            amount = undefined; // for market buy orders origQty is in quote currency, we will use cost instead
+        const rawType = this.safeStringLower (order, 'type');
+        const type = this.parseOrderType (rawType);
+        let amount = this.safeString2 (order, 'origQty', 'volume');
+        const openOrClose = this.safeStringUpper2 (order, 'openOrClose', 'action');
+        const isBuy = (side === 'buy');
+        const isOpen = (openOrClose === 'OPEN');
+        const isMarket = (type === 'market');
+        const isSpot = market['spot'];
+        const spotMarketBuy = isSpot && isBuy && isMarket;
+        const isContractMarketOpen = !isSpot && isMarket && isOpen;
+        if (spotMarketBuy || isContractMarketOpen) {
+            // for spot market buy and swap market open orders this value is in quote currency
+            amount = undefined;
         }
         let postOnly = undefined;
         let timeInForce = this.safeStringUpper (order, 'timeInForce');
@@ -1748,6 +2047,14 @@ export default class bitbaby extends Exchange {
             } else {
                 postOnly = false;
             }
+        }
+        let fee = undefined;
+        const feeAmount = this.safeString (order, 'fee'); // only in contract orders
+        if (feeAmount !== undefined) {
+            fee = {
+                'cost': feeAmount,
+                'currency': market['settle'],
+            };
         }
         return this.safeOrder ({
             'id': id,
@@ -1761,17 +2068,17 @@ export default class bitbaby extends Exchange {
             'amount': amount,
             'price': this.omitZero (this.safeString (order, 'price')),
             'triggerPrice': undefined,
-            'cost': undefined,
-            'filled': this.safeString (order, 'executedQty'),
+            'cost': this.safeString (order, 'dealMoney'),
+            'filled': this.safeString2 (order, 'executedQty', 'dealVolume'),
             'remaining': undefined,
             'timestamp': timestamp,
             'datetime': this.iso8601 (timestamp),
-            'fee': undefined,
+            'fee': fee,
             'status': this.parseOrderStatus (rawStatus),
             'lastTradeTimestamp': undefined,
             'lastUpdateTimestamp': undefined,
             'average': this.omitZero (this.safeString (order, 'avgPrice')),
-            'trades': undefined,
+            'trades': this.safeList (order, 'fills'),
             'stopLossPrice': undefined,
             'takeProfitPrice': undefined,
             'info': order,
@@ -1782,6 +2089,7 @@ export default class bitbaby extends Exchange {
         const statuses = {
             'NEW': 'open',
             'NEW ORDER': 'open',
+            'INIT': 'open',
             'PARTIALLY_FILLED': 'open',
             'PART_FILLED': 'open',
             'FILLED': 'closed',
@@ -1790,8 +2098,20 @@ export default class bitbaby extends Exchange {
             'PENDING_CANCEL': 'pending',
             'PARTIALLY FILLED/CANCELLED': 'closed',
             'REJECTED': 'rejected',
+            '2': 'closed',
+            '4': 'canceled',
         };
         return this.safeString (statuses, status, status);
+    }
+
+    parseOrderType (type) {
+        const types = {
+            'limit': 'limit',
+            'market': 'market',
+            '1': 'limit',
+            '2': 'market',
+        };
+        return this.safeString (types, type, type);
     }
 
     /**
@@ -1823,6 +2143,27 @@ export default class bitbaby extends Exchange {
         let response = undefined;
         if (isContract) {
             request['contractName'] = marketId;
+            //
+            //     [
+            //         {
+            //             "symbol": "DOGE-USDT",
+            //             "amount": 9.93753000000000000000000000000000,
+            //             "side": "BUY",
+            //             "fee": "0.005962518",
+            //             "isMaker": false,
+            //             "isBuyer": true,
+            //             "bidId": 3221406049627539350,
+            //             "bidUserId": 20290,
+            //             "price": 0.0911700000000000,
+            //             "qty": 109,
+            //             "askId": 3221403661625561316,
+            //             "contractName": "E-DOGE-USDT",
+            //             "time": 1775221360000,
+            //             "tradeId": 42501154,
+            //             "askUserId": 10016
+            //         }
+            //     ]
+            //
             response = await this.privateGetFuturesOpenFapiV1MyTrades (this.extend (request, params));
         } else {
             request['symbol'] = marketId;
@@ -1885,7 +2226,59 @@ export default class bitbaby extends Exchange {
             //     }
             response = await this.privateGetSpotOpenSapiV1Account (params);
         } else {
+            //
+            //     {
+            //         "account": [
+            //             {
+            //                 "marginCoin": "USDT",
+            //                 "accountNormal": 29.9627736560000000,
+            //                 "accountLock": 0E-16,
+            //                 "partPositionNormal": 0E-16,
+            //                 "totalPositionNormal": 0,
+            //                 "achievedAmount": 0,
+            //                 "unrealizedAmount": 0,
+            //                 "totalMarginRate": 0,
+            //                 "totalEquity": 29.9627736560000000,
+            //                 "partEquity": 0E-16,
+            //                 "totalCost": 0,
+            //                 "sumMarginRate": 0,
+            //                 "positionVos": [],
+            //                 "totalHisRealizeAmount": null,
+            //                 "accountAmount": null,
+            //                 "totalShareAmount": null,
+            //                 "walletBalance": null,
+            //                 "recoverableAmount": null,
+            //                 "availableAmount": null
+            //             },
+            //             {
+            //                 "marginCoin": "USDC",
+            //                 "accountNormal": 0E-16,
+            //                 "accountLock": 0E-16,
+            //                 "partPositionNormal": 0E-16,
+            //                 "totalPositionNormal": 0,
+            //                 "achievedAmount": 0,
+            //                 "unrealizedAmount": 0,
+            //                 "totalMarginRate": 0,
+            //                 "totalEquity": 0E-16,
+            //                 "partEquity": 0E-16,
+            //                 "totalCost": 0,
+            //                 "sumMarginRate": 0,
+            //                 "positionVos": [],
+            //                 "totalHisRealizeAmount": null,
+            //                 "accountAmount": null,
+            //                 "totalShareAmount": null,
+            //                 "walletBalance": null,
+            //                 "recoverableAmount": null,
+            //                 "availableAmount": null
+            //             }
+            //         ]
+            //     }
+            //
             response = await this.privateGetFuturesOpenFapiV1Account (params);
+            const account = this.safeList (response, 'account');
+            if (account === undefined) {
+                response = JSON.parse (response);
+            }
         }
         return this.parseBalance (response);
     }
@@ -1894,17 +2287,301 @@ export default class bitbaby extends Exchange {
         const result: Dict = {
             'info': response,
         };
-        const balances = this.safeList (response, 'balances', []);
+        const balances = this.safeList2 (response, 'balances', 'account', []);
         for (let i = 0; i < balances.length; i++) {
             const entry = this.safeDict (balances, i);
-            const id = this.safeString (entry, 'asset');
+            const id = this.safeString2 (entry, 'asset', 'marginCoin');
             const code = this.safeCurrencyCode (id);
             const account = this.account ();
-            account['free'] = this.safeString (entry, 'free');
-            account['used'] = this.safeString (entry, 'locked');
+            account['free'] = this.safeString2 (entry, 'accountNormal', 'free');
+            account['used'] = this.safeString2 (entry, 'accountLock', 'locked');
             result[code] = account;
         }
         return this.safeBalance (result);
+    }
+
+    /**
+     * @method
+     * @name bitbaby#fetchPositions
+     * @description fetch all open positions
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#zhang-hu
+     * @param {string[]|undefined} symbols list of unified market symbols
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @param {boolean} [params.uta] set to true for the unified trading account (uta), defaults to false
+     * @returns {object[]} a list of [position structure]{@link https://docs.ccxt.com/?id=position-structure}
+     */
+    async fetchPositions (symbols: Strings = undefined, params = {}): Promise<Position[]> {
+        await this.loadMarkets ();
+        symbols = this.marketSymbols (symbols);
+        const response = await this.privateGetFuturesOpenFapiV1Account (params);
+        let account = this.safeList (response, 'account');
+        if (account === undefined) {
+            const parsedResponse = JSON.parse (response);
+            account = this.safeList (parsedResponse, 'account', []);
+        }
+        const positions = [];
+        for (let i = 0; i < account.length; i++) {
+            const entry = this.safeDict (account, i);
+            const positionVos = this.safeList (entry, 'positionVos', []);
+            const first = this.safeDict (positionVos, 0, {});
+            const innerPositions = this.safeList (first, 'positions', []);
+            for (let j = 0; j < innerPositions.length; j++) {
+                const innerPosition = this.safeDict (innerPositions, j);
+                positions.push (innerPosition);
+            }
+        }
+        return this.parsePositions (positions, symbols);
+    }
+
+    /**
+     * @method
+     * @name bitbaby#fetchPositionHistory
+     * @description fetches historical positions
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#ying-kui-ji-lu
+     * @param {string} symbol unified contract symbol
+     * @param {int} [since] the earliest time in ms to fetch positions for
+     * @param {int} [limit] the maximum amount of records to fetch, default is 10
+     * @param {object} [params] extra parameters specific to the exchange api endpoint
+     * @returns {object[]} a list of [position structures]{@link https://docs.ccxt.com/?id=position-structure}
+     */
+    async fetchPositionHistory (symbol: string, since: Int = undefined, limit: Int = undefined, params = {}): Promise<Position[]> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        const request: Dict = {
+            'contractName': market['id'],
+        };
+        if (limit !== undefined) {
+            request['limit'] = limit;
+        }
+        const response = await this.privatePostFuturesOpenFapiV1ProfitHistorical (this.extend (request, params));
+        //
+        //     [
+        //         {
+        //             "side": "SELL",
+        //             "positionType": 1,
+        //             "tradeFee": -0.0238342980000000,
+        //             "realizedAmount": 0E-16,
+        //             "leverageLevel": 20,
+        //             "openPrice": 0.0911000000000000,
+        //             "mtime": 1775224490000,
+        //             "shareAmount": 0E-16,
+        //             "openEndPrice": 0.0910950000000000,
+        //             "closeProfit": -0.0053200000000000,
+        //             "volume": 218.0000000000000000,
+        //             "contractId": 30,
+        //             "historyRealizedAmount": -0.0291542980000000,
+        //             "ctime": 1775223325000,
+        //             "contractName": "E-DOGE-USDT",
+        //             "id": 111713,
+        //             "capitalFee": 0E-16
+        //         }
+        //     ]
+        //
+        const result = [];
+        for (let i = 0; i < response.length; i++) {
+            const position = this.safeDict (response, i);
+            const parsedPosition = this.parsePosition (position, market);
+            result.push (parsedPosition);
+        }
+        return this.filterBySinceLimit (result, since, limit);
+    }
+
+    parsePosition (position: Dict, market: Market = undefined) {
+        //
+        // fetchPositions
+        //     {
+        //         "id": 111728,
+        //         "uid": 20290,
+        //         "contractId": 30,
+        //         "positionType": 1,
+        //         "side": "SELL",
+        //         "volume": 54,
+        //         "openPrice": 0.09175,
+        //         "positionValue": 4.9545,
+        //         "avgPrice": 0.09175,
+        //         "closePrice": 0,
+        //         "leverageLevel": 20,
+        //         "openAmount": 0.247725,
+        //         "holdAmount": 0.247698,
+        //         "closeVolume": 0,
+        //         "pendingCloseVolume": 0,
+        //         "realizedAmount": 0,
+        //         "historyRealizedAmount": -0.0029727,
+        //         "tradeFee": -0.0029727,
+        //         "capitalFee": 0,
+        //         "closeProfit": 0,
+        //         "shareAmount": 0,
+        //         "freezeLock": 0,
+        //         "secret": "28caf3bbae9215030e055c9422830c39",
+        //         "status": 1,
+        //         "ctime": "2026-04-03T16:40:31",
+        //         "mtime": "2026-04-03T16:40:31",
+        //         "brokerId": 1000,
+        //         "mergeSplitMode": 1,
+        //         "lockTime": "2026-04-03T16:40:31",
+        //         "mergeVolume": 0,
+        //         "liquidationVolume": 0,
+        //         "computerTakeOver": false,
+        //         "marginAmount": null,
+        //         "sumUnRealizedAmount": null,
+        //         "sumKeepAmount": null,
+        //         "sumPositionBalance": null,
+        //         "config": {
+        //             id: 30,
+        //             "contractName": "E-DOGE-USDT",
+        //             "contractOtherName": "DOGEUSDT",
+        //             "symbol": "DOGE-USDT",
+        //             "contractType": "E",
+        //             "deliveryKind": "0",
+        //             "contractSide": 1,
+        //             "multiplier": 1,
+        //             "multiplierCoin": "DOGE",
+        //             "marginCoin": "USDT",
+        //             "marginRateType": 0,
+        //             "marginRate": 1,
+        //             "quoteValue": 1,
+        //             "quoteValueCoin": "USDT",
+        //             "ladderConfigId": 27,
+        //             "leverConfigId": 25,
+        //             "capitalStartTime": 0,
+        //             "capitalFrequency": 8,
+        //             "capitalRate": 0.0001,
+        //             "capitalDepthMoney": 8000,
+        //             "capitalIntervalMin": -0.015,
+        //             "capitalIntervalMax": 0.015,
+        //             "capitalPremiumMin": -0.0005,
+        //             "capitalPremiumMax": 0.0005,
+        //             "openMakerFee": 0.0002,
+        //             "openTakerFee": 0.0006,
+        //             "closeMakerFee": 0.0002,
+        //             "closeTakerFee": 0.0006,
+        //             "minMakerFee": 0.0002,
+        //             "minTakerFee": 0.0006,
+        //             "settlementFrequency": 1,
+        //             "lossSubsidy": 0.2,
+        //             "riskAlarm": 0.3,
+        //             "status": 1,
+        //             "brokerId": 1,
+        //             "merchantId": 0,
+        //             "ctime": "2021-01-28T20:21:19",
+        //             "mtime": "2026-03-29T07:47:02",
+        //             "deliveryStatus": 0,
+        //             "minOrderVolume": null,
+        //             "maxMarketVolume": null,
+        //             "maxLimitVolume": null,
+        //             "multiplierShow": null,
+        //             "exclusiveStatus": null,
+        //             "liquidationServer": null,
+        //             "contractTypeName": null,
+        //             "contractSideDesc": null,
+        //             "configLever": null,
+        //             "configLadder": [Object],
+        //             "statusDesc": null,
+        //             "serverStatus": null,
+        //             "sort": 14,
+        //             "quote": null,
+        //             "simpleSymbol": "e_dogeusdt",
+        //             "base": null,
+        //             "server": null,
+        //             "positive": true
+        //         },
+        //         "keepRate": 0.0065,
+        //         "maxFeeRate": 0.0006,
+        //         "unRealizedAmount": 0.00054,
+        //         "positionBalance": 4.95396,
+        //         "orderUnitType": null,
+        //         "openRealizedAmount": 0.00054,
+        //         "coinPrecious": 4,
+        //         "returnRate": 0.0021798365122615,
+        //         "settleProfit": 0,
+        //         "indexPrice": 0.09174,
+        //         "reducePrice": -0.0917371443111948,
+        //         "marginRate": 1.1976637178038319
+        //     }
+        //
+        // fetchPositionHistory
+        //     {
+        //         "side": "SELL",
+        //         "positionType": 1,
+        //         "tradeFee": -0.0238342980000000,
+        //         "realizedAmount": 0E-16,
+        //         "leverageLevel": 20,
+        //         "openPrice": 0.0911000000000000,
+        //         "mtime": 1775224490000,
+        //         "shareAmount": 0E-16,
+        //         "openEndPrice": 0.0910950000000000,
+        //         "closeProfit": -0.0053200000000000,
+        //         "volume": 218.0000000000000000,
+        //         "contractId": 30,
+        //         "historyRealizedAmount": -0.0291542980000000,
+        //         "ctime": 1775223325000,
+        //         "contractName": "E-DOGE-USDT",
+        //         "id": 111713,
+        //         "capitalFee": 0E-16
+        //     }
+        //
+        const config = this.safeDict (position, 'config', {});
+        const marketId = this.safeString (config, 'contractName');
+        market = this.safeMarket (marketId, market);
+        let timestamp = this.safeInteger (position, 'ctime');
+        let datetime = this.safeString (position, 'ctime');
+        if (timestamp === undefined) {
+            timestamp = this.parse8601 (datetime);
+        } else {
+            datetime = this.iso8601 (timestamp);
+        }
+        let lastUpdateTimestamp = this.safeInteger (position, 'mtime');
+        if (lastUpdateTimestamp === undefined) {
+            const mtime = this.safeString (position, 'mtime');
+            lastUpdateTimestamp = this.parse8601 (mtime);
+        }
+        const positionType = this.safeString (position, 'positionType');
+        const side = this.safeStringUpper (position, 'side');
+        return this.safePosition ({
+            'info': position,
+            'id': this.safeStringN (position, [ 'id', 'positionId', 'closeId' ]),
+            'symbol': this.safeString (market, 'symbol'),
+            'timestamp': timestamp,
+            'datetime': datetime,
+            'lastUpdateTimestamp': lastUpdateTimestamp,
+            'initialMargin': this.safeNumber (position, 'marginAmount'), // todo check
+            'initialMarginPercentage': this.safeNumber (position, 'marginRate'), // todo check
+            'maintenanceMargin': undefined, // todo check
+            'maintenanceMarginPercentage': this.safeNumber (position, 'keepRate'), // todo check
+            'entryPrice': this.safeNumber (position, 'openPrice'),
+            'notional': this.safeNumber (position, 'positionValue'),
+            'leverage': this.safeNumber (position, 'leverageLevel'),
+            'unrealizedPnl': this.safeNumber (position, 'unRealizedAmount'),
+            'contracts': this.safeNumber (position, 'volume'),
+            'contractSize': this.safeNumber (market, 'contractSize'),
+            'realizedPnl': this.safeNumber (position, 'closeProfit'),
+            'marginRatio': this.safeNumber (position, 'marginRate'),
+            'liquidationPrice': undefined,
+            'markPrice': undefined,
+            'lastPrice': undefined,
+            'collateral': this.safeString (position, 'positionBalance'), // todo check
+            'marginMode': this.parsePositionMarginMode (positionType),
+            'side': this.parsePositionSide (side),
+            'percentage': this.safeNumber (position, 'returnRate'), // todo check
+            'stopLossPrice': undefined,
+            'takeProfitPrice': undefined,
+        });
+    }
+
+    parsePositionMarginMode (mode) {
+        const modes = {
+            '1': 'cross',
+            '2': 'isolated',
+        };
+        return this.safeString (modes, mode, mode);
+    }
+
+    parsePositionSide (side) {
+        const sides = {
+            'BUY': 'long',
+            'SELL': 'short',
+        };
+        return this.safeString (sides, side, side);
     }
 
     sign (path, api = 'public', method = 'GET', params = {}, headers = undefined, body = undefined) {
