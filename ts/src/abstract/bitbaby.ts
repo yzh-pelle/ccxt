@@ -15,14 +15,13 @@ interface Exchange {
     publicGetSpotOpenSapiV1Depth (params?: {}): Promise<implicitReturnType>;
     publicGetSpotOpenSapiV1Ticker (params?: {}): Promise<implicitReturnType>;
     publicGetSpotOpenSapiV1Trades (params?: {}): Promise<implicitReturnType>;
-    publicGetSpotOpenSapiV1Klines (params?: {}): Promise<implicitReturnType>;
     publicGetFuturesOpenFapiV1Ping (params?: {}): Promise<implicitReturnType>;
     publicGetFuturesOpenFapiV1Time (params?: {}): Promise<implicitReturnType>;
     publicGetFuturesOpenFapiV1Contracts (params?: {}): Promise<implicitReturnType>;
     publicGetFuturesOpenFapiV1Depth (params?: {}): Promise<implicitReturnType>;
     publicGetFuturesOpenFapiV1Ticker (params?: {}): Promise<implicitReturnType>;
     publicGetFuturesOpenFapiV1Index (params?: {}): Promise<implicitReturnType>;
-    publicGetFuturesOpenFapiV1Klines (params?: {}): Promise<implicitReturnType>;
+    publicGetFuturesOpenFapiV1Kline (params?: {}): Promise<implicitReturnType>;
     privateGetSpotOpenSapiV1Order (params?: {}): Promise<implicitReturnType>;
     privateGetSpotOpenSapiV1OpenOrders (params?: {}): Promise<implicitReturnType>;
     privateGetSpotOpenSapiV1MyTrades (params?: {}): Promise<implicitReturnType>;
@@ -34,18 +33,19 @@ interface Exchange {
     privateGetFuturesOpenFapiV1OpenOrders (params?: {}): Promise<implicitReturnType>;
     privateGetFuturesOpenFapiV1MyTrades (params?: {}): Promise<implicitReturnType>;
     privateGetFuturesOpenFapiV1Account (params?: {}): Promise<implicitReturnType>;
-    privatePostSpotOpenSapiV1MarginOrder (params?: {}): Promise<implicitReturnType>;
-    privatePostSpotOpenSapiV1MarginCancel (params?: {}): Promise<implicitReturnType>;
     privatePostSpotOpenSapiV1Order (params?: {}): Promise<implicitReturnType>;
     privatePostSpotOpenSapiV1OrderTest (params?: {}): Promise<implicitReturnType>;
     privatePostSpotOpenSapiV1BatchOrders (params?: {}): Promise<implicitReturnType>;
     privatePostSpotOpenSapiV1Cancel (params?: {}): Promise<implicitReturnType>;
     privatePostSpotOpenSapiV1BatchCancel (params?: {}): Promise<implicitReturnType>;
+    privatePostSpotOpenSapiV1MarginOrder (params?: {}): Promise<implicitReturnType>;
+    privatePostSpotOpenSapiV1MarginCancel (params?: {}): Promise<implicitReturnType>;
     privatePostFuturesOpenFapiV1Order (params?: {}): Promise<implicitReturnType>;
     privatePostFuturesOpenFapiV1ConditionOrder (params?: {}): Promise<implicitReturnType>;
     privatePostFuturesOpenFapiV1Cancel (params?: {}): Promise<implicitReturnType>;
     privatePostFuturesOpenFapiV1OrderHistorical (params?: {}): Promise<implicitReturnType>;
     privatePostFuturesOpenFapiV1ProfitHistorical (params?: {}): Promise<implicitReturnType>;
+    klineGetV1SpotMarketKline (params?: {}): Promise<implicitReturnType>;
 }
 abstract class Exchange extends _Exchange {}
 
