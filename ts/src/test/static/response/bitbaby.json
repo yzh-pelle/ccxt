@@ -197,7 +197,7 @@
                 "method": "fetchOHLCV",
                 "input": [
                     "DOGE/USDT",
-                    null,
+                    "1m",
                     null,
                     2
                 ],
