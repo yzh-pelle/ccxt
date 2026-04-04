@@ -3,6 +3,17 @@
     "skipKeys": [],
     "options": {},
     "methods": {
+        "fetchMarkOHLCV": [
+            {
+                "description": "fetch mark ohlcv",
+                "method": "fetchMarkOHLCV",
+                "url": "https://kline.bitbaby.com/v1/future/market/kline?scaleType=1min&symbol=e_dogeusdt&type=mark",
+                "input": [
+                    "DOGE/USDT:USDT"
+                ],
+                "output": null
+            }
+        ],
         "fetchPositionHistory": [
             {
                 "description": "fetch position history",
@@ -159,6 +170,15 @@
             }
         ],
         "fetchOHLCV": [
+            {
+                "description": "fetch swap ohlcv",
+                "method": "fetchOHLCV",
+                "url": "https://kline.bitbaby.com/v1/future/market/kline?scaleType=1min&symbol=e_dogeusdt",
+                "input": [
+                    "DOGE/USDT:USDT"
+                ],
+                "output": null
+            },
             {
                 "description": "fetch spot ohlcv",
                 "method": "fetchOHLCV",
