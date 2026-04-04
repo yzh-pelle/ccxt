@@ -110,9 +110,8 @@ export default class bitbaby extends bitbabyRest {
         };
         const client = this.client (url);
         const messageHash = 'unsubscribe:' + channel;
-        const result = this.watch (url, messageHash, this.deepExtend (message, params), messageHash, subscription);
+        this.watch (url, messageHash, this.deepExtend (message, params), messageHash, subscription);
         this.handleUnSubscribe (client, subscription);
-        return await result;
     }
 
     handleUnSubscribe (client: Client, subscription) {
