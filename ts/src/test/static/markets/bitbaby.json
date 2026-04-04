@@ -1,7 +1,7 @@
 {
     "ETH/USDT": {
         "id": "ethusdt",
-        "lowercaseId": null,
+        "lowercaseId": "ethusdt",
         "symbol": "ETH/USDT",
         "base": "ETH",
         "quote": "USDT",
@@ -73,7 +73,7 @@
     },
     "BTC/USDT": {
         "id": "btcusdt",
-        "lowercaseId": null,
+        "lowercaseId": "btcusdt",
         "symbol": "BTC/USDT",
         "base": "BTC",
         "quote": "USDT",
@@ -145,7 +145,7 @@
     },
     "DOGE/USDT": {
         "id": "dogeusdt",
-        "lowercaseId": null,
+        "lowercaseId": "dogeusdt",
         "symbol": "DOGE/USDT",
         "base": "DOGE",
         "quote": "USDT",
@@ -217,7 +217,7 @@
     },
     "DOGE/USDT:USDT": {
         "id": "E-DOGE-USDT",
-        "lowercaseId": null,
+        "lowercaseId": "e-doge-usdt",
         "symbol": "DOGE/USDT:USDT",
         "base": "DOGE",
         "quote": "USDT",
@@ -295,7 +295,7 @@
     },
     "ETH/USDT:USDT": {
         "id": "E-ETH-USDT",
-        "lowercaseId": null,
+        "lowercaseId": "e-eth-usdt",
         "symbol": "ETH/USDT:USDT",
         "base": "ETH",
         "quote": "USDT",
@@ -373,7 +373,7 @@
     },
     "BTC/USDT:USDT": {
         "id": "E-BTC-USDT",
-        "lowercaseId": null,
+        "lowercaseId": "e-btc-usdt",
         "symbol": "BTC/USDT:USDT",
         "base": "BTC",
         "quote": "USDT",
@@ -451,7 +451,7 @@
     },
     "BTC/USDC:USDC": {
         "id": "E-BTC-USDC",
-        "lowercaseId": null,
+        "lowercaseId": "e-btc-usdc",
         "symbol": "BTC/USDC:USDC",
         "base": "BTC",
         "quote": "USDC",
@@ -529,7 +529,7 @@
     },
     "ETH/USDC:USDC": {
         "id": "E-ETH-USDC",
-        "lowercaseId": null,
+        "lowercaseId": "e-eth-usdc",
         "symbol": "ETH/USDC:USDC",
         "base": "ETH",
         "quote": "USDC",
@@ -607,7 +607,7 @@
     },
     "DOGE/USDC:USDC": {
         "id": "E-DOGE-USDC",
-        "lowercaseId": null,
+        "lowercaseId": "e-doge-usdc",
         "symbol": "DOGE/USDC:USDC",
         "base": "DOGE",
         "quote": "USDC",
