@@ -4,8 +4,8 @@
 import bitbabyRest from '../bitbaby.js';
 // import { ArgumentsRequired, ExchangeError } from '../base/errors.js';
 // import { Precise } from '../base/Precise.js';
-import { ArrayCacheByTimestamp } from '../base/ws/Cache.js';
-import type { Dict, Int, OHLCV, Market, Ticker } from '../base/types.js';
+import { ArrayCache, ArrayCacheByTimestamp } from '../base/ws/Cache.js';
+import type { Dict, Int, OHLCV, Market, Ticker, Trade } from '../base/types.js';
 import Client from '../base/ws/Client.js';
 
 //  ---------------------------------------------------------------------------
@@ -91,8 +91,7 @@ export default class bitbaby extends bitbabyRest {
                 'channel': channel,
             },
         };
-        const result = this.watch (url, channel, this.deepExtend (message, params), channel, subscription);
-        return await result;
+        return await this.watch (url, channel, this.deepExtend (message, params), channel, subscription);
     }
 
     async unSubscribe (channel, symbol, params = {}, subscription = undefined) {
@@ -144,7 +143,7 @@ export default class bitbaby extends bitbabyRest {
         const length = parts.length;
         if (length > 1) {
             // contract market
-            const prefix = this.safeString (parts, 0);
+            const prefix = this.safeStringUpper (parts, 0);
             const spotPart = this.safeStringLower (parts, 1);
             const spotSafeMarket = this.safeMarket (spotPart);
             const baseId = this.safeString (spotSafeMarket, 'baseId');
@@ -422,6 +421,126 @@ export default class bitbaby extends bitbabyRest {
         client.resolve (cache, channel);
     }
 
+    /**
+     * @method
+     * @name bitbaby#watchTrades
+     * @description watches information on multiple trades made in a market
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/websocket-tui-song
+     * @param {string} symbol unified market symbol of the market trades were made in
+     * @param {int} [since] the earliest time in ms to fetch trades for
+     * @param {int} [limit] the maximum number of trade structures to retrieve
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object[]} a list of [trade structures]{@link https://docs.ccxt.com/#/?id=trade-structure}
+     */
+    async watchTrades (symbol: string, since: Int = undefined, limit: Int = undefined, params = {}): Promise<Trade[]> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        symbol = market['symbol'];
+        const marketId = this.getWsMarketIdFromMarket (market);
+        const channel = 'market_' + marketId + '_deals';
+        const trades = await this.subscribe (channel, symbol, params);
+        if (this.newUpdates) {
+            limit = trades.getLimit (market['symbol'], limit);
+        }
+        return this.filterBySymbolSinceLimit (trades, symbol, since, limit, true);
+    }
+
+    /**
+     * @method
+     * @name bitbaby#unWatchTrades
+     * @description unsubscribe from the trades channel
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/websocket-tui-song
+     * @param {string} symbol unified market symbol of the market trades were made in
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object[]} a list of [trade structures]{@link https://docs.ccxt.com/#/?id=trade-structure}
+     */
+    async unWatchTrades (symbol: string, params = {}): Promise<any> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        symbol = market['symbol'];
+        const marketId = this.getWsMarketIdFromMarket (market);
+        const channel = 'market_' + marketId + '_deals';
+        const subscription: Dict = {
+            'unsubscribe': true,
+            'subMessageHashes': [ channel ],
+            'symbols': [ symbol ],
+            'topic': 'trades',
+        };
+        return await this.unSubscribe (channel, symbol, params, subscription);
+    }
+
+    handleTrade (client: Client, message) {
+        //
+        // spot
+        //     {
+        //         "channel": "market_ethusdt_deals",
+        //         "tick": [
+        //             {
+        //             "id": "1775303118",
+        //             "ts": "2026-04-04T11:45:18Z",
+        //             "side": "sell",
+        //             "vol": "0.004",
+        //             "amount": "8.206",
+        //             "price": "2051.5"
+        //             }
+        //         ],
+        //         "ts": "2026-04-04T11:45:18Z"
+        //     }
+        //
+        // contract
+        //     {
+        //         "channel": "market_e_ethusdt_deals",
+        //         "tick": [
+        //             {
+        //                 "id": 1775302875,
+        //                 "ts": "2026-04-04T11:41:15Z",
+        //                 "side": "buy",
+        //                 "vol": "1",
+        //                 "piece": "",
+        //                 "price": "2050.39"
+        //             }
+        //         ],
+        //         "ts": "2026-04-04T11:41:15Z"
+        //     }
+        //
+        const channel = this.safeString (message, 'channel');
+        const marketId = channel.replace ('market_', '').replace ('_deals', '');
+        const symbol = this.getWsMarketSymbolFromId (marketId);
+        if (!(symbol in this.trades)) {
+            const limit = this.safeInteger (this.options, 'tradesLimit', 1000);
+            this.trades[symbol] = new ArrayCache (limit);
+        }
+        const market = this.market (symbol);
+        const stored = this.trades[symbol];
+        const data = this.safeList (message, 'tick', []);
+        for (let i = 0; i < data.length; i++) {
+            const trade = this.safeDict (data, i, {});
+            const parsed = this.parseWsTrade (trade, market);
+            stored.append (parsed);
+        }
+        this.trades[symbol] = stored;
+        client.resolve (stored, channel);
+    }
+
+    parseWsTrade (trade: Dict, market: Market = undefined): Trade {
+        const datetime = this.safeString (trade, 'ts');
+        return this.safeTrade ({
+            'info': trade,
+            'id': this.safeString (trade, 'id'),
+            'order': undefined,
+            'timestamp': this.parse8601 (datetime),
+            'datetime': datetime,
+            'symbol': market['symbol'],
+            'type': undefined,
+            'takerOrMaker': undefined,
+            'side': this.safeStringLower (trade, 'side'),
+            'price': this.safeString (trade, 'price'),
+            'amount': this.safeString (trade, 'vol'),
+            'cost': this.safeString (trade, 'amount'),
+            'fee': undefined,
+        }, market);
+    }
+
     handleMessage (client: Client, message) {
         if ('ping' in message) {
             this.handlePing (client, message);
@@ -443,6 +562,9 @@ export default class bitbaby extends bitbabyRest {
         } else if (topic === 'kline') {
             // market_btcusdt_kline_1m
             this.handleOHLCV (client, message);
+        } else if (topic === 'deals') {
+            // market_btcusdt_deals
+            this.handleTrade (client, message);
         }
     }
 }
