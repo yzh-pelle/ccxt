@@ -2293,6 +2293,9 @@
         "skipMethods": {
             "orderBook": {
                 "timestamp": "not present in swap"
+            },
+            "fetchTickers": {
+                "compareOHLC": "open < low"
             }
         }
     }
