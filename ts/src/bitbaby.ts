@@ -2,11 +2,11 @@
 //  ---------------------------------------------------------------------------
 
 import Exchange from './abstract/bitbaby.js';
-import { ArgumentsRequired, BadRequest, InvalidOrder, NotSupported } from './base/errors.js';
+import { ArgumentsRequired, AuthenticationError, BadRequest, BadSymbol, ExchangeError, InvalidOrder, InsufficientFunds, NotSupported, OrderNotFillable, OrderNotFound, PermissionDenied, RateLimitExceeded } from './base/errors.js';
 import { Precise } from './base/Precise.js';
 import { TICK_SIZE } from './base/functions/number.js';
 import { sha256 } from './static_dependencies/noble-hashes/sha256.js';
-import type { Balances, Dict, FundingRate, Int, Market, Num, OHLCV, Order, OrderBook, OrderRequest, OrderSide, OrderType, Position, Str, Strings, Ticker, Trade } from './base/types.js';
+import type { Balances, Dict, FundingRate, Int, int, Market, Num, OHLCV, Order, OrderBook, OrderRequest, OrderSide, OrderType, Position, Str, Strings, Ticker, Trade } from './base/types.js';
 
 //  ---------------------------------------------------------------------------
 
@@ -268,21 +268,53 @@ export default class bitbaby extends Exchange {
             'precisionMode': TICK_SIZE,
             'exceptions': {
                 'exact': {
-                    // error messages:
-                    // {"code":"-1203","msg":"委托价值须大于最小值 21 USDT","data":null}
-                    // order not found - {"code":"-1196","msg":"该订单不存在","data":null}
-                    // {"code":"1","msg":"fail","data":null,"message":null,"succ":false}
-                    // {"code":"-1121","msg":"Invalid contract","data":null}
-                    // bad symbol {"code":"-1121","msg":"无效的合约","data":null}
-                    // {"code":"-1102","msg":"Forced parameter {0} not sent, empty or incorrect format","data":null}
-                    // {"code":"110047","msg":"价格或金额小于最小值","data":null}
-                    // {"code":"-1000","msg":"处理请求时发生未知错误","data":null}
-                    // { code: '-2100', msg: '参数问题', data: null }
-                    // {"code":"10081","msg":"Take profit order volume must be greater than minimum value 30 contracts","data":{"custom_error_tips":["30"]},"msgData":null,"succ":false}
-                    // non-error messages:
-                    // {"code":"0","msg":"成功","data":null}
+                    '-1000': ExchangeError, // UNKNOWN An unknown error occurred while processing the request.
+                    '-1001': ExchangeError, // DISCONNECTED Internal error, unable to process your request, please try again.
+                    '-1002': AuthenticationError, // UNAUTHORIZED You are not authorized to execute this request.
+                    '-1003': RateLimitExceeded, // TOO_MANY_REQUESTS The requests were too frequent and exceeded the limit.
+                    '-1004': PermissionDenied, // NO_THIS_COMPANY You are not authorized to perform this request. (User not exiting Company)
+                    '-1006': ExchangeError, // UNEXPECTED_RESP A message that does not conform to the preset format was received; the order status is unknown.
+                    '-1007': ExchangeError, // TIMEOUT Timeout occurred while waiting for a response from the backend server. Sending status unknown; execution status unknown.
+                    '-1014': BadRequest, // UNKNOWN_ORDER_COMPOSITION Unsupported order combinations
+                    '-1015': RateLimitExceeded, // TOO_MANY_ORDERS Too many new orders. Please reduce your request frequency.
+                    '-1016': ExchangeError, // SERVICE_SHUTTING_DOWN Server offline
+                    '-1017': ExchangeError, // ILLEGAL_CONTENT_TYPE 'We recommend': , // appending Content-Type to all request headers and setting it to application/json.
+                    '-1020': NotSupported, // UNSUPPORTED_OPERATION This operation is not supported.
+                    '-1021': BadRequest, // INVALID_TIMESTAMP The latency is too high; the server determines that the time taken has exceeded the recevWindow based on the timestamp in the received request. Please improve network conditions or increase the recevWindow.
+                    '-1022': AuthenticationError, // INVALID_SIGNATURE The signature for this request is invalid.
+                    '-1023': AuthenticationError, // UNTIMESTAMP 'You are not authorized to execute this request.
+                    '-1024': AuthenticationError, // UNSIGNATURE 'You are not authorized to execute this request
+                    '110047': BadRequest, // PRICE_OR_AMOUNT_LESS_THAN_MINIMUM The price or amount is less than the minimum value. {"code":"110047","msg":"价格或金额小于最小值","data":null}
+                    '10081': BadRequest, // // {"code":"10081","msg":"Take profit order volume must be greater than minimum value 30 contracts","data":{"custom_error_tips":["30"]},"msgData":null,"succ":false}
+                    '-1101': BadRequest, // TOO_MANY_PARAMETERS Too many parameters were sent.
+                    '-1102': BadRequest, // MANDATORY_PARAM_EMPTY_OR_MALFORMED No mandatory parameter was sent; the parameter is empty or incorrectly formatted.
+                    '-1103': BadRequest, // UNKNOWN_PARAM Unknown parameters were sent. Each request requires at least one parameter {Timestamp}.
+                    '-1104': BadRequest, // UNREAD_PARAMETERS Not all sent parameters are read.
+                    '-1105': BadRequest, // PARAM_EMPTY The parameter is empty.
+                    '-1106': BadRequest, // PARAM_NOT_REQUIRED Parameters have been sent when not needed.
+                    '-1111': BadRequest, // BAD_PRECISION The accuracy exceeds the maximum value defined for this asset.
+                    '-1112': OrderNotFillable, // NO_DEPTH There are no pending orders for the trading pair.
+                    '-1116': InvalidOrder, // INVALID_ORDER_TYPE Invalid order type.
+                    '-1117': InvalidOrder, // INVALID_SIDE Invalid buy/sell direction.
+                    '-1118': InvalidOrder, // EMPTY_NEW_CL_ORD_ID The new customer order ID is empty.
+                    '-1121': BadSymbol, // BAD_SYMBOL Invalid symbol
+                    '-1136': InvalidOrder, // ORDER_QUANTITY_TOO_SMALL The order quantity is less than the minimum value.
+                    '-1138': InvalidOrder, // ORDER_PRICE_WAVE_EXCEED Order price exceeds the allowed range
+                    '-1139': InvalidOrder, // ORDER_NOT_SUPPORT_MARKET This trading pair does not support market orders.
+                    '-1145': InvalidOrder, // ORDER_NOT_SUPPORT_CANCELLATION This order type does not support cancellation.
+                    '-1147': InvalidOrder, // PRICE_VOLUME_PRESION_ERROR Order price or quantity exceeds the maximum limit
+                    '-1196': OrderNotFound, // {"code":"-1196","msg":"该订单不存在","data":null}
+                    '-1203': InvalidOrder, // // {"code":"-1203","msg":"委托价值须大于最小值 21 USDT","data":null}
+                    '-2013': OrderNotFound, // NO_SUCH_ORDER Order does not exist.
+                    '-2015': AuthenticationError, // REJECTED_CH_KEY Invalid API key, IP address, or operation permission.
+                    '-2016': ExchangeError, // EXCHANGE_LOCK The transaction was frozen
+                    '-2017': InsufficientFunds, // BALANCE_NOT_ENOUG
+                    '-2100': BadRequest, // {"code":"-2100","msg":"参数问题","data":null}
                 },
                 'broad': {
+                    '-10': ExchangeError, // 10xx - General Server and Network Errors
+                    '-11': BadRequest, // 11xx - Issues in the request content
+                    'fail': ExchangeError, // {"code":"1","msg":"fail","data":null,"message":null,"succ":false}
                 },
             },
             'fees': {
@@ -2632,5 +2664,24 @@ export default class bitbaby extends Exchange {
         }
         const url = this.urls['api'][api] + '/' + endpoint;
         return { 'url': url, 'method': method, 'body': body, 'headers': headers };
+    }
+
+    handleErrors (code: int, reason: string, url: string, method: string, headers: Dict, body: string, response, requestHeaders, requestBody) {
+        //
+        // bad
+        // {"code":"10081","msg":"Take profit order volume must be greater than minimum value 30 contracts","data":{"custom_error_tips":["30"]},"msgData":null,"succ":false}
+        // good
+        // {"code":"0","msg":"成功","data":null}
+        //
+        const errorCode = this.safeString (response, 'code');
+        if ((errorCode !== undefined) && (errorCode !== '0')) {
+            const message = this.safeString2 (response, 'msg', 'data', '');
+            const feedback = this.id + ' ' + body;
+            this.throwExactlyMatchedException (this.exceptions['exact'], errorCode, feedback);
+            this.throwBroadlyMatchedException (this.exceptions['broad'], errorCode, feedback);
+            this.throwBroadlyMatchedException (this.exceptions['broad'], message, feedback);
+            throw new ExchangeError (feedback);
+        }
+        return undefined;
     }
 }
