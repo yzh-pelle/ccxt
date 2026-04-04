@@ -504,7 +504,8 @@ export default class bitbaby extends bitbabyRest {
         //     }
         //
         const channel = this.safeString (message, 'channel');
-        const marketId = channel.replace ('market_', '').replace ('_deals', '');
+        let marketId = channel.replace ('market_', '');
+        marketId = marketId.replace ('_deals', '');
         const symbol = this.getWsMarketSymbolFromId (marketId);
         if (!(symbol in this.trades)) {
             const limit = this.safeInteger (this.options, 'tradesLimit', 1000);
@@ -619,7 +620,8 @@ export default class bitbaby extends bitbabyRest {
         //     }
         //
         const channel = this.safeString (message, 'channel');
-        const marketId = channel.replace ('market_', '').replace ('_depth_0.1', '');
+        let marketId = channel.replace ('market_', '');
+        marketId = marketId.replace ('_depth_0.1', '');
         const symbol = this.getWsMarketSymbolFromId (marketId);
         if (!(symbol in this.orderbooks)) {
             const defaultLimit = this.safeInteger (this.options, 'watchOrderBookLimit', 1000);
