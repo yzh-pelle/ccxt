@@ -1021,7 +1021,7 @@ export default class bitbaby extends Exchange {
             this.safeNumber (ohlcv, 'high'),
             this.safeNumber (ohlcv, 'low'),
             this.safeNumber (ohlcv, 'close'),
-            this.safeNumber (ohlcv, 'volume'),
+            this.safeNumber2 (ohlcv, 'volume', 'vol'),
         ];
     }
 
