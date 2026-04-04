@@ -632,6 +632,7 @@ export default class bitbaby extends Exchange {
         const amountPrecision = this.parsePrecision (this.safeString (market, 'quantityPrecision', '0'));
         return this.safeMarketStructure ({
             'id': id,
+            'lowercaseId': id.toLowerCase (),
             'numericId': this.safeInteger (market, 'contractId'),
             'symbol': symbol,
             'base': base,
