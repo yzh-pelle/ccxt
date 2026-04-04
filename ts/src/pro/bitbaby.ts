@@ -5,7 +5,7 @@ import bitbabyRest from '../bitbaby.js';
 // import { ArgumentsRequired, ExchangeError } from '../base/errors.js';
 // import { Precise } from '../base/Precise.js';
 import { ArrayCache, ArrayCacheByTimestamp } from '../base/ws/Cache.js';
-import type { Dict, Int, OHLCV, Market, Ticker, Trade } from '../base/types.js';
+import type { Dict, Int, Market, OHLCV, OrderBook, Ticker, Trade } from '../base/types.js';
 import Client from '../base/ws/Client.js';
 
 //  ---------------------------------------------------------------------------
@@ -512,11 +512,17 @@ export default class bitbaby extends bitbabyRest {
         }
         const market = this.market (symbol);
         const stored = this.trades[symbol];
+        const trades = [];
         const data = this.safeList (message, 'tick', []);
         for (let i = 0; i < data.length; i++) {
             const trade = this.safeDict (data, i, {});
             const parsed = this.parseWsTrade (trade, market);
-            stored.append (parsed);
+            trades.push (parsed);
+        }
+        const sorted = this.sortBy (stored, 'timestamp');
+        for (let i = 0; i < sorted.length; i++) {
+            const trade = this.safeDict (sorted, i, {});
+            stored.append (trade);
         }
         this.trades[symbol] = stored;
         client.resolve (stored, channel);
@@ -539,6 +545,130 @@ export default class bitbaby extends bitbabyRest {
             'cost': this.safeString (trade, 'amount'),
             'fee': undefined,
         }, market);
+    }
+
+    /**
+     * @method
+     * @name bitbaby#watchOrderBook
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/websocket-tui-song
+     * @description watches information on open orders with bid (buy) and ask (sell) prices, volumes and other data
+     * @param {string} symbol unified symbol of the market to fetch the order book for
+     * @param {int} [limit] the maximum amount of order book entries to return.
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} A dictionary of [order book structures]{@link https://docs.ccxt.com/#/?id=order-book-structure} indexed by market symbols
+     */
+    async watchOrderBook (symbol: string, limit: Int = undefined, params = {}): Promise<OrderBook> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        symbol = market['symbol'];
+        const marketId = this.getWsMarketIdFromMarket (market);
+        const channel = 'market_' + marketId + '_depth_0.1';
+        const subscription: Dict = {
+            'limit': limit,
+        };
+        const orderbook = await this.subscribe (channel, symbol, params, subscription);
+        return orderbook.limit ();
+    }
+
+    /**
+     * @method
+     * @name bitbaby#unWatchOrderBook
+     * @description unsubscribe from the orderbook channel
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/websocket-tui-song
+     * @param {string} symbol symbol of the market to unwatch the trades for
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {object} A dictionary of [order book structures]{@link https://docs.ccxt.com/#/?id=order-book-structure} indexed by market symbols
+     */
+    async unWatchOrderBook (symbol: string, params = {}): Promise<any> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        symbol = market['symbol'];
+        const marketId = this.getWsMarketIdFromMarket (market);
+        const channel = 'market_' + marketId + '_depth_0.1';
+        const subscription: Dict = {
+            'unsubscribe': true,
+            'subMessageHashes': [ channel ],
+            'symbols': [ symbol ],
+            'topic': 'orderbook',
+        };
+        return await this.unSubscribe (channel, symbol, params, subscription);
+    }
+
+    handleOrderBook (client: Client, message) {
+        //
+        //     {
+        //         "channel": "market_e_ethusdt_depth_0.1",
+        //         "tick": {
+        //             "asks": [
+        //                 [
+        //                     "2036.17",
+        //                     "9.058",
+        //                     "9.058"
+        //                 ]
+        //             ],
+        //             "bids": [
+        //                 [
+        //                     "2036.16",
+        //                     "5.698",
+        //                     "5.698"
+        //                 ]
+        //             ],
+        //             "ts": "2026-04-04T12:18:50Z"
+        //         },
+        //         "ts": "2026-04-04T12:18:50Z"
+        //     }
+        //
+        const channel = this.safeString (message, 'channel');
+        const marketId = channel.replace ('market_', '').replace ('_depth_0.1', '');
+        const symbol = this.getWsMarketSymbolFromId (marketId);
+        if (!(symbol in this.orderbooks)) {
+            const defaultLimit = this.safeInteger (this.options, 'watchOrderBookLimit', 1000);
+            const subscription = this.safeDict (client.subscriptions, channel);
+            const limit = this.safeInteger (subscription, 'limit', defaultLimit);
+            this.orderbooks[symbol] = this.orderBook ({}, limit);
+            subscription['limit'] = limit;
+        }
+        const orderbook = this.orderbooks[symbol];
+        const data = this.safeDict (message, 'tick', {});
+        const datetime = this.safeString (data, 'ts');
+        const timestamp = this.parse8601 (datetime);
+        const snapshot = this.parseWsOrderBook (data, symbol, timestamp); // use custom parser to avoid exsessive values
+        orderbook.reset (snapshot);
+        this.orderbooks[symbol] = orderbook;
+        client.resolve (orderbook, channel);
+    }
+
+    parseWsOrderBook (orderbook: Dict, symbol: string, timestamp: Int): OrderBook {
+        const rawBids = this.safeList (orderbook, 'bids', []);
+        const rawAsks = this.safeList (orderbook, 'asks', []);
+        const bids = [];
+        const asks = [];
+        for (let i = 0; i < rawBids.length; i++) {
+            const bid = this.safeList (rawBids, i, []);
+            const parsedBid = [];
+            const price = this.safeNumber (bid, 0);
+            const amount = this.safeNumber (bid, 1);
+            parsedBid.push (price);
+            parsedBid.push (amount);
+            bids.push (parsedBid);
+        }
+        for (let i = 0; i < rawAsks.length; i++) {
+            const ask = this.safeList (rawAsks, i, []);
+            const parsedAsk = [];
+            const price = this.safeNumber (ask, 0);
+            const amount = this.safeNumber (ask, 1);
+            parsedAsk.push (price);
+            parsedAsk.push (amount);
+            asks.push (parsedAsk);
+        }
+        return {
+            'symbol': symbol,
+            'bids': this.sortBy (bids, 0, true),
+            'asks': this.sortBy (asks, 0),
+            'timestamp': timestamp,
+            'datetime': this.iso8601 (timestamp),
+            'nonce': undefined,
+        } as OrderBook;
     }
 
     handleMessage (client: Client, message) {
@@ -565,6 +695,9 @@ export default class bitbaby extends bitbabyRest {
         } else if (topic === 'deals') {
             // market_btcusdt_deals
             this.handleTrade (client, message);
+        } else if (topic === 'depth') {
+            // market_btcusdt_depth_0.1
+            this.handleOrderBook (client, message);
         }
     }
 }
