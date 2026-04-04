@@ -15,6 +15,7 @@ interface Exchange {
     publicGetSpotOpenSapiV1Depth (params?: {}): Promise<implicitReturnType>;
     publicGetSpotOpenSapiV1Ticker (params?: {}): Promise<implicitReturnType>;
     publicGetSpotOpenSapiV1Trades (params?: {}): Promise<implicitReturnType>;
+    publicGetSpotOpenSapiV1Kline (params?: {}): Promise<implicitReturnType>;
     publicGetFuturesOpenFapiV1Ping (params?: {}): Promise<implicitReturnType>;
     publicGetFuturesOpenFapiV1Time (params?: {}): Promise<implicitReturnType>;
     publicGetFuturesOpenFapiV1Contracts (params?: {}): Promise<implicitReturnType>;
@@ -46,6 +47,7 @@ interface Exchange {
     privatePostFuturesOpenFapiV1OrderHistorical (params?: {}): Promise<implicitReturnType>;
     privatePostFuturesOpenFapiV1ProfitHistorical (params?: {}): Promise<implicitReturnType>;
     klineGetV1SpotMarketKline (params?: {}): Promise<implicitReturnType>;
+    klineGetV1FutureMarketKline (params?: {}): Promise<implicitReturnType>;
 }
 abstract class Exchange extends _Exchange {}
 
