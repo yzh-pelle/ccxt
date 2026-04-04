@@ -1370,8 +1370,8 @@ export default class bitbaby extends Exchange {
             openOrClose = 'CLOSE';
         }
         const isMarketOrder = (type === 'market');
-        const [ triggerPrice, stopLossPrice, takeProfitPrice ] = this.handleTriggerPricesAndParams (symbol, params);
-        params = this.omit (params, [ 'triggerPrice', 'stopPrice', 'stopLossPrice', 'takeProfitPrice' ]);
+        const [ triggerPrice, stopLossPrice, takeProfitPrice, query ] = this.handleTriggerPricesAndParams (symbol, params);
+        params = query;
         const isStopLossOrTakeProfit = (stopLossPrice !== undefined) || (takeProfitPrice !== undefined);
         if (isStopLossOrTakeProfit && openOrClose === 'OPEN') {
             // in case if user not provided reduceOnly param but provided stop loss or take profit price
