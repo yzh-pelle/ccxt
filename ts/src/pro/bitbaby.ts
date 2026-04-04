@@ -34,23 +34,41 @@ export default class bitbaby extends bitbabyRest {
             'options': {},
             'streaming': {
                 'keepAlive': 29000,
-                // 'ping': this.ping,
             },
         });
     }
 
     handlePong (client: Client, message) {
+        //
+        //     {
+        //         "ts": "2026-04-04T09:53:24Z",
+        //         "pong": 1775296404,
+        //         "data": {
+        //             "ping": 1775296404
+        //         }
+        //     }
+        //
         client.lastPong = this.safeTimestamp (message, 'pong');
         return message;
     }
 
     handlePing (client: Client, message) {
+        //
+        //     {
+        //         "ts": "2026-04-04T09:53:24Z",
+        //         "ping": 1775296404
+        //     }
+        //
         client.lastPong = this.safeTimestamp (message, 'ping', this.milliseconds ());
         this.spawn (this.pong, client, message);
     }
 
     async pong (client, message) {
         //
+        //     {
+        //         "ts": "2026-04-04T09:53:24Z",
+        //         "ping": 1775296404
+        //     }
         //
         const time = this.safeInteger (message, 'ping');
         const pong: Dict = {
@@ -73,20 +91,29 @@ export default class bitbaby extends bitbabyRest {
                 'channel': channel,
             },
         };
-        const unsubscribe = this.safeBool (subscription, 'unsubscribe', false);
-        if (unsubscribe) {
-            // exchange does not send confirmation of unsubscription
-            // we send unsubscription request and clean up local subscriptions and caches
-            message['event'] = 'unsub';
-            const client = this.client (url);
-            await client.send (message);
-            // we do not return promise from line above
-            // to avoid CS build error: Cannot implicitly convert type 'void' to 'object'
-            // instead, we return true after we await unsubscription request and clean up local subscriptions and caches
-            this.handleUnSubscribe (client, subscription);
-            return true;
+        const result = this.watch (url, channel, this.deepExtend (message, params), channel, subscription);
+        return await result;
+    }
+
+    async unSubscribe (channel, symbol, params = {}, subscription = undefined) {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        let marketType = 'spot';
+        if (market['contract']) {
+            marketType = 'contract';
         }
-        return await this.watch (url, channel, this.deepExtend (message, params), channel, subscription);
+        const url = this.urls['api']['ws'][marketType];
+        const message: Dict = {
+            'event': 'unsub',
+            'params': {
+                'channel': channel,
+            },
+        };
+        const client = this.client (url);
+        const messageHash = 'unsubscribe:' + channel;
+        const result = this.watch (url, messageHash, this.deepExtend (message, params), messageHash, subscription);
+        this.handleUnSubscribe (client, subscription);
+        return await result;
     }
 
     handleUnSubscribe (client: Client, subscription) {
@@ -165,126 +192,7 @@ export default class bitbaby extends bitbabyRest {
             'symbols': [ symbol ],
             'topic': 'ticker',
         };
-        return await this.subscribe (channel, symbol, params, subscription);
-    }
-
-    /**
-     * @method
-     * @name bitbaby#watchOHLCV
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/websocket-tui-song
-     * @description watches historical candlestick data containing the open, high, low, and close price, and the volume of a market
-     * @param {string} symbol unified symbol of the market to fetch OHLCV data for
-     * @param {string} timeframe the length of time each candle represents
-     * @param {int} [since] timestamp in ms of the earliest candle to fetch
-     * @param {int} [limit] the maximum amount of candles to fetch
-     * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @returns {int[][]} A list of candles ordered as timestamp, open, high, low, close, volume
-     */
-    async watchOHLCV (symbol: string, timeframe: string = '1m', since: Int = undefined, limit: Int = undefined, params = {}): Promise<OHLCV[]> {
-        await this.loadMarkets ();
-        const market = this.market (symbol);
-        symbol = market['symbol'];
-        const marketId = this.getWsMarketIdFromMarket (market);
-        const interval = this.safeString (this.timeframes, timeframe, timeframe);
-        const channel = 'market_' + marketId + '_kline_' + interval;
-        const ohlcv = await this.subscribe (channel, symbol, params);
-        if (this.newUpdates) {
-            limit = ohlcv.getLimit (symbol, limit);
-        }
-        return this.filterBySinceLimit (ohlcv, since, limit, 0, true);
-    }
-
-    /**
-     * @method
-     * @name bitbaby#unWatchOHLCV
-     * @description unWatches historical candlestick data containing the open, high, low, and close price, and the volume of a market
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/websocket-tui-song
-     * @param {string} symbol unified symbol of the market to fetch OHLCV data for
-     * @param {string} timeframe the length of time each candle represents
-     * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @returns {int[][]} A list of candles ordered as timestamp, open, high, low, close, volume
-     */
-    async unWatchOHLCV (symbol: string, timeframe: string = '1m', params = {}): Promise<any> {
-        await this.loadMarkets ();
-        const market = this.market (symbol);
-        symbol = market['symbol'];
-        const marketId = this.getWsMarketIdFromMarket (market);
-        const interval = this.safeString (this.timeframes, timeframe, timeframe);
-        const channel = 'market_' + marketId + '_kline_' + interval;
-        const subscription: Dict = {
-            'unsubscribe': true,
-            'subMessageHashes': [ channel ],
-            'symbols': [ symbol ],
-            'topic': 'ohlcv',
-            'symbolsAndTimeframes': [ [ symbol, timeframe ] ],
-        };
-        return await this.subscribe (channel, symbol, params, subscription);
-    }
-
-    handleOHLCV (client: Client, message) {
-        //
-        // spot
-        //     {
-        //         "channel": "market_ethusdt_kline_1min",
-        //         "tick": [
-        //             {
-        //                 "id": 1775293440,
-        //                 "ts": "2026-04-04T09:04:00Z",
-        //                 "open": "2050.7",
-        //                 "close": "2050.51",
-        //                 "high": "2050.71",
-        //                 "low": "2050.5",
-        //                 "vol": "0.374",
-        //                 "amount": "766.9271",
-        //                 "symbol": "ETHUSDT"
-        //             }
-        //         ],
-        //         "ts": "2026-04-04T09:04:22Z"
-        //     }
-        //
-        // contract
-        //     {
-        //         "channel": "market_e_ethusdt_kline_1min",
-        //         "tick": [
-        //             {
-        //                 "id": 1775293680,
-        //                 "ts": "2026-04-04T09:08:00Z",
-        //                 "open": "2049.66",
-        //                 "close": "2049.66",
-        //                 "high": "2049.67",
-        //                 "low": "2049.66",
-        //                 "vol": "262",
-        //                 "piece": "",
-        //                 "amount": "537012.77",
-        //                 "symbol": "E_ETHUSDT"
-        //             }
-        //         ],
-        //         "ts": "2026-04-04T09:08:19Z"
-        //     }
-        //
-        const data = this.safeList (message, 'tick', []);
-        const channel = this.safeString (message, 'channel');
-        const parts = channel.split ('_kline_');
-        const interval = this.safeString (parts, 1);
-        const timeframe = this.findTimeframe (interval);
-        const first = this.safeDict (data, 0, {});
-        const marketId = this.safeString (first, 'symbol');
-        const symbol = this.getWsMarketSymbolFromId (marketId);
-        if (!(symbol in this.ohlcvs)) {
-            this.ohlcvs[symbol] = {};
-        }
-        if (!(timeframe in this.ohlcvs[symbol])) {
-            const limit = this.safeInteger (this.options, 'OHLCVLimit', 1000);
-            this.ohlcvs[symbol][timeframe] = new ArrayCacheByTimestamp (limit);
-        }
-        const cache = this.ohlcvs[symbol][timeframe];
-        for (let i = 0; i < data.length; i++) {
-            const candle = this.safeDict (data, i, {});
-            const parsed = this.parseOHLCV (candle);
-            cache.append (parsed);
-        }
-        this.ohlcvs[symbol][timeframe] = cache;
-        client.resolve (cache, channel);
+        return await this.unSubscribe (channel, symbol, params, subscription);
     }
 
     handleTicker (client: Client, message) {
@@ -393,6 +301,125 @@ export default class bitbaby extends bitbabyRest {
             'indexPrice': this.safeString (ticker, 'index_price'),
             'info': ticker,
         }, market);
+    }
+
+    /**
+     * @method
+     * @name bitbaby#watchOHLCV
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/websocket-tui-song
+     * @description watches historical candlestick data containing the open, high, low, and close price, and the volume of a market
+     * @param {string} symbol unified symbol of the market to fetch OHLCV data for
+     * @param {string} timeframe the length of time each candle represents
+     * @param {int} [since] timestamp in ms of the earliest candle to fetch
+     * @param {int} [limit] the maximum amount of candles to fetch
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {int[][]} A list of candles ordered as timestamp, open, high, low, close, volume
+     */
+    async watchOHLCV (symbol: string, timeframe: string = '1m', since: Int = undefined, limit: Int = undefined, params = {}): Promise<OHLCV[]> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        symbol = market['symbol'];
+        const marketId = this.getWsMarketIdFromMarket (market);
+        const interval = this.safeString (this.timeframes, timeframe, timeframe);
+        const channel = 'market_' + marketId + '_kline_' + interval;
+        const ohlcv = await this.subscribe (channel, symbol, params);
+        if (this.newUpdates) {
+            limit = ohlcv.getLimit (symbol, limit);
+        }
+        return this.filterBySinceLimit (ohlcv, since, limit, 0, true);
+    }
+
+    /**
+     * @method
+     * @name bitbaby#unWatchOHLCV
+     * @description unWatches historical candlestick data containing the open, high, low, and close price, and the volume of a market
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/websocket-tui-song
+     * @param {string} symbol unified symbol of the market to fetch OHLCV data for
+     * @param {string} timeframe the length of time each candle represents
+     * @param {object} [params] extra parameters specific to the exchange API endpoint
+     * @returns {int[][]} A list of candles ordered as timestamp, open, high, low, close, volume
+     */
+    async unWatchOHLCV (symbol: string, timeframe: string = '1m', params = {}): Promise<any> {
+        await this.loadMarkets ();
+        const market = this.market (symbol);
+        symbol = market['symbol'];
+        const marketId = this.getWsMarketIdFromMarket (market);
+        const interval = this.safeString (this.timeframes, timeframe, timeframe);
+        const channel = 'market_' + marketId + '_kline_' + interval;
+        const subscription: Dict = {
+            'unsubscribe': true,
+            'subMessageHashes': [ channel ],
+            'symbols': [ symbol ],
+            'topic': 'ohlcv',
+            'symbolsAndTimeframes': [ [ symbol, timeframe ] ],
+        };
+        return await this.unSubscribe (channel, symbol, params, subscription);
+    }
+
+    handleOHLCV (client: Client, message) {
+        //
+        // spot
+        //     {
+        //         "channel": "market_ethusdt_kline_1min",
+        //         "tick": [
+        //             {
+        //                 "id": 1775293440,
+        //                 "ts": "2026-04-04T09:04:00Z",
+        //                 "open": "2050.7",
+        //                 "close": "2050.51",
+        //                 "high": "2050.71",
+        //                 "low": "2050.5",
+        //                 "vol": "0.374",
+        //                 "amount": "766.9271",
+        //                 "symbol": "ETHUSDT"
+        //             }
+        //         ],
+        //         "ts": "2026-04-04T09:04:22Z"
+        //     }
+        //
+        // contract
+        //     {
+        //         "channel": "market_e_ethusdt_kline_1min",
+        //         "tick": [
+        //             {
+        //                 "id": 1775293680,
+        //                 "ts": "2026-04-04T09:08:00Z",
+        //                 "open": "2049.66",
+        //                 "close": "2049.66",
+        //                 "high": "2049.67",
+        //                 "low": "2049.66",
+        //                 "vol": "262",
+        //                 "piece": "",
+        //                 "amount": "537012.77",
+        //                 "symbol": "E_ETHUSDT"
+        //             }
+        //         ],
+        //         "ts": "2026-04-04T09:08:19Z"
+        //     }
+        //
+        const data = this.safeList (message, 'tick', []);
+        const channel = this.safeString (message, 'channel');
+        const parts = channel.split ('_kline_');
+        const interval = this.safeString (parts, 1);
+        const timeframe = this.findTimeframe (interval);
+        const first = this.safeDict (data, 0, {});
+        const marketId = this.safeString (first, 'symbol');
+        const symbol = this.getWsMarketSymbolFromId (marketId);
+        if (!(symbol in this.ohlcvs)) {
+            this.ohlcvs[symbol] = {};
+        }
+        if (!(timeframe in this.ohlcvs[symbol])) {
+            const limit = this.safeInteger (this.options, 'OHLCVLimit', 1000);
+            this.ohlcvs[symbol][timeframe] = new ArrayCacheByTimestamp (limit);
+        }
+        const cache = this.ohlcvs[symbol][timeframe];
+        for (let i = 0; i < data.length; i++) {
+            const candle = this.safeDict (data, i, {});
+            const parsed = this.parseOHLCV (candle);
+            cache.append (parsed);
+        }
+        this.ohlcvs[symbol][timeframe] = cache;
+        client.resolve (cache, channel);
     }
 
     handleMessage (client: Client, message) {
