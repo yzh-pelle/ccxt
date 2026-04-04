@@ -123,12 +123,12 @@ export default class bitbaby extends Exchange {
                 'fetchMarginModes': false,
                 'fetchMarketLeverageTiers': false,
                 'fetchMarkets': true,
-                'fetchMarkOHLCV': false,
+                'fetchMarkOHLCV': true,
                 'fetchMarkPrices': false,
                 'fetchMyLiquidations': false,
                 'fetchMySettlementHistory': false,
                 'fetchMyTrades': true,
-                'fetchOHLCV': false,
+                'fetchOHLCV': true,
                 'fetchOpenInterest': false,
                 'fetchOpenInterestHistory': false,
                 'fetchOpenInterests': false,
@@ -208,6 +208,7 @@ export default class bitbaby extends Exchange {
                         'spot/open/sapi/v1/depth': 1,
                         'spot/open/sapi/v1/ticker': 1,
                         'spot/open/sapi/v1/trades': 1,
+                        'spot/open/sapi/v1/kline': 1, // returns an empty response
                         'futures/open/fapi/v1/ping': 1,
                         'futures/open/fapi/v1/time': 1,
                         'futures/open/fapi/v1/contracts': 1,
@@ -232,7 +233,7 @@ export default class bitbaby extends Exchange {
                         'futures/open/fapi/v1/account': 5,
                     },
                     'post': {
-                        'spot/open/sapi/v1/order': 1, // todo - add static tests
+                        'spot/open/sapi/v1/order': 1,
                         'spot/open/sapi/v1/order/test': 1,
                         'spot/open/sapi/v1/batchOrders': 2,
                         'spot/open/sapi/v1/cancel': 1,
@@ -249,6 +250,7 @@ export default class bitbaby extends Exchange {
                 'kline': {
                     'get': {
                         'v1/spot/market/kline': 1,
+                        'v1/future/market/kline': 1,
                     },
                 },
             },
@@ -452,7 +454,9 @@ export default class bitbaby extends Exchange {
                         'trailing': false,
                         'symbolRequired': false,
                     },
-                    'fetchOHLCV': undefined,
+                    'fetchOHLCV': {
+                        'limit': 1000,
+                    },
                 },
                 'swap': {
                     'linear': {
@@ -969,9 +973,38 @@ export default class bitbaby extends Exchange {
         }
         let response = undefined;
         if (market['contract']) {
-            // request['contractName'] = market['id'];
-            // response = await this.publicGetFuturesOpenFapiV1Kline (this.extend (request, params));
-            throw new NotSupported (this.id + ' fetchOHLCV() is not supported for contract markets'); // todo add support in case the endpoint starts working
+            const lowercaseId = market['lowercaseId'];
+            const parts = lowercaseId.split ('-');
+            const type = this.safeString (parts, 0);
+            const baseId = this.safeString (parts, 1);
+            const quoteId = this.safeString (parts, 2);
+            const marketId = type + '_' + baseId + quoteId;
+            request['symbol'] = marketId;
+            let priceType = undefined;
+            [ priceType, params ] = this.handleOptionAndParams (params, 'fetchOHLCV', 'price');
+            if (priceType !== undefined) {
+                request['type'] = priceType;
+            }
+            //
+            //     {
+            //         "code": "0",
+            //         "msg": "Success",
+            //         "data": {
+            //             "channel": "mark_e_btcusdt_1min",
+            //             "data": [
+            //                 {
+            //                     "id": 1775290380,
+            //                     "open": 66981.7,
+            //                     "close": 66970.2,
+            //                     "high": 66981.7,
+            //                     "low": 66970.2,
+            //                     "volume": 0
+            //                 }
+            //             ]
+            //         }
+            //     }
+            //
+            response = await this.klineGetV1FutureMarketKline (this.extend (request, params));
         } else {
             request['symbol'] = market['id'];
             //
