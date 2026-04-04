@@ -278,14 +278,14 @@ export default class bitbaby extends Exchange {
                     '-1014': BadRequest, // UNKNOWN_ORDER_COMPOSITION Unsupported order combinations
                     '-1015': RateLimitExceeded, // TOO_MANY_ORDERS Too many new orders. Please reduce your request frequency.
                     '-1016': ExchangeError, // SERVICE_SHUTTING_DOWN Server offline
-                    '-1017': ExchangeError, // ILLEGAL_CONTENT_TYPE 'We recommend': , // appending Content-Type to all request headers and setting it to application/json.
+                    '-1017': ExchangeError, // ILLEGAL_CONTENT_TYPE
                     '-1020': NotSupported, // UNSUPPORTED_OPERATION This operation is not supported.
                     '-1021': BadRequest, // INVALID_TIMESTAMP The latency is too high; the server determines that the time taken has exceeded the recevWindow based on the timestamp in the received request. Please improve network conditions or increase the recevWindow.
                     '-1022': AuthenticationError, // INVALID_SIGNATURE The signature for this request is invalid.
                     '-1023': AuthenticationError, // UNTIMESTAMP 'You are not authorized to execute this request.
                     '-1024': AuthenticationError, // UNSIGNATURE 'You are not authorized to execute this request
-                    '110047': BadRequest, // PRICE_OR_AMOUNT_LESS_THAN_MINIMUM The price or amount is less than the minimum value. {"code":"110047","msg":"价格或金额小于最小值","data":null}
-                    '10081': BadRequest, // // {"code":"10081","msg":"Take profit order volume must be greater than minimum value 30 contracts","data":{"custom_error_tips":["30"]},"msgData":null,"succ":false}
+                    '110047': BadRequest, // PRICE_OR_AMOUNT_LESS_THAN_MINIMUM
+                    '10081': BadRequest, // // {"code":"10081","msg":"Take profit order volume must be greater than minimum value 30 contracts"}
                     '-1101': BadRequest, // TOO_MANY_PARAMETERS Too many parameters were sent.
                     '-1102': BadRequest, // MANDATORY_PARAM_EMPTY_OR_MALFORMED No mandatory parameter was sent; the parameter is empty or incorrectly formatted.
                     '-1103': BadRequest, // UNKNOWN_PARAM Unknown parameters were sent. Each request requires at least one parameter {Timestamp}.
@@ -303,13 +303,13 @@ export default class bitbaby extends Exchange {
                     '-1139': InvalidOrder, // ORDER_NOT_SUPPORT_MARKET This trading pair does not support market orders.
                     '-1145': InvalidOrder, // ORDER_NOT_SUPPORT_CANCELLATION This order type does not support cancellation.
                     '-1147': InvalidOrder, // PRICE_VOLUME_PRESION_ERROR Order price or quantity exceeds the maximum limit
-                    '-1196': OrderNotFound, // {"code":"-1196","msg":"该订单不存在","data":null}
-                    '-1203': InvalidOrder, // // {"code":"-1203","msg":"委托价值须大于最小值 21 USDT","data":null}
+                    '-1196': OrderNotFound,
+                    '-1203': InvalidOrder,
                     '-2013': OrderNotFound, // NO_SUCH_ORDER Order does not exist.
                     '-2015': AuthenticationError, // REJECTED_CH_KEY Invalid API key, IP address, or operation permission.
                     '-2016': ExchangeError, // EXCHANGE_LOCK The transaction was frozen
-                    '-2017': InsufficientFunds, // BALANCE_NOT_ENOUG
-                    '-2100': BadRequest, // {"code":"-2100","msg":"参数问题","data":null}
+                    '-2017': InsufficientFunds, // BALANCE_NOT_ENOUGH
+                    '-2100': BadRequest,
                 },
                 'broad': {
                     '-10': ExchangeError, // 10xx - General Server and Network Errors
