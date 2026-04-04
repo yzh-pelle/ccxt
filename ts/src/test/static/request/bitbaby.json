@@ -40,6 +40,60 @@
         ],
         "createOrder": [
             {
+                "description": "create spot limit buy order",
+                "method": "createOrder",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/order",
+                "input": [
+                    "DOGE/USDT",
+                    "limit",
+                    "buy",
+                    50,
+                    0.01
+                ],
+                "output": "{\"symbol\":\"dogeusdt\",\"side\":\"BUY\",\"type\":\"LIMIT\",\"volume\":\"50\",\"price\":\"0.01\"}"
+            },
+            {
+                "description": "create spot limit sell order",
+                "method": "createOrder",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/order",
+                "input": [
+                    "DOGE/USDT",
+                    "limit",
+                    "sell",
+                    50,
+                    1
+                ],
+                "output": "{\"symbol\":\"dogeusdt\",\"side\":\"SELL\",\"type\":\"LIMIT\",\"volume\":\"50\",\"price\":\"1\"}"
+            },
+            {
+                "description": "create spot market sell order",
+                "method": "createOrder",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/order",
+                "input": [
+                    "DOGE/USDT",
+                    "market",
+                    "sell",
+                    200
+                ],
+                "output": "{\"symbol\":\"dogeusdt\",\"side\":\"SELL\",\"type\":\"MARKET\",\"volume\":\"200\"}"
+            },
+            {
+                "description": "create spot market buy order with cost",
+                "method": "createOrder",
+                "url": "https://openapi.bitbaby.com/spot/open/sapi/v1/order",
+                "input": [
+                    "DOGE/USDT",
+                    "market",
+                    "buy",
+                    1,
+                    null,
+                    {
+                        "cost": 30
+                    }
+                ],
+                "output": "{\"symbol\":\"dogeusdt\",\"side\":\"BUY\",\"type\":\"MARKET\",\"volume\":\"30\"}"
+            },
+            {
                 "description": "create take profit market swap order",
                 "method": "createOrder",
                 "url": "https://openapi.bitbaby.com/futures/open/fapi/v1/conditionOrder",
@@ -53,7 +107,7 @@
                         "takeProfitPrice": 1
                     }
                 ],
-                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"SELL\",\"type\":\"MARKET\",\"open\":\"CLOSE\",\"volume\":\"30\",\"positionType\":\"1\",\"triggerPrice\":\"1\",\"triggerType\":2,\"takeProfitPrice\":1}"
+                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"SELL\",\"type\":\"MARKET\",\"open\":\"CLOSE\",\"volume\":\"30\",\"positionType\":\"1\",\"triggerPrice\":\"1\",\"triggerType\":2}"
             },
             {
                 "description": "create stop loss limit swap order",
@@ -69,7 +123,7 @@
                         "stopLossPrice": 0.01
                     }
                 ],
-                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"SELL\",\"type\":\"LIMIT\",\"open\":\"CLOSE\",\"volume\":\"30\",\"price\":\"0.02\",\"positionType\":\"1\",\"triggerPrice\":\"0.01\",\"triggerType\":1,\"stopLossPrice\":0.01}"
+                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"SELL\",\"type\":\"LIMIT\",\"open\":\"CLOSE\",\"volume\":\"30\",\"price\":\"0.02\",\"positionType\":\"1\",\"triggerPrice\":\"0.01\",\"triggerType\":1}"
             },
             {
                 "description": "create swap order with cost",
@@ -85,7 +139,7 @@
                         "cost": 20
                     }
                 ],
-                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"BUY\",\"type\":\"MARKET\",\"open\":\"OPEN\",\"volume\":\"20\",\"positionType\":\"1\",\"cost\":20}"
+                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"BUY\",\"type\":\"MARKET\",\"open\":\"OPEN\",\"volume\":\"20\",\"positionType\":\"1\"}"
             },
             {
                 "description": "create reduceOnly swap order",
@@ -101,7 +155,7 @@
                         "reduceOnly": true
                     }
                 ],
-                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"BUY\",\"type\":\"MARKET\",\"open\":\"CLOSE\",\"volume\":\"100\",\"positionType\":\"1\",\"reduceOnly\":true}"
+                "output": "{\"contractName\":\"E-DOGE-USDT\",\"side\":\"BUY\",\"type\":\"MARKET\",\"open\":\"CLOSE\",\"volume\":\"100\",\"positionType\":\"1\"}"
             }
         ],
         "fetchOHLCV": [
