@@ -510,7 +510,7 @@ export default class bitbaby extends bitbabyRest {
             this.trades[symbol] = new ArrayCache (limit);
         }
         const market = this.market (symbol);
-        const stored = this.trades[symbol];
+        const cache = this.trades[symbol];
         const trades = [];
         const data = this.safeList (message, 'tick', []);
         for (let i = 0; i < data.length; i++) {
@@ -518,13 +518,13 @@ export default class bitbaby extends bitbabyRest {
             const parsed = this.parseWsTrade (trade, market);
             trades.push (parsed);
         }
-        const sorted = this.sortBy (stored, 'timestamp');
+        const sorted = this.sortBy (trades, 'timestamp');
         for (let i = 0; i < sorted.length; i++) {
             const trade = this.safeDict (sorted, i, {});
-            stored.append (trade);
+            cache.append (trade);
         }
-        this.trades[symbol] = stored;
-        client.resolve (stored, channel);
+        this.trades[symbol] = cache;
+        client.resolve (cache, channel);
     }
 
     parseWsTrade (trade: Dict, market: Market = undefined): Trade {
