@@ -27,7 +27,7 @@ export default class bitbaby extends Exchange {
             'has': {
                 'CORS': undefined,
                 'spot': true,
-                'margin': true,
+                'margin': false,
                 'swap': true,
                 'future': false,
                 'option': false,
@@ -158,7 +158,7 @@ export default class bitbaby extends Exchange {
                 'fetchTicker': true,
                 'fetchTickers': false,
                 'fetchTime': true,
-                'fetchTrades': true,
+                'fetchTrades': true, // spot only
                 'fetchTradingFee': false,
                 'fetchTradingFees': false,
                 'fetchTradingLimits': false,
@@ -202,53 +202,53 @@ export default class bitbaby extends Exchange {
             'api': {
                 'public': {
                     'get': {
-                        'spot/open/sapi/v1/ping': 1, // done check rate limit
-                        'spot/open/sapi/v1/time': 1, // done check rate limit
-                        'spot/open/sapi/v1/symbols': 1, // done check rate limit
-                        'spot/open/sapi/v1/depth': 1, // done check rate limit
-                        'spot/open/sapi/v1/ticker': 1, // done check rate limit
-                        'spot/open/sapi/v1/trades': 1, // done check rate limit
-                        'futures/open/fapi/v1/ping': 1, // done check rate limit
-                        'futures/open/fapi/v1/time': 1, // done check rate limit
-                        'futures/open/fapi/v1/contracts': 1, // done check rate limit
-                        'futures/open/fapi/v1/depth': 1, // done check rate limit
-                        'futures/open/fapi/v1/ticker': 1, // done check rate limit
-                        'futures/open/fapi/v1/index': 1, // done check rate limit
+                        'spot/open/sapi/v1/ping': 1,
+                        'spot/open/sapi/v1/time': 1,
+                        'spot/open/sapi/v1/symbols': 1,
+                        'spot/open/sapi/v1/depth': 1,
+                        'spot/open/sapi/v1/ticker': 1,
+                        'spot/open/sapi/v1/trades': 1,
+                        'futures/open/fapi/v1/ping': 1,
+                        'futures/open/fapi/v1/time': 1,
+                        'futures/open/fapi/v1/contracts': 1,
+                        'futures/open/fapi/v1/depth': 1,
+                        'futures/open/fapi/v1/ticker': 1,
+                        'futures/open/fapi/v1/index': 1,
                         'futures/open/fapi/v1/kline': 1, // returns an empty response
                     },
                 },
                 'private': {
                     'get': {
-                        'spot/open/sapi/v1/order': 5, // done
-                        'spot/open/sapi/v1/openOrders': 5, // done
-                        'spot/open/sapi/v1/myTrades': 5, // done
-                        'spot/open/sapi/v1/account': 5, // done
-                        'spot/open/sapi/v1/margin/order': 5, // todo check rate limit and response
-                        'spot/open/sapi/v1/margin/openOrders': 5, // todo check rate limit and response
-                        'spot/open/sapi/v1/margin/myTrades': 1, // todo check rate limit and response
-                        'futures/open/fapi/v1/order': 5, // done
-                        'futures/open/fapi/v1/openOrders': 5, // done
-                        'futures/open/fapi/v1/myTrades': 1, // done
-                        'futures/open/fapi/v1/account': 5, // done
+                        'spot/open/sapi/v1/order': 5,
+                        'spot/open/sapi/v1/openOrders': 5,
+                        'spot/open/sapi/v1/myTrades': 5,
+                        'spot/open/sapi/v1/account': 5,
+                        'spot/open/sapi/v1/margin/order': 1, // not supported by the exchange yet
+                        'spot/open/sapi/v1/margin/openOrders': 1, // not supported by the exchange yet
+                        'spot/open/sapi/v1/margin/myTrades': 1, // not supported by the exchange yet
+                        'futures/open/fapi/v1/order': 5,
+                        'futures/open/fapi/v1/openOrders': 5,
+                        'futures/open/fapi/v1/myTrades': 1,
+                        'futures/open/fapi/v1/account': 5,
                     },
                     'post': {
-                        'spot/open/sapi/v1/order': 1, // done todo - add static tests
-                        'spot/open/sapi/v1/order/test': 1, // done
-                        'spot/open/sapi/v1/batchOrders': 2, // done
-                        'spot/open/sapi/v1/cancel': 1, // done
-                        'spot/open/sapi/v1/batchCancel': 2, // done
-                        'spot/open/sapi/v1/margin/order': 5, // todo - check rate limit and response
-                        'spot/open/sapi/v1/margin/cancel': 1, // todo check rate limit and response
-                        'futures/open/fapi/v1/order': 1, // done
-                        'futures/open/fapi/v1/conditionOrder': 1, // done
-                        'futures/open/fapi/v1/cancel': 1, // done
-                        'futures/open/fapi/v1/orderHistorical': 1, // done
-                        'futures/open/fapi/v1/profitHistorical': 1, // done
+                        'spot/open/sapi/v1/order': 1, // todo - add static tests
+                        'spot/open/sapi/v1/order/test': 1,
+                        'spot/open/sapi/v1/batchOrders': 2,
+                        'spot/open/sapi/v1/cancel': 1,
+                        'spot/open/sapi/v1/batchCancel': 2,
+                        'spot/open/sapi/v1/margin/order': 1, // not supported by the exchange yet
+                        'spot/open/sapi/v1/margin/cancel': 1, // not supported by the exchange yet
+                        'futures/open/fapi/v1/order': 1,
+                        'futures/open/fapi/v1/conditionOrder': 1,
+                        'futures/open/fapi/v1/cancel': 1,
+                        'futures/open/fapi/v1/orderHistorical': 1,
+                        'futures/open/fapi/v1/profitHistorical': 1,
                     },
                 },
                 'kline': {
                     'get': {
-                        'v1/spot/market/kline': 1, // done
+                        'v1/spot/market/kline': 1,
                     },
                 },
             },
@@ -271,7 +271,7 @@ export default class bitbaby extends Exchange {
                     // order not found - {"code":"-1196","msg":"该订单不存在","data":null}
                     // {"code":"1","msg":"fail","data":null,"message":null,"succ":false}
                     // {"code":"-1121","msg":"Invalid contract","data":null}
-                    // {"code":"-1121","msg":"无效的合约","data":null}
+                    // bad symbol {"code":"-1121","msg":"无效的合约","data":null}
                     // {"code":"-1102","msg":"Forced parameter {0} not sent, empty or incorrect format","data":null}
                     // {"code":"110047","msg":"价格或金额小于最小值","data":null}
                     // {"code":"-1000","msg":"处理请求时发生未知错误","data":null}
@@ -347,8 +347,8 @@ export default class bitbaby extends Exchange {
                 'spot': {
                     'sandbox': false,
                     'createOrder': {
+                        'test': true,
                         'marginMode': false,
-                        'margin': true,
                         'triggerPrice': false,
                         'triggerPriceType': undefined,
                         'triggerDirection': undefined,
@@ -373,7 +373,6 @@ export default class bitbaby extends Exchange {
                         'max': 10,
                     },
                     'fetchMyTrades': {
-                        'margin': true,
                         'marginMode': false,
                         'limit': undefined,
                         'daysBack': undefined,
@@ -381,14 +380,12 @@ export default class bitbaby extends Exchange {
                         'symbolRequired': true,
                     },
                     'fetchOrder': {
-                        'margin': true,
                         'marginMode': false,
                         'trigger': false,
                         'trailing': false,
                         'symbolRequired': true,
                     },
                     'fetchOpenOrders': {
-                        'margin': true,
                         'marginMode': false,
                         'limit': 1000,
                         'trigger': false,
@@ -448,9 +445,14 @@ export default class bitbaby extends Exchange {
                     },
                     'fetchOrders': undefined,
                     'fetchClosedOrders': undefined,
-                    'fetchOHLCV': {
+                    'fetchCanceledAndClosedOrders': {
+                        'marginMode': false,
                         'limit': 1000,
+                        'trigger': false,
+                        'trailing': false,
+                        'symbolRequired': false,
                     },
+                    'fetchOHLCV': undefined,
                 },
                 'swap': {
                     'linear': {
@@ -470,8 +472,8 @@ export default class bitbaby extends Exchange {
      * @method
      * @name bitbaby#fetchStatus
      * @description the latest known information on the availability of the exchange API
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#ce-shi-lian-jie
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#ce-shi-lian-jie
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#ce-shi-lian-jie // spot
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#ce-shi-lian-jie // contract
      * @param {object} [params] extra parameters specific to the exchange API endpoint
      * @param {string} [params.type] spot or swap
      * @returns {object} a [status structure]{@link https://docs.ccxt.com/?id=exchange-status-structure}
@@ -480,7 +482,7 @@ export default class bitbaby extends Exchange {
         let type = undefined;
         [ type, params ] = this.handleMarketTypeAndParams ('fetchStatus', undefined, params);
         let response = undefined;
-        if ((type !== 'spot') && (type !== 'margin')) {
+        if (type !== 'spot') {
             response = await this.publicGetFuturesOpenFapiV1Ping (params);
         } else {
             response = await this.publicGetSpotOpenSapiV1Ping (params);
@@ -499,8 +501,8 @@ export default class bitbaby extends Exchange {
      * @method
      * @name bitbaby#fetchTime
      * @description fetches the current integer timestamp in milliseconds from the exchange server
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#fu-wu-qi-shi-jian
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#huo-qu-fu-wu-qi-shi-jian
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#fu-wu-qi-shi-jian // spot
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#huo-qu-fu-wu-qi-shi-jian // contract
      * @param {object} [params] extra parameters specific to the exchange API endpoint
      * @returns {int} the current integer timestamp in milliseconds from the exchange server
      */
@@ -508,7 +510,7 @@ export default class bitbaby extends Exchange {
         let type = undefined;
         [ type, params ] = this.handleMarketTypeAndParams ('fetchTime', undefined, params);
         let response = undefined;
-        if ((type !== 'spot') && (type !== 'margin')) {
+        if (type !== 'spot') {
             response = await this.publicGetFuturesOpenFapiV1Time (params);
         } else {
             response = await this.publicGetSpotOpenSapiV1Time (params);
@@ -526,8 +528,8 @@ export default class bitbaby extends Exchange {
      * @method
      * @name bitbaby#fetchMarkets
      * @description retrieves data on all markets for exchagne
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#bi-dui-lie-biao
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#he-yue-lie-biao
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#bi-dui-lie-biao // spot
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#he-yue-lie-biao // contract
      * @param {object} [params] extra parameters specific to the exchange API endpoint
      * @returns {object[]} an array of objects representing market data
      */
@@ -640,7 +642,7 @@ export default class bitbaby extends Exchange {
             'settleId': settleId,
             'type': isSpot ? 'spot' : 'swap',
             'spot': isSpot,
-            'margin': isSpot, // todo check if margin is available for all markets
+            'margin': false,
             'swap': !isSpot,
             'future': false,
             'option': false,
@@ -687,8 +689,8 @@ export default class bitbaby extends Exchange {
      * @method
      * @name bitbaby#fetchOrderBook
      * @description fetches information on open orders with bid (buy) and ask (sell) prices, volumes and other data
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#ding-dan-bo
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#ding-dan-bo
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#ding-dan-bo // spot
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#ding-dan-bo // contract
      * @param {string} symbol unified symbol of the market to fetch the order book for
      * @param {int} [limit] the maximum amount of order book entries to return (default 30, max 100)
      * @param {object} [params] extra parameters specific to the exchange API endpoint
@@ -786,8 +788,8 @@ export default class bitbaby extends Exchange {
      * @method
      * @name bitbaby#fetchTicker
      * @description fetches a price ticker, a statistical calculation with the information calculated over the past 24 hours for a specific market
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#hang-qing-ticker
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#hang-qing-ticker
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#hang-qing-ticker // spot
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#hang-qing-ticker // contract
      * @param {string} symbol unified symbol of the market to fetch the ticker for
      * @param {object} [params] extra parameters specific to the exchange API endpoint
      * @returns {object} a [ticker structure]{@link https://docs.ccxt.com/?id=ticker-structure}
@@ -946,7 +948,7 @@ export default class bitbaby extends Exchange {
      * @name bitbaby#fetchOHLCV
      * @description fetches historical candlestick data containing the open, high, low, and close price, and the volume of a market
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#k-xian-la-zhu-tu-shu-ju // wrong description in docs
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#k-xian-la-zhu-tu-shu-ju // wrong description in docs
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#k-xian-la-zhu-tu-shu-ju // wrong description in docs, currntly not working for contract markets
      * @param {string} symbol unified symbol of the market to fetch OHLCV data for
      * @param {string} timeframe the length of time each candle represents
      * @param {int} [since] timestamp in ms of the earliest candle to fetch
@@ -1026,7 +1028,7 @@ export default class bitbaby extends Exchange {
      * @method
      * @name bitbaby#fetchTrades
      * @description get the list of most recent trades for a particular symbol
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#zui-jin-cheng-jiao
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#zui-jin-cheng-jiao // spot
      * @param {string} symbol unified symbol of the market to fetch trades for
      * @param {int} [since] timestamp in ms of the earliest trade to fetch
      * @param {int} [limit] the maximum amount of trades to fetch (default 200)
@@ -1170,7 +1172,6 @@ export default class bitbaby extends Exchange {
      * @description Create an order on the exchange
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#chuang-jian-xin-ding-dan // spot
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#chuang-jian-ce-shi-ding-dan // spot test
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/gang-gan-jiao-yi#chuang-jian-gang-gan-ding-dan // margin
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#chuang-jian-ding-dan // contract
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#chuang-jian-tiao-jian-dan // contract trigger
      * @param {string} symbol Unified CCXT market symbol
@@ -1202,7 +1203,6 @@ export default class bitbaby extends Exchange {
      * @description helper method for creating spot orders
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#chuang-jian-xin-ding-dan // spot
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#chuang-jian-ce-shi-ding-dan // spot test
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/gang-gan-jiao-yi#chuang-jian-gang-gan-ding-dan // margin
      * @param {string} symbol Unified CCXT market symbol
      * @param {string} type 'limit' or 'market'
      * @param {string} side 'buy' or 'sell'
@@ -1210,31 +1210,21 @@ export default class bitbaby extends Exchange {
      * @param {float} [price] the price at which the order is to be fulfilled, in units of the quote currency, ignored in market orders
      * @param {object} [params]  extra parameters specific to the exchange API endpoint
      * @param {string} [params.clientOrderId] client order id
-     * @param {bool} [params.margin] whether to create a margin order, default is false (spot order)
      * @param {int} [params.recvWindow] request valid time window value
      * @returns {object} an [order structure]{@link https://docs.ccxt.com/?id=order-structure}
      */
     async createSpotOrder (symbol: string, type: OrderType, side: OrderSide, amount: number, price: Num = undefined, params = {}) {
         await this.loadMarkets ();
         const market = this.market (symbol);
-        const request = this.createSpotOrderRequest (symbol, type, side, amount, price, params);
-        const test = this.safeBool (params, 'test', false);
-        let margin = false;
-        [ margin, params ] = this.handleOptionAndParams (params, 'createOrder', 'margin', margin);
+        let request = this.createSpotOrderRequest (symbol, type, side, amount, price, params);
+        const test = this.safeBool (request, 'test', false);
         let response = undefined;
-        if (margin && test) {
-            throw new NotSupported (this.id + ' createOrder() does not support test orders with margin');
-        }
         if (test) {
             //
             // {} - empty response if no error
             //
-            params = this.omit (params, 'test');
-            response = await this.privatePostSpotOpenSapiV1OrderTest (this.extend (request, params));
-        } else if (margin) {
-            // todo check margin order
-            //
-            response = await this.privatePostSpotOpenSapiV1MarginOrder (this.extend (request, params));
+            request = this.omit (request, 'test');
+            response = await this.privatePostSpotOpenSapiV1OrderTest (request);
         } else {
             //
             //     {
@@ -1253,7 +1243,7 @@ export default class bitbaby extends Exchange {
             //         "status": "NEW"
             //     }
             //
-            response = await this.privatePostSpotOpenSapiV1Order (this.extend (request, params));
+            response = await this.privatePostSpotOpenSapiV1Order (request);
         }
         return this.parseOrder (response, market);
     }
@@ -1279,7 +1269,7 @@ export default class bitbaby extends Exchange {
                     } else {
                         const amountString = this.numberToString (amount);
                         const priceString = this.numberToString (price);
-                        const quoteAmount = this.parseToNumeric (Precise.stringMul (amountString, priceString));
+                        const quoteAmount = Precise.stringMul (amountString, priceString);
                         const costRequest = (cost !== undefined) ? cost : quoteAmount;
                         request['volume'] = this.costToPrecision (symbol, costRequest);
                     }
@@ -1336,7 +1326,7 @@ export default class bitbaby extends Exchange {
         let response = undefined;
         if (triggerPrice === undefined) {
             // regular order
-            response = await this.privatePostFuturesOpenFapiV1Order (this.extend (request, params));
+            response = await this.privatePostFuturesOpenFapiV1Order (request);
             return this.parseOrder (response, market);
         } else {
             // conditional order
@@ -1356,7 +1346,7 @@ export default class bitbaby extends Exchange {
             //         "succ": true
             //     }
             //
-            response = await this.privatePostFuturesOpenFapiV1ConditionOrder (this.extend (request, params));
+            response = await this.privatePostFuturesOpenFapiV1ConditionOrder (request);
             const data = this.safeDict (response, 'data', {});
             const triggerIds = this.safeList (data, 'triggerIds', []);
             const id = this.safeString (triggerIds, 0);
@@ -1380,7 +1370,8 @@ export default class bitbaby extends Exchange {
             openOrClose = 'CLOSE';
         }
         const isMarketOrder = (type === 'market');
-        const [ triggerPrice, stopLossPrice, takeProfitPrice, query ] = this.handleTriggerPricesAndParams (symbol, params);
+        const [ triggerPrice, stopLossPrice, takeProfitPrice ] = this.handleTriggerPricesAndParams (symbol, params);
+        params = this.omit (params, [ 'triggerPrice', 'stopPrice', 'stopLossPrice', 'takeProfitPrice' ]);
         const isStopLossOrTakeProfit = (stopLossPrice !== undefined) || (takeProfitPrice !== undefined);
         if (isStopLossOrTakeProfit && openOrClose === 'OPEN') {
             // in case if user not provided reduceOnly param but provided stop loss or take profit price
@@ -1399,7 +1390,7 @@ export default class bitbaby extends Exchange {
                     } else {
                         const amountString = this.numberToString (amount);
                         const priceString = this.numberToString (price);
-                        const quoteAmount = this.parseToNumeric (Precise.stringMul (amountString, priceString));
+                        const quoteAmount = Precise.stringMul (amountString, priceString);
                         const costRequest = (cost !== undefined) ? cost : quoteAmount;
                         request['volume'] = this.costToPrecision (symbol, costRequest);
                     }
@@ -1449,7 +1440,7 @@ export default class bitbaby extends Exchange {
             request['triggerPrice'] = takeProfitPrice;
             request['triggerType'] = 2;
         }
-        return this.extend (request, query);
+        return this.extend (request, params);
     }
 
     encodeMarginMode (marginMode) {
@@ -1458,6 +1449,19 @@ export default class bitbaby extends Exchange {
             'isolated': '2',
         };
         return this.safeString (modes, marginMode, marginMode);
+    }
+
+    async createMarketBuyOrderWithCost (symbol: string, cost: number, params = {}): Promise<Order> {
+        const reduceOnly = this.safeBool (params, 'reduceOnly', false);
+        if (reduceOnly) {
+            throw new NotSupported (this.id + ' createMarketBuyOrderWithCost() does not support reduceOnly orders');
+        }
+        const stopLossPrice = this.safeString (params, 'stopLossPrice');
+        const takeProfitPrice = this.safeString (params, 'takeProfitPrice');
+        if ((stopLossPrice !== undefined) || (takeProfitPrice !== undefined)) {
+            throw new NotSupported (this.id + ' createMarketBuyOrderWithCost() does not support stopLossPrice or takeProfitPrice parameters');
+        }
+        return await super.createMarketBuyOrderWithCost (symbol, cost, params);
     }
 
     async createMarketSellOrderWithCost (symbol: string, cost: number, params = {}): Promise<Order> {
@@ -1469,6 +1473,11 @@ export default class bitbaby extends Exchange {
         const reduceOnly = this.safeBool (params, 'reduceOnly', false);
         if (reduceOnly) {
             throw new NotSupported (this.id + ' createMarketSellOrderWithCost() does not support reduceOnly orders');
+        }
+        const stopLossPrice = this.safeString (params, 'stopLossPrice');
+        const takeProfitPrice = this.safeString (params, 'takeProfitPrice');
+        if ((stopLossPrice !== undefined) || (takeProfitPrice !== undefined)) {
+            throw new NotSupported (this.id + ' createMarketSellOrderWithCost() does not support stopLossPrice or takeProfitPrice parameters');
         }
         return await super.createMarketSellOrderWithCost (symbol, cost, params);
     }
@@ -1482,6 +1491,11 @@ export default class bitbaby extends Exchange {
         const reduceOnly = this.safeBool (params, 'reduceOnly', false);
         if (reduceOnly) {
             throw new NotSupported (this.id + ' createMarketOrderWithCost() does not support reduceOnly orders');
+        }
+        const stopLossPrice = this.safeString (params, 'stopLossPrice');
+        const takeProfitPrice = this.safeString (params, 'takeProfitPrice');
+        if ((stopLossPrice !== undefined) || (takeProfitPrice !== undefined)) {
+            throw new NotSupported (this.id + ' createMarketOrderWithCost() does not support stopLossPrice or takeProfitPrice parameters');
         }
         return await super.createMarketOrderWithCost (symbol, side, cost, params);
     }
@@ -1566,13 +1580,11 @@ export default class bitbaby extends Exchange {
      * @name bitbaby#fetchOrder
      * @description fetches information on an order made by the user
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#ding-dan-cha-xun // spot
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/gang-gan-jiao-yi#gang-gan-ding-dan-cha-xun // margin
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#ding-dan-xiang-qing // contract
      * @param {string} id order id
      * @param {string} symbol unified symbol of the market the order was made in
      * @param {object} [params] extra parameters specific to the exchange API endpoint
      * @param {string} [params.clientOrderId] client order id, required if id is not provided
-     * @param {bool} [params.margin] *spot markets only* whether to fetch a margin order, default is false (spot order)
      * @returns {object} An [order structure]{@link https://docs.ccxt.com/?id=order-structure}
      */
     async fetchOrder (id: Str, symbol: Str = undefined, params = {}) {
@@ -1597,8 +1609,6 @@ export default class bitbaby extends Exchange {
         } else {
             request['newClientOrderId'] = clientOrderId; // todo check fetching by clientOrderId
         }
-        let margin = false;
-        [ margin, params ] = this.handleOptionAndParams (params, 'fetchOrder', 'margin', margin);
         let response = undefined;
         if (isContract) {
             request['contractName'] = marketId;
@@ -1630,25 +1640,21 @@ export default class bitbaby extends Exchange {
             response = await this.privateGetFuturesOpenFapiV1Order (this.extend (request, params));
         } else {
             request['symbol'] = marketId;
-            if (margin) {
-                response = await this.privateGetSpotOpenSapiV1MarginOrder (this.extend (request, params));
-            } else {
-                //
-                //     {
-                //         "symbol": "dogeusdt",
-                //         "side": "BUY",
-                //         "executedQty": 0E-16,
-                //         "orderId": "3176908865623394614",
-                //         "price": 0.0100000000000000,
-                //         "origQty": 20.0000000000000000,
-                //         "avgPrice": 0E-16,
-                //         "transactTime": 1775156645000,
-                //         "type": "LIMIT",
-                //         "status": "New Order"
-                //     }
-                //
-                response = await this.privateGetSpotOpenSapiV1Order (this.extend (request, params));
-            }
+            //
+            //     {
+            //         "symbol": "dogeusdt",
+            //         "side": "BUY",
+            //         "executedQty": 0E-16,
+            //         "orderId": "3176908865623394614",
+            //         "price": 0.0100000000000000,
+            //         "origQty": 20.0000000000000000,
+            //         "avgPrice": 0E-16,
+            //         "transactTime": 1775156645000,
+            //         "type": "LIMIT",
+            //         "status": "New Order"
+            //     }
+            //
+            response = await this.privateGetSpotOpenSapiV1Order (this.extend (request, params));
         }
         return this.parseOrder (response, market);
     }
@@ -1658,13 +1664,11 @@ export default class bitbaby extends Exchange {
      * @name bitbaby#fetchOpenOrders
      * @description fetch all unfilled currently open orders
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#dang-qian-ding-dan // spot
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/gang-gan-jiao-yi#gang-gan-dang-qian-wei-tuo // margin
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#dang-qian-ding-dan // contract
      * @param {string} symbol unified market symbol of the market orders were made in
      * @param {int} [since] the earliest time in ms to fetch orders for
      * @param {int} [limit] the maximum number of order structures to retrieve
      * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @param {bool} [params.margin] *spot markets only* whether to fetch a margin order, default is false (spot order)
      * @returns {Order[]} a list of [order structures]{@link https://docs.ccxt.com/?id=order-structure}
      */
     async fetchOpenOrders (symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}): Promise<Order[]> {
@@ -1676,8 +1680,6 @@ export default class bitbaby extends Exchange {
         const marketId = market['id'];
         const isContract = market['contract'];
         const request: Dict = {};
-        let margin = false;
-        [ margin, params ] = this.handleOptionAndParams (params, 'fetchOpenOrders', 'margin', margin);
         let response = undefined;
         if (isContract) {
             request['contractName'] = marketId;
@@ -1705,35 +1707,31 @@ export default class bitbaby extends Exchange {
             //
             response = await this.privateGetFuturesOpenFapiV1OpenOrders (this.extend (request, params));
             if (!Array.isArray (response)) {
-                response = [];
+                response = []; // if no open orders, the exchange returns an object with empty data instead of an empty array
             }
         } else {
             request['symbol'] = marketId;
             if (limit !== undefined) {
                 request['limit'] = limit;
             }
-            if (margin) {
-                response = await this.privateGetSpotOpenSapiV1MarginOpenOrders (this.extend (request, params));
-            } else {
-                //
-                //     [
-                //         {
-                //             "symbol": "DOGEUSDT",
-                //             "newClientOrderId": null,
-                //             "side": "BUY",
-                //             "executedQty": "0",
-                //             "orderId": "3176908865623394614",
-                //             "price": "0.01",
-                //             "origQty": "20",
-                //             "avgPrice": "0",
-                //             "time": 1775156645000,
-                //             "type": "LIMIT",
-                //             "status": "New Order"
-                //         }
-                //     ]
-                //
-                response = await this.privateGetSpotOpenSapiV1OpenOrders (this.extend (request, params));
-            }
+            //
+            //     [
+            //         {
+            //             "symbol": "DOGEUSDT",
+            //             "newClientOrderId": null,
+            //             "side": "BUY",
+            //             "executedQty": "0",
+            //             "orderId": "3176908865623394614",
+            //             "price": "0.01",
+            //             "origQty": "20",
+            //             "avgPrice": "0",
+            //             "time": 1775156645000,
+            //             "type": "LIMIT",
+            //             "status": "New Order"
+            //         }
+            //     ]
+            //
+            response = await this.privateGetSpotOpenSapiV1OpenOrders (this.extend (request, params));
         }
         return this.parseOrders (response, market, since, limit);
     }
@@ -1759,7 +1757,7 @@ export default class bitbaby extends Exchange {
         }
         let marketType = undefined;
         [ marketType, params ] = this.handleMarketTypeAndParams ('fetchCanceledAndClosedOrders', market, params);
-        if ((marketType === 'spot') || (marketType === 'margin')) {
+        if (marketType === 'spot') {
             throw new NotSupported (this.id + ' fetchCanceledAndClosedOrders() is supported for contract markets only');
         }
         if (limit !== undefined) {
@@ -1806,12 +1804,10 @@ export default class bitbaby extends Exchange {
      * @name bitbaby#cancelOrder
      * @description cancels an open order
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#che-xiao-ding-dan // spot
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/gang-gan-jiao-yi#che-xiao-gang-gan-ding-dan // margin
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#qu-xiao-ding-dan // contract
      * @param {string} id order id
      * @param {string} symbol unified symbol of the market the order was made in
      * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @param {bool} [params.margin] *spot markets only* whether to fetch a margin order, default is false (spot order)
      * @returns Response from the exchange
      */
     async cancelOrder (id: string, symbol: Str = undefined, params = {}) {
@@ -1830,13 +1826,7 @@ export default class bitbaby extends Exchange {
             response = await this.privatePostFuturesOpenFapiV1Cancel (this.extend (request, params));
         } else {
             request['symbol'] = marketId;
-            let margin = false;
-            [ margin, params ] = this.handleOptionAndParams (params, 'cancelOrder', 'margin', margin);
-            if (margin) {
-                response = await this.privatePostSpotOpenSapiV1MarginCancel (this.extend (request, params));
-            } else {
-                response = await this.privatePostSpotOpenSapiV1Cancel (this.extend (request, params));
-            }
+            response = await this.privatePostSpotOpenSapiV1Cancel (this.extend (request, params));
         }
         return this.parseOrder (response, market);
     }
@@ -1845,7 +1835,7 @@ export default class bitbaby extends Exchange {
      * @method
      * @name bitbaby#cancelOrders
      * @description cancel multiple orders for contract markets
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#pi-liang-che-xiao-ding-dan
+     * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#pi-liang-che-xiao-ding-dan // spot
      * @param {string[]} ids order ids
      * @param {string} symbol unified symbol of the market the order was made in
      * @param {object} [params] extra parameters specific to the exchange API endpoint
@@ -2120,14 +2110,12 @@ export default class bitbaby extends Exchange {
      * @method
      * @name bitbaby#fetchMyTrades
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/xian-huo-jiao-yi#jiao-yi-ji-lu // spot
-     * @see https://bitbaby-1.gitbook.io/bitbaby-api/gang-gan-jiao-yi#gang-gan-jiao-yi-ji-lu // margin
      * @see https://bitbaby-1.gitbook.io/bitbaby-api/he-yue-jiao-yi#jiao-yi-ji-lu // contract
      * @description fetch all trades made by the user
      * @param {string} symbol unified market symbol
      * @param {int} [since] the earliest time in ms to fetch trades for
      * @param {int} [limit] the maximum number of trades structures to retrieve
      * @param {object} [params] extra parameters specific to the exchange API endpoint
-     * @param {bool} [params.margin] *spot markets only* whether to fetch a margin order, default is false (spot order)
      * @returns {Trade[]} a list of [trade structures]{@link https://docs.ccxt.com/?id=trade-structure}
      */
     async fetchMyTrades (symbol: Str = undefined, since: Int = undefined, limit: Int = undefined, params = {}) {
@@ -2169,34 +2157,28 @@ export default class bitbaby extends Exchange {
             response = await this.privateGetFuturesOpenFapiV1MyTrades (this.extend (request, params));
         } else {
             request['symbol'] = marketId;
-            let margin = false;
-            [ margin, params ] = this.handleOptionAndParams (params, 'fetchMyTrades', 'margin', margin);
-            if (margin) {
-                response = await this.privateGetSpotOpenSapiV1MarginMyTrades (this.extend (request, params));
-            } else {
-                //
-                //     [
-                //         {
-                //             "symbol": "DOGEUSDT",
-                //             "side": "BUY",
-                //             "fee": "0.4652193",
-                //             "isMaker": false,
-                //             "isBuyer": true,
-                //             "bidId": 3206077345740844498,
-                //             "bidUserId": 1047121,
-                //             "feeCoin": "DOGE",
-                //             "price": "0.09028",
-                //             "qty": "232.60965",
-                //             "askId": 3176911270805052610,
-                //             "id": "6137967",
-                //             "time": 1775161045250,
-                //             "isSelf": false,
-                //             "askUserId": 1000048
-                //         }
-                //     ]
-                //
-                response = await this.privateGetSpotOpenSapiV1MyTrades (this.extend (request, params));
-            }
+            //
+            //     [
+            //         {
+            //             "symbol": "DOGEUSDT",
+            //             "side": "BUY",
+            //             "fee": "0.4652193",
+            //             "isMaker": false,
+            //             "isBuyer": true,
+            //             "bidId": 3206077345740844498,
+            //             "bidUserId": 1047121,
+            //             "feeCoin": "DOGE",
+            //             "price": "0.09028",
+            //             "qty": "232.60965",
+            //             "askId": 3176911270805052610,
+            //             "id": "6137967",
+            //             "time": 1775161045250,
+            //             "isSelf": false,
+            //             "askUserId": 1000048
+            //         }
+            //     ]
+            //
+            response = await this.privateGetSpotOpenSapiV1MyTrades (this.extend (request, params));
         }
         return this.parseTrades (response, market, since, limit);
     }
